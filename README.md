@@ -1,6 +1,8 @@
 # ExifStats
 Exif statistics of your JPEG and HEIF library
 
+![](ExifStats.png)
+
 ## Compilation
 
 ## Static Compilation
