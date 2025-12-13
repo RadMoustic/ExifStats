@@ -1,0 +1,145 @@
+cmake_minimum_required(VERSION 3.6.2)
+
+if(DEFINED ENV{VCPKG_TOOLCHAIN_FILE})
+	if(NOT DEFINED ENV{VCPKG_TARGET_TRIPLET})
+		message(FATAL_ERROR "Environment variable VCPKG_TARGET_TRIPLET missing")
+	endif()
+	set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_TOOLCHAIN_FILE})
+	set(VCPKG_TARGET_TRIPLET $ENV{VCPKG_TARGET_TRIPLET})
+endif()
+
+if("$ENV{HEIF_PLUGIN_ENABLE}" STREQUAL "true" AND NOT DEFINED ENV{VCPKG_TOOLCHAIN_FILE})
+	message(FATAL_ERROR "You must set the environment variables VCPKG_TOOLCHAIN_FILE and VCPKG_TARGET_TRIPLET to enable the HEIF plugin")
+endif()
+
+if("$ENV{QT_STATIC}" STREQUAL "true")
+	set(QT_STATIC ON)
+else()
+	set(QT_STATIC OFF)
+endif()
+if("$ENV{HEIF_PLUGIN_ENABLE}" STREQUAL "true")
+	set(HEIF_PLUGIN_ENABLE ON)
+else()
+	set(HEIF_PLUGIN_ENABLE OFF)
+endif()
+if("$ENV{TURBOJPEG_PLUGIN_ENABLE}" STREQUAL "true")
+	set(TURBOJPEG_PLUGIN_ENABLE ON)
+else()
+	set(TURBOJPEG_PLUGIN_ENABLE OFF)
+endif()
+
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
+project($ENV{SLN_NAME} LANGUAGES CXX)
+
+set_property( GLOBAL PROPERTY USE_FOLDERS ON)
+set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT "$ENV{SLN_NAME}") 
+
+set(GEN_DIR $ENV{GENERATED_PATH})
+set(PROJECT_SRC_DIR ${CMAKE_SOURCE_DIR})
+
+if(MSVC)
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GEN_DIR}/bin")
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${GEN_DIR}/bin")
+endif()
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# C++ conf
+set(CPP_DEFINES "")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qpar /Qpar-report:1 /W4 /WX /MP -std:c++latest /wd4127 /Wv:18 /bigobj")
+	if(HEIF_PLUGIN_ENABLE)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd26812")
+	endif()
+	if(QT_STATIC)
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+	endif()
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL /O2 /arch:AVX2")
+	# Edit and Continu Disabled because of a bug with windeployqt
+	#set(CMAKE_CXX_FLAGS_DEBUG "/ZI /Od")
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /LTCG /SUBSYSTEM:WINDOWS")
+	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL")
+endif()
+
+# Version setup # TODO Replace with Git
+include(FindSubversion)
+Subversion_WC_INFO(${PROJECT_SRC_DIR} MY)
+set(SVN_REV ${MY_WC_REVISION})
+configure_file(${PROJECT_SRC_DIR}/inc/version.h.in ${PROJECT_SRC_DIR}/inc/version.h @ONLY)
+
+# List Project Files
+file(GLOB_RECURSE INC_LIST ${PROJECT_SRC_DIR}/inc/*.h)
+file(GLOB_RECURSE INL_LIST ${PROJECT_SRC_DIR}/inc/*.inl)
+file(GLOB_RECURSE SRC_LIST ${PROJECT_SRC_DIR}/src/*.cpp)
+file(GLOB_RECURSE QRC_LIST ${PROJECT_SRC_DIR}/rc/*.qrc)
+if(MSVC)
+	file(GLOB_RECURSE RC_LIST ${PROJECT_SRC_DIR}/rc/*.rc)
+endif()
+
+source_group("Resources" FILES ${QRC_LIST} ${RC_LIST})
+
+# Include Directories
+include_directories(${PROJECT_SRC_DIR}/inc)
+
+# Qt
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Scripts/CMake)
+include(Qt)
+ADD_QT6_PACKAGES("Core;Quick;Qml;QuickControls2;Concurrent;Widgets;Positioning")
+
+# libheif
+set(HEIF_PLUGIN_LIB "")
+if(HEIF_PLUGIN_ENABLE)
+	find_package(libde265 CONFIG REQUIRED)
+	find_package(libheif CONFIG REQUIRED)
+	file(GLOB_RECURSE HEIF_PLUGIN_INC ${PROJECT_SRC_DIR}/Plugins/Heif/*.h)
+	file(GLOB_RECURSE HEIF_PLUGIN_SRC ${PROJECT_SRC_DIR}/Plugins/Heif/*.cpp)
+	qt_add_plugin(QHeifPlugin STATIC ${HEIF_PLUGIN_INC} ${HEIF_PLUGIN_SRC})
+	set(HEIF_PLUGIN_LIB "QHeifPlugin")
+	list(APPEND CPP_DEFINES HEIF_PLUGIN_ENABLED)
+endif()
+
+# Turbojpeg
+set(TURBOJPEG_PLUGIN_LIB "")
+if(TURBOJPEG_PLUGIN_ENABLE)
+	find_package(libjpeg-turbo CONFIG REQUIRED)
+	file(GLOB_RECURSE TURBOJPEG_PLUGIN_INC ${PROJECT_SRC_DIR}/Plugins/TurboJpeg/*.h)
+	file(GLOB_RECURSE TURBOJPEG_PLUGIN_SRC ${PROJECT_SRC_DIR}/Plugins/TurboJpeg/*.cpp)
+	qt_add_plugin(QTurboJpegPlugin STATIC ${TURBOJPEG_PLUGIN_INC} ${TURBOJPEG_PLUGIN_SRC})
+	if(QT_STATIC)
+		set(TURBOJPEG_LIB libjpeg-turbo::turbojpeg-static)
+	else()
+		set(TURBOJPEG_LIB libjpeg-turbo::turbojpeg)
+	endif()
+	set(TURBOJPEG_PLUGIN_LIB QTurboJpegPlugin ${TURBOJPEG_LIB})
+	list(APPEND CPP_DEFINES TURBOJPEG_PLUGIN_ENABLED)
+endif()
+
+# Create Executable
+list(APPEND ALL_SRC_LIST ${INC_LIST} ${INL_LIST} ${SRC_LIST} ${QRC_COMPILED} ${RC_LIST} ${MOC_CPP_LIST})
+add_executable($ENV{SLN_NAME} ${ALL_SRC_LIST})
+
+# Defines
+target_compile_definitions($ENV{SLN_NAME} PRIVATE
+    ${CPP_DEFINES}
+)
+
+# For Static build
+qt6_import_qml_plugins(${CMAKE_PROJECT_NAME})
+
+# Link
+if(HEIF_PLUGIN_ENABLE)
+	target_link_libraries(QHeifPlugin PRIVATE Qt6::Core Qt6::Gui de265 heif)
+endif()
+if(TURBOJPEG_PLUGIN_ENABLE)
+	target_link_libraries(QTurboJpegPlugin PRIVATE Qt6::Core Qt6::Gui ${TURBOJPEG_LIB})
+endif()
+
+target_link_libraries($ENV{SLN_NAME} PRIVATE ${LINK_LIB} ${QT_LINK_LIBS} ${HEIF_PLUGIN_LIB} ${TURBOJPEG_PLUGIN_LIB})
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ALL_SRC_LIST})
+
+if(MSVC)
+	set_property(TARGET $ENV{SLN_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:$ENV{SLN_NAME}>")
+endif()

@@ -1,0 +1,49 @@
+# Qt config
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+
+# Fix CMake/Qt issue
+get_property(cxx_features GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
+set(CMAKE_CXX_COMPILE_FEATURES ${cxx_features})
+set(GLOBAL PROPERTY CMAKE_C_COMPILE_FEATURES ${cxx_features})
+
+MACRO(ADD_QT6_PACKAGES QT_MODULES)
+	ADD_QT_PACKAGES_INTERNAL(Qt6 QmlCompiler "${QT_MODULES}" "CoreTools;QmlTools;GuiTools")
+	qt_add_resources(QRC_COMPILED ${QRC_LIST})
+ENDMACRO()
+
+MACRO(ADD_QT_PACKAGES_INTERNAL QT_PREFIX QT_QML_COMPILER QT_MODULES QT_TOOLSMODULES)
+	cmake_policy(SET CMP0071 NEW) # Remove cmake warning
+	
+	if(MSVC)
+		FILE(GLOB FILES_AND_DIRS RELATIVE $ENV{QT_MSVC_ROOT_DIR}/lib/cmake $ENV{QT_MSVC_ROOT_DIR}/lib/cmake/*)
+		foreach(ENTRY ${FILES_AND_DIRS})
+			if(IS_DIRECTORY $ENV{QT_MSVC_ROOT_DIR}/lib/cmake/${ENTRY})
+				set(${ENTRY}_DIR "$ENV{QT_MSVC_ROOT_DIR}/lib/cmake/${ENTRY}")
+			endif()
+		endforeach()
+	endif()
+	
+	set(QT_LINK_LIBS "")
+	foreach(QT_MODULE IN ITEMS ${QT_MODULES})
+		message("Adding Qt module: ${QT_PREFIX}${QT_MODULE}")
+		find_package(${QT_PREFIX}${QT_MODULE})
+		list(APPEND QT_LINK_LIBS ${QT_PREFIX}::${QT_MODULE})
+	endforeach()
+ENDMACRO()
+
+MACRO(LIST_FILES_TO_MOC filesToMoc)
+	foreach(INC_FILE ${ARGN})
+		set_property(SOURCE INC_FILE PROPERTY SKIP_AUTOMOC ON)
+		file(READ ${INC_FILE} INC_FILE_CONTENT)
+		string(FIND "${INC_FILE_CONTENT}" "Q_OBJECT" MATCH_RES)
+		if(${MATCH_RES} GREATER -1)
+			list(APPEND filesToMoc ${INC_FILE})
+		endif ()
+	endforeach()
+ENDMACRO()
+
+MACRO(MOC_QT6_FILES)
+	LIST_FILES_TO_MOC(MOC_INC_LIST)
+	qt6_wrap_cpp(MOC_CPP_LIST ${MOC_INC_LIST})
+ENDMACRO()

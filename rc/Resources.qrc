@@ -1,0 +1,14 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource>
+    <file>Qml/main.qml</file>
+    <file>Qml/FallbackQmlErrors.qml</file>
+    <file>Qml/CounterChart.qml</file>
+	<file>Qml/CounterChartFromTo.qml</file>
+    <file>Qml/FilteringList.qml</file>
+    <file>Qml/RegularButton.qml</file>
+    <file>Qml/SmallButton.qml</file>
+
+    <file>Images/DotQuantityLUT.png</file>
+</qresource>
+</RCC>
