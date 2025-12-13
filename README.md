@@ -3,6 +3,10 @@ Exif statistics of your JPEG and HEIF library
 
 ![](ExifStats.png)
 
+## Customize UI / QML
+
+Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in %localappdata%\ExifStats\ExifStats\ExifStats.log
+
 ## Compilation
 
 ## Static Compilation
