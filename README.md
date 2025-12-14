@@ -3,6 +3,21 @@ Exif statistics of your JPEG and HEIF library
 
 ![](ExifStats.png)
 
+## Usage
+* Open or add a folder containing JPEG or HEIF images. All files will be parsed recursively to read their EXIF data
+* You can use the Refresh button to find new files without reparsing all the files already there
+* You can right click on a camera in the list on the left penel to set a 35mm equivalent focal factor if the camera does not add it automatically to the EXIF
+* You can zoom with the mouse wheel in all charts, use Ctrl + Wheel to zoom vertically, or Double Click to reset the view
+* You can click on a bar in a chart to get the value
+* You can right click on a bar chart to edit the filters
+* You can use the Ctrl + Wheel on the image grid to zoon
+* You can use Ctrl + Double Click on the image grid to reset the zoom
+* You can Double Click on an image in the image grid to open it with the default image viewer
+* You can use the **Restrict to View** option of the map to filter out files not in the actual map view
+* You can click on the map to see the images around the clicked position (if you want to reset the click in an empty space)
+* All files (database, presets, logs and image cache are stored in %localappdata%/ExifStats/ExifStats
+* All settings are stored in HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats
+
 ## Customize UI / QML
 
 Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in %localappdata%\ExifStats\ExifStats\ExifStats.log
