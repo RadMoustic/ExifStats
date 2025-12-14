@@ -25,14 +25,17 @@ Download and extract the CustomizeQML.zip into the same directory as ExifStats.e
 ## Compilation
 
 # Windows
-* Download and install Qt6.6+ https://doc.qt.io/qt-6/get-and-install-qt.html
-  * MSVC 2019 64-bit
-  * Sources
-  * Qt 5 Compatibility Module
-  * Qt Debug Information Files
-  * Additional librairies:
-    * Qt Image Formats
-    * Qt Location
+* Requirements
+  * Visual Studio 2022+
+  * CMake 3.6.2+
+  * Download and install Qt6.6+ https://doc.qt.io/qt-6/get-and-install-qt.html
+    * MSVC 2019 64-bit
+    * Sources
+    * Qt 5 Compatibility Module
+    * Qt Debug Information Files
+    * Additional librairies:
+      * Qt Image Formats
+      * Qt Location
 * Create a file **User.Setup.bat** at the root next to **CMakeLists.txt** with:
   * set QT_ROOT_DIR=c:\Dev\Qt
   * (optional) set QT_VERSION=6.6.2 (Project.Setup.bat already set a default value)
