@@ -12,50 +12,50 @@
 
 class QHeifPlugin : public QImageIOPlugin
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QImageIOHandlerFactoryInterface" FILE "heif.json")
+	Q_OBJECT
+	Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QImageIOHandlerFactoryInterface" FILE "heif.json")
 
 public:
-    Capabilities capabilities(QIODevice* pDevice, const QByteArray& pFormat) const override;
-    QImageIOHandler *create(QIODevice* pDevice, const QByteArray& pFormat = QByteArray()) const override;
+	Capabilities capabilities(QIODevice* pDevice, const QByteArray& pFormat) const override;
+	QImageIOHandler *create(QIODevice* pDevice, const QByteArray& pFormat = QByteArray()) const override;
 };
 
 /********************************************************************************/
 
 QHeifPlugin::Capabilities QHeifPlugin::capabilities(QIODevice* pDevice, const QByteArray& pFormat) const
 {
-    const bool lFormatOK = (pFormat == "heic" || pFormat == "heics" || pFormat == "heif" || pFormat == "heifs");
+	const bool lFormatOK = (pFormat == "heic" || pFormat == "heics" || pFormat == "heif" || pFormat == "heifs");
 
-    if (!lFormatOK && !pFormat.isEmpty())
-        return {};
+	if (!lFormatOK && !pFormat.isEmpty())
+		return {};
 
-    if (!pDevice)
-    {
-        if (lFormatOK)
-            return CanRead | CanWrite;
-        else
-            return {};
-    }
+	if (!pDevice)
+	{
+		if (lFormatOK)
+			return CanRead | CanWrite;
+		else
+			return {};
+	}
 
-    Capabilities lCaps;
+	Capabilities lCaps;
 
-    if (pDevice->isReadable() && QHeifHandler::canReadFrom(*pDevice) != QHeifHandler::Format::None)
-        lCaps |= CanRead;
+	if (pDevice->isReadable() && QHeifHandler::canReadFrom(*pDevice) != QHeifHandler::Format::None)
+		lCaps |= CanRead;
 
-    if (pDevice->isWritable())
-        lCaps |= CanWrite;
+	if (pDevice->isWritable())
+		lCaps |= CanWrite;
 
-    return lCaps;
+	return lCaps;
 }
 
 /********************************************************************************/
 
 QImageIOHandler *QHeifPlugin::create(QIODevice* pDevice, const QByteArray& pFormat) const
 {
-    QImageIOHandler* lHandler = new QHeifHandler;
-    lHandler->setDevice(pDevice);
-    lHandler->setFormat(pFormat);
-    return lHandler;
+	QImageIOHandler* lHandler = new QHeifHandler;
+	lHandler->setDevice(pDevice);
+	lHandler->setFormat(pFormat);
+	return lHandler;
 }
 
 /********************************************************************************/

@@ -29,15 +29,14 @@ public:
 	bool isLoaded() const;
 	bool isNull() const;
 
-	const QImage& getImage(bool pUpdateLastUsed = true) const;
+	const QImage& getImage() const;
 	StringId getImagePath() const;
 	uint64_t getExifDateTime() const;
-	QChar getDriveLetter() const;
+	
 	bool hasCacheFile() const;
 
+	void updateLastUsed();
 	void loadImage();
-	void cancelLoading();
-	void unloadImage();
 
 signals:
 	/********************************** SIGNALS ***********************************/
@@ -62,13 +61,17 @@ private:
 
 	uint64_t mExifDateTime; // Used for sorting
 
-	static std::atomic_char msIsSSDCache[26]; // 0 unset, 1 is SSD, >1 is not SSD
-
 	/********************************* METHODS ***********************************/
 
 	explicit ESImage(const StringId pImagePath, const QString pImageCachePath, const UsefullExif* pImageExif);
+
 	void loadImageInternal(const QSize pMaxSize, bool pAsync);
 	void readImage(const QString& pImagePath, QSize aMaxSize);
 	void readImage(QByteArray& pImageData, QSize aMaxSize);
 	void readImage(QImageReader& pImageReader, QSize aMaxSize);
+
+	void cancelLoading();
+	void unloadImage();
+
+	QChar getDriveLetter() const;
 };

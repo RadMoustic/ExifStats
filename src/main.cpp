@@ -1,10 +1,13 @@
+// ExifStats
 #include "ESStringPool.h"
 #include "ESWindow.h"
 #include "ESLogger.h"
+#include "ESImageCache.h"
 
 // Qt
 #include <QApplication>
 #include <QtPlugin>
+#include <QThreadPool>
 
 // Stl
 #include <iostream>
@@ -46,5 +49,11 @@ int main(int argc, char* argv[])
 	lMainWindow.initialize();
 	lMainWindow.show();
 
-	return app.exec();
+	int lAppResult = app.exec();
+
+	ESImageCache::getInstance().stopAndCancelAllLoadings();
+
+	QThreadPool::globalInstance()->waitForDone();
+
+	return lAppResult;
 }

@@ -14,7 +14,7 @@
 #include <QFuture>
 
 // Stl
-#include <queue>
+#include <deque>
 #include <mutex>
 #include <shared_mutex>
 
@@ -45,11 +45,17 @@ public:
 	void initializeFromDatabase();
 	bool isInitialized() const;
 	std::shared_ptr<ESImage> getImage(StringId pImagePath);
+	void stopAndCancelAllLoadings();
+
+#ifdef QT_DEBUG
+	void printImageDebugInfo(const std::shared_ptr<ESImage>& pImage);
+#endif
 
 signals:
 	/********************************** SIGNALS ***********************************/
 
 	void initializationFinished();
+	void imageCachingProgressUpdated(int pCachedCount, int pCachingCount);
 
 private:
 	/******************************** ATTRIBUTES **********************************/
@@ -60,6 +66,10 @@ private:
 
 	class LoadingThreadTask
 	{
+#ifdef QT_DEBUG
+		friend void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage);
+#endif
+		
 	public:
 		void init(std::function<void(std::shared_ptr<ESImage>)> pProcessFct)
 		{
@@ -67,20 +77,29 @@ private:
 			mProcessFct = std::move(pProcessFct);
 		}
 		void processImage(const std::shared_ptr<ESImage>& pImage);
+		void stop();
 
-	private:
-		QFuture<void> mLoadingThread;
-		std::queue<std::shared_ptr<ESImage>> mLoadingQueue;
+#ifdef QT_DEBUG
+		void printImageDebugInfo(const QString& pTaskName, const std::shared_ptr<ESImage>& pImage);
+#endif
+		
+private:
 		std::mutex mQueueMutex;
+		QFuture<void> mLoadingThread;
+		std::deque<std::shared_ptr<ESImage>> mLoadingQueue;
 		std::function<void(std::shared_ptr<ESImage>)> mProcessFct;
+		bool mStop = false;
 	};
 
 	std::map<QChar, std::shared_ptr<LoadingThreadTask>> mDriveLoadingTasks;
 	std::shared_mutex mDriveLoadingTasksMutex;
+	LoadingThreadTask mCacheLoadingTask; // Cache files are loaded in another thread to not be blocked by drive loading tasks
 	LoadingThreadTask mQueueLoadingTask;
 
 	QFuture<void> mUnloadingUnusedThread;
 	bool mIsInitialized;
+	std::atomic_int mImagesCachingCount;
+	std::atomic_int mImagesCachedCount;
 
 	/********************************* METHODS ***********************************/
 
@@ -90,6 +109,6 @@ private:
 	void queueImageLoading(const std::shared_ptr<ESImage>& pImage);
 	void queueDriveImageLoading(const std::shared_ptr<ESImage>& pImage);
 	void unloadUnusedImages();
-
+	void imageCachingFinished();
 };
 

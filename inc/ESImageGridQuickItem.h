@@ -63,12 +63,10 @@ private:
 
 	std::vector<std::shared_ptr<ESImage>> mImages;
 	const ESExifStatListFilesComponent* mFilteredFilesListComponent;
-	std::atomic_int32_t mImagesLoadedCount;
-	std::atomic_int32_t mImagesLoadingCount;
 
 	/********************************* METHODS ***********************************/
 
 	void updateInternal();
-	void updateImageLoadingProgress(ESImage* pSender);
+	void onImageCachingProgressUpdated(int pCachedCount, int pCachingCount);
 	void sort();
 };

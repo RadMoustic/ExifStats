@@ -31,6 +31,8 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
 
+	connect(&ESImageCache::getInstance(), &ESImageCache::imageCachingProgressUpdated, this, &ESImageGridQuickItem::onImageCachingProgressUpdated);
+
 	connect(this, &ESImageGridQuickItem::propertyFilteredFilesListChanged, this, 
 	[this]()
 	{
@@ -57,6 +59,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	connect(&ESImageCache::getInstance(), &ESImageCache::initializationFinished, this, 
 	[this]()
 	{
+		mDataHasChanged = true; // All cache images have changed, don't keep the old images
 		update();
 	});
 }
@@ -65,8 +68,6 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 /*virtual*/ ESImageGridQuickItem::~ESImageGridQuickItem()
 {
-	for(std::shared_ptr<ESImage>& image: mImages)
-		image->cancelLoading();
 }
 
 /********************************************************************************/
@@ -77,9 +78,17 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	int row = static_cast<int>((pY + mYOffset) / mImageHeight);
 	int lIndex = row * mNbColumns + col;
 	if(lIndex >= 0 && lIndex < mImages.size())
-		return mImages[lIndex]->getImagePath();
+	{
+		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
+#ifdef QT_DEBUG
+		ESImageCache::getInstance().printImageDebugInfo(lImage);
+#endif
+		return lImage->getImagePath();
+	}
 	else
+	{
 		return QString();
+	}
 }
 
 /********************************************************************************/
@@ -113,17 +122,12 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 				if(!boundingRect().intersects(lImageRect))
 					continue;
 				std::shared_ptr<ESImage>& lImageWrapper = mImages[lIndex];
-				if(!lImageWrapper->isLoaded())
-				{
-					if(!lImageWrapper->isLoading())
-					{
-						lImageWrapper->loadImage();
-						++mImagesLoadingCount;
-						connect(lImageWrapper.get(), &ESImage::imageLoadedOrCanceled, this, &ESImageGridQuickItem::updateImageLoadingProgress);
-						setLoading(true);
-					}
-				}
-				else if (!lImageWrapper->isNull())
+				lImageWrapper->updateLastUsed();
+
+				if(!lImageWrapper->isLoaded() && !lImageWrapper->isLoading())
+					lImageWrapper->loadImage();
+				
+				if (lImageWrapper->isLoaded() && !lImageWrapper->isNull())
 				{
 					const QImage& lImage = lImageWrapper->getImage();
 
@@ -170,10 +174,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 
 void ESImageGridQuickItem::updateInternal()
 {
-	if(!ESImageCache::getInstance().isInitialized())
-		return;
-
-	mValid = true;
+	mValid = ESImageCache::getInstance().isInitialized();
 
 	if(!mValid)
 		return;
@@ -190,12 +191,8 @@ void ESImageGridQuickItem::updateInternal()
 
 	if(mDataHasChanged)
 	{
-		mImagesLoadingCount = 0;
-		mImagesLoadedCount = 0;
-
 		for(std::shared_ptr<ESImage>& image: mImages)
 		{
-			image->cancelLoading();
 			disconnect(image.get(), nullptr, this, nullptr);
 		}
 		mImages.clear();
@@ -203,11 +200,7 @@ void ESImageGridQuickItem::updateInternal()
 		auto lGetImage = [this](const QString& pImageFilePath)
 			{
 				std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImageFilePath);
-				if (lImage->isLoading())
-				{
-					++mImagesLoadingCount;
-					connect(lImage.get(), &ESImage::imageLoadedOrCanceled, this, &ESImageGridQuickItem::updateImageLoadingProgress);
-				}
+				connect(lImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]() { update(); });
 				mImages.push_back(lImage);
 			};
 
@@ -224,8 +217,6 @@ void ESImageGridQuickItem::updateInternal()
 				lGetImage(imageFilePath);
 		}
 
-		setLoading(mImagesLoadingCount > 0);
-
 		sort();
 
 		mDataHasChanged = false;
@@ -234,20 +225,20 @@ void ESImageGridQuickItem::updateInternal()
 
 /********************************************************************************/
 
-void ESImageGridQuickItem::updateImageLoadingProgress(ESImage* pSender)
+void ESImageGridQuickItem::onImageCachingProgressUpdated(int pCachedCount, int pCachingCount)
 {
-	disconnect(pSender, &ESImage::imageLoadedOrCanceled, this, &ESImageGridQuickItem::updateImageLoadingProgress);
-	int lLoadedCount = ++mImagesLoadedCount;
-	float loadingProgress = static_cast<float>(lLoadedCount) / mImagesLoadingCount;
-	if (loadingProgress - getLoadingProgress() >= 0.001)
-		setLoadingProgress(loadingProgress);
-	if (lLoadedCount == mImagesLoadingCount)
+	if (pCachingCount == 0)
 	{
-		mImagesLoadingCount = 0;
-		mImagesLoadedCount = 0;
+		setLoadingProgress(100.f);
 		setLoading(false);
 	}
-	update();
+	else
+	{
+		setLoading(true);
+		float loadingProgress = static_cast<float>(pCachedCount) / pCachingCount;
+		if (loadingProgress - getLoadingProgress() >= 0.001)
+			setLoadingProgress(loadingProgress);
+	}
 }
 
 /********************************************************************************/

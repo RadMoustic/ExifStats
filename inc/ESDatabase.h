@@ -68,7 +68,6 @@ public:
 signals:
 	/********************************** SIGNALS ***********************************/
 
-	void dataHasChanged();
 	void foldersChanged();
 
 private:

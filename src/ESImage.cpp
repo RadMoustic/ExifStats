@@ -120,10 +120,8 @@ void ESImage::unloadImage()
 
 /********************************************************************************/
 
-const QImage& ESImage::getImage(bool pUpdateLastUsed) const
+const QImage& ESImage::getImage() const
 {
-	if (isLoaded())
-		mLastUsed = pUpdateLastUsed ? QDateTime::currentMSecsSinceEpoch() : mLastUsed;
 	return mImage;
 }
 
@@ -131,8 +129,14 @@ const QImage& ESImage::getImage(bool pUpdateLastUsed) const
 
 void ESImage::loadImage()
 {
-	mLastUsed = QDateTime::currentMSecsSinceEpoch();
 	ESImageCache::getInstance().queueImageLoading(std::const_pointer_cast<ESImage>(shared_from_this()));
+}
+
+/********************************************************************************/
+
+void ESImage::updateLastUsed()
+{
+	mLastUsed = QDateTime::currentMSecsSinceEpoch();
 }
 
 /********************************************************************************/
@@ -216,7 +220,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 		if (mCancelLoading)
 			return;
 
-		QtConcurrent::run([this, aMaxSize, lResetIsLoading]()
+		QtConcurrent::run([this, aMaxSize, lResetIsLoading, lReadCache]()
 		{
 			if (!mCancelLoading)
 			{
@@ -229,10 +233,11 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 				else
 				{
 					mIsLoaded = true;
-					mLastUsed = QDateTime::currentMSecsSinceEpoch();
 					ESImageCache::getInstance().unloadUnusedImages();
 				}
 			}
+			if(!lReadCache)
+				ESImageCache::getInstance().imageCachingFinished();
 			emit imageLoadedOrCanceled(this);
 		});
 	}
@@ -240,9 +245,10 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 	{
 		readImage(lImagePath, aMaxSize);
 		mIsLoaded = true;
-		mLastUsed = QDateTime::currentMSecsSinceEpoch();
 		ESImageCache::getInstance().unloadUnusedImages();
-		assert(!mCancelLoading); // In synchronous mode, calling cancelLoading() in another thread is not supported
+		assert(!mCancelLoading); // In synchronous mode, 1calling cancelLoading() in another thread is not supported
+		if (!lReadCache)
+			ESImageCache::getInstance().imageCachingFinished();
 		emit imageLoadedOrCanceled(this);
 	}
 }
