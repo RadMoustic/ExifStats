@@ -3,12 +3,61 @@ Exif statistics of your JPEG and HEIF library
 
 ![](ExifStats.png)
 
+## Usage
+* Open or add a folder containing JPEG or HEIF images. All files will be parsed recursively to read their EXIF data
+* You can use the Refresh button to find new files without reparsing all the files already there
+* You can right click on a camera in the list on the left penel to set a 35mm equivalent focal factor if the camera does not add it automatically to the EXIF
+* You can zoom with the mouse wheel in all charts, use Ctrl + Wheel to zoom vertically, or Double Click to reset the view
+* You can click on a bar in a chart to get the value
+* You can right click on a bar chart to edit the filters
+* You can use the Ctrl + Wheel on the image grid to zoon
+* You can use Ctrl + Double Click on the image grid to reset the zoom
+* You can Double Click on an image in the image grid to open it with the default image viewer
+* You can use the **Restrict to View** option of the map to filter out files not in the actual map view
+* You can click on the map to see the images around the clicked position (if you want to reset the click in an empty space)
+* All files (database, presets, logs and image cache are stored in %localappdata%/ExifStats/ExifStats
+* All settings are stored in HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats
+
 ## Customize UI / QML
 
 Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in %localappdata%\ExifStats\ExifStats\ExifStats.log
 
 ## Compilation
 
+# Windows
+* Requirements
+  * Visual Studio 2022+
+  * CMake 3.6.2+
+  * Download and install Qt6.6+ https://doc.qt.io/qt-6/get-and-install-qt.html
+    * MSVC 2019 64-bit
+    * Sources
+    * Qt 5 Compatibility Module
+    * Qt Debug Information Files
+    * Additional librairies:
+      * Qt Image Formats
+      * Qt Location
+* Create a file **User.Setup.bat** at the root next to **CMakeLists.txt** with:
+  * set QT_ROOT_DIR=c:\Dev\Qt
+  * (optional) set QT_VERSION=6.6.2 (Project.Setup.bat already set a default value)
+  * (optional) set QT_MSVC_DIR=msvc2019_64 (Project.Setup.bat already set a default value)
+  * (optional) set HEIF_PLUGIN_ENABLE=true (See Heif / Turbojpeg plugins section)
+  * (optional) set TURBOJPEG_PLUGIN_ENABLE=true (See Heif / Turbojpeg plugins section)
+* Use a bat in the Scripts folder
+  * **Scripts/CMake.bat**: CMake only
+  * **Scripts/Build.bat**: Build release only (need CMake)
+  * **Scripts/Deploy.bat**: Deploy files required to launch the debug/release/relwithdebuginfo binaries (dlls, qml ...)(need Build)
+  * **Scripts/Run.bat**: Run the release bin (need Build and Deploy)
+  * **Scripts/DeleteGenerated.bat**: Delete the Generated folder and all its content
+  * **Scripts/OpenSln.bat**: Open the Visual Studio solution (need CMake)
+  * **Scripts/OpenQtCreator.bat**: Open Qt Creator with the folder (Qt Creator is not officially supported)
+  * **Scripts/BuildDeployRun.bat**: Build, Deploy, Run (Release)
+  * **Scripts/CleanBuildDebugDeployOpenSln.bat**: Delete Generated, CMake, Build, Deploy, Open Sln (Debug)
+  * **Scripts/CleanBuildRun.bat**: Delete Generated, CMake, Build, Run (Release)
+* The binaries are and all generated files are located in the **generated** folder
+
+# Other
+Not supported. With a bit of work it should compile on all platforms supported by Qt.
+  
 ## Static Compilation
 ### Compile Qt6
 First you need to download and compile Qt in Static, if you don't want to use the turbo jpeg lib remove "-no-libjpeg"
@@ -46,4 +95,6 @@ set VCPKG_TOOLCHAIN_FILE=C:/Dev/vcpkg/scripts/buildsystems/vcpkg.cmake
 set VCPKG_TARGET_TRIPLET=x64-windows
 	or
 set VCPKG_TARGET_TRIPLET=x64-windows-static
+set HEIF_PLUGIN_ENABLE=true
+set TURBOJPEG_PLUGIN_ENABLE=true
 ```
