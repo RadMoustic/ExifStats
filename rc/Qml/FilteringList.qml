@@ -10,6 +10,8 @@ import QtQuick.Layouts
 ColumnLayout
 {
 	id: rootItem
+	
+	clip: true
 
 	property var model: []
 	property var selectedItems: {}

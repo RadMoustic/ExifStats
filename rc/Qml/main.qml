@@ -707,8 +707,9 @@ Item
 		ColumnLayout
 		{
 			id: rightPanel
-			SplitView.preferredWidth: parent.width - 400
 			SplitView.preferredHeight: parent.height
+			SplitView.minimumWidth: 350
+			clip: true
 
 			ColumnLayout
 			{
@@ -1113,6 +1114,7 @@ Item
 			
 			SplitView.preferredWidth: 200
 			SplitView.preferredHeight: parent.height
+			SplitView.minimumWidth: 270
 			
 			property real imageScale: 1.0
 			

@@ -30,17 +30,13 @@ static const int MAX_NUM_IMAGE_LOADED = 512;
 /********************************************************************************/
 
 ESImageCache::ESImageCache()
-	: mIsInitialized(false)
+	: mIsUpdating(false)
 {
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 	mCacheFolderPath = lDataBaseDir + QDir::separator() + "ImageCache";
 	QDir lDir;
 	lDir.mkpath(mCacheFolderPath);
 
-	mQueueLoadingTask.init([this](const std::shared_ptr<ESImage>& pImage)
-		{
-			queueDriveImageLoading(pImage);
-		});
 
 	mCacheLoadingTask.init([this](const std::shared_ptr<ESImage>& pImage)
 		{
@@ -53,88 +49,102 @@ ESImageCache::ESImageCache()
 
 void ESImageCache::initializeFromDatabase()
 {
+	assert(!mIsUpdating);
 	assert(mImages.empty()); // Initialize only once at startup
 
-	auto lResetCache = [this]()
+	mIsUpdating = true;
+
+	std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
 	{
-		std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
-		{
-			std::lock_guard<std::shared_mutex> lock(mImagesMutex);
-			mIsInitialized = false;
-			mImages.clear();
-			const ESDatabase& lDatabase = ESDatabase::getInstance();
-			mImages.reserve(lDatabase.getFiles().size());
+		std::lock_guard<std::shared_mutex> lock(mImagesMutex);
+		const ESDatabase& lDatabase = ESDatabase::getInstance();
+		mImages.reserve(lDatabase.getFiles().size());
 		
-			for(auto&& lFileInfo: lDatabase.getFiles())
+		for(auto&& lFileInfo: lDatabase.getFiles())
+		{
+			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.first, getCacheFilePath(lFileInfo.first), &lFileInfo.second.mExif));
+			mImages.emplace(std::make_pair(lFileInfo.first, lImage));
+			lImagesToInitializeCacheFileCheck.push_back(lImage);
+		}
+	}
+
+	mIsUpdating = false;
+	emit updateFinished();
+		
+	queueImageCaching(lImagesToInitializeCacheFileCheck);
+
+	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESImageCache::onDatabaseFoldersChanged);
+}
+
+/********************************************************************************/
+
+void ESImageCache::onDatabaseFoldersChanged()
+{
+	assert(!mIsUpdating);
+	mIsUpdating = true;
+
+	QtConcurrent::run([this]()
+		{	
+			std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
 			{
-				std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.first, getCacheFilePath(lFileInfo.first), &lFileInfo.second.mExif));
-				mImages.emplace(std::make_pair(lFileInfo.first, lImage));
-				lImagesToInitializeCacheFileCheck.push_back(lImage);
+				std::lock_guard<std::shared_mutex> lock(mImagesMutex);
+
+				const ESDatabase& lDatabase = ESDatabase::getInstance();
+				mImages.reserve(lDatabase.getFiles().size());
+
+				for (auto&& lFileInfo : lDatabase.getFiles())
+				{
+					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.first];
+					if (!lImage)
+					{
+						lImage.reset(new ESImage(lFileInfo.first, getCacheFilePath(lFileInfo.first), &lFileInfo.second.mExif));
+						lImagesToInitializeCacheFileCheck.push_back(lImage);
+					}
+				}
 			}
-		}
-		mIsInitialized = true;
-		emit initializationFinished();
-		
-		std::sort(lImagesToInitializeCacheFileCheck.begin(), lImagesToInitializeCacheFileCheck.end(),
-		[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
-		{
-			return a->getExifDateTime() < b->getExifDateTime();
-		});
 
-		// Initialize cache file after emitting the signal to avoid delaying UI startup
-		for (std::shared_ptr<ESImage>& lImage : lImagesToInitializeCacheFileCheck)
-		{
-			lImage->updateLastUsed();
-			if(!lImage->hasCacheFile()) // Slow so initialize that too
-				queueImageLoading(lImage);
-		}
-	};
+			mIsUpdating = false;
+			emit updateFinished();
 
-	lResetCache();
-	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, [this, lResetCache]()
-		{
-			QtConcurrent::run(lResetCache);
+			queueImageCaching(lImagesToInitializeCacheFileCheck);
 		});
 }
 
 /********************************************************************************/
 
-bool ESImageCache::isInitialized() const
+void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pImages)
 {
-	return mIsInitialized;
+	std::sort(pImages.begin(), pImages.end(),
+		[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
+		{
+			return a->getExifDateTime() < b->getExifDateTime();
+		});
+
+	// Initialize cache file after emitting the signal to avoid delaying UI startup
+	for (std::shared_ptr<ESImage>& lImage : pImages)
+	{
+		lImage->updateLastUsed();
+		if (!lImage->hasCacheFile()) // Slow so initialize that too
+			queueImageLoading(lImage);
+	}
+}
+
+/********************************************************************************/
+
+bool ESImageCache::isUpdating() const
+{
+	return mIsUpdating;
 }
 
 /********************************************************************************/
 
 std::shared_ptr<ESImage> ESImageCache::getImage(StringId pImagePath)
 {
-	std::shared_ptr<ESImage> lResult;
-
-	mImagesMutex.lock_shared();
+	std::shared_lock lock(mImagesMutex);
 	auto itFound = mImages.find(pImagePath);
-	if (itFound == mImages.end())
-	{
-		mImagesMutex.unlock_shared();
-		std::lock_guard<std::shared_mutex> lock(mImagesMutex);
-		// Double check
-		itFound = mImages.find(pImagePath);
-		if (itFound == mImages.end())
-		{
-			const FileInfo* lFileInfo = ESDatabase::getInstance().getFileInfo(pImagePath);
-			lResult.reset(new ESImage(pImagePath, getCacheFilePath(pImagePath), lFileInfo ? &lFileInfo->mExif : nullptr));
-			mImages.emplace(std::make_pair(pImagePath, lResult));
-		}
-		else
-		{
-			lResult = itFound->second;
-		}
-	}
-	else
-	{
+	std::shared_ptr<ESImage> lResult;
+	if(itFound != mImages.end())
 		lResult = itFound->second;
-		mImagesMutex.unlock_shared();
-	}
-
 	return lResult;
 }
 
@@ -164,29 +174,20 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 
 void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage)
 {
-	if(pImage->isLoading() || pImage->isLoaded())
+	if (pImage->isLoading() || pImage->isLoaded())
 		return;
 
 	pImage->mCancelLoading = false; // The ONLY ALLOWED place to reset the cancel loading state
 	pImage->mIsQueueForLoading = true;
 
-	if(!pImage->hasCacheFile())
-		++mImagesCachingCount;
-
-	mQueueLoadingTask.processImage(pImage);
-}
-
-/********************************************************************************/
-
-void ESImageCache::queueDriveImageLoading(const std::shared_ptr<ESImage>& pImage)
-{
-	if (pImage->isLoaded())
-		return;
-
 	if(pImage->hasCacheFile())
 	{
 		mCacheLoadingTask.processImage(pImage);
 		return;
+	}
+	else
+	{
+		++mImagesCachingCount;
 	}
 	
 	QChar lDriveLetter = pImage->getDriveLetter();
@@ -314,7 +315,6 @@ void ESImageCache::imageCachingFinished()
 
 void ESImageCache::stopAndCancelAllLoadings()
 {
-	mQueueLoadingTask.stop();
 	mCacheLoadingTask.stop();
 
 	std::unique_lock<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
@@ -362,7 +362,6 @@ void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage)
 		qDebug() << " - No cache file";
 
 	qDebug() << " - Found in loading queues:";
-	mQueueLoadingTask.printImageDebugInfo("Main", pImage);
 	mCacheLoadingTask.printImageDebugInfo("Cache", pImage);
 	for (auto lDriveLoadingTask : mDriveLoadingTasks)
 		lDriveLoadingTask.second->printImageDebugInfo(QString("Drive %1").arg(lDriveLoadingTask.first), pImage);

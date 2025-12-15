@@ -43,7 +43,7 @@ public:
 	static ESImageCache& getInstance();
 
 	void initializeFromDatabase();
-	bool isInitialized() const;
+	bool isUpdating() const;
 	std::shared_ptr<ESImage> getImage(StringId pImagePath);
 	void stopAndCancelAllLoadings();
 
@@ -54,7 +54,7 @@ public:
 signals:
 	/********************************** SIGNALS ***********************************/
 
-	void initializationFinished();
+	void updateFinished();
 	void imageCachingProgressUpdated(int pCachedCount, int pCachingCount);
 
 private:
@@ -94,10 +94,9 @@ private:
 	std::map<QChar, std::shared_ptr<LoadingThreadTask>> mDriveLoadingTasks;
 	std::shared_mutex mDriveLoadingTasksMutex;
 	LoadingThreadTask mCacheLoadingTask; // Cache files are loaded in another thread to not be blocked by drive loading tasks
-	LoadingThreadTask mQueueLoadingTask;
 
 	QFuture<void> mUnloadingUnusedThread;
-	bool mIsInitialized;
+	std::atomic_bool mIsUpdating;
 	std::atomic_int mImagesCachingCount;
 	std::atomic_int mImagesCachedCount;
 
@@ -107,8 +106,9 @@ private:
 	QByteArray getImageHash(const QString& pImagePath);
 	QString getCacheFilePath(const QString& pImagePath);
 	void queueImageLoading(const std::shared_ptr<ESImage>& pImage);
-	void queueDriveImageLoading(const std::shared_ptr<ESImage>& pImage);
 	void unloadUnusedImages();
 	void imageCachingFinished();
+	void onDatabaseFoldersChanged();
+	void queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pImages);
 };
 

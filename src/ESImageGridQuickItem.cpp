@@ -56,7 +56,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 		updateInternal();
 	});
 
-	connect(&ESImageCache::getInstance(), &ESImageCache::initializationFinished, this, 
+	connect(&ESImageCache::getInstance(), &ESImageCache::updateFinished, this, 
 	[this]()
 	{
 		mDataHasChanged = true; // All cache images have changed, don't keep the old images
@@ -174,7 +174,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 
 void ESImageGridQuickItem::updateInternal()
 {
-	mValid = ESImageCache::getInstance().isInitialized();
+	mValid = !ESImageCache::getInstance().isUpdating();
 
 	if(!mValid)
 		return;
@@ -200,8 +200,11 @@ void ESImageGridQuickItem::updateInternal()
 		auto lGetImage = [this](const QString& pImageFilePath)
 			{
 				std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImageFilePath);
-				connect(lImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]() { update(); });
-				mImages.push_back(lImage);
+				if(lImage)
+				{
+					connect(lImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]() { update(); });
+					mImages.push_back(lImage);
+				}
 			};
 
 		if(mImageFiles.size() > 0)
@@ -236,7 +239,7 @@ void ESImageGridQuickItem::onImageCachingProgressUpdated(int pCachedCount, int p
 	{
 		setLoading(true);
 		float loadingProgress = static_cast<float>(pCachedCount) / pCachingCount;
-		if (loadingProgress - getLoadingProgress() >= 0.001)
+		if (abs(loadingProgress - getLoadingProgress()) >= 0.001)
 			setLoadingProgress(loadingProgress);
 	}
 }
