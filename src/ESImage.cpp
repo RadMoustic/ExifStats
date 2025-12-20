@@ -16,34 +16,35 @@
 /********************************************************************************/
 
 #ifdef TURBOJPEG_PLUGIN_ENABLED
-bool loadTurboJpeg(QImage& img, const QByteArray& data)
+bool loadTurboJpeg(QImage& pImageOut, const QByteArray& pImageData)
 {
-	tjhandle handle = tjInitDecompress();
-	if (!handle)
+	tjhandle lHandle = tjInitDecompress();
+	if (!lHandle)
 		return false;
+	
+	std::shared_ptr<void> lRAIIDestroyHandle(nullptr, [lHandle](void*) { tjDestroy(lHandle); });
 
-	int width, height, subsamp, cs;
-	if (tjDecompressHeader3(handle,
-		(unsigned char*)data.data(), data.size(),
-		&width, &height, &subsamp, &cs) != 0)
+	int lWidth, lHeight, lSubsamp, lColorSpace;
+	if (tjDecompressHeader3(lHandle,
+		(unsigned char*)pImageData.data(), pImageData.size(),
+		&lWidth, &lHeight, &lSubsamp, &lColorSpace) != 0)
 	{
 		return false;
 	}
 
-	img = QImage(width, height, QImage::Format_RGBA8888);
-	if (img.isNull()) {
+	pImageOut = QImage(lWidth, lHeight, QImage::Format_RGBA8888);
+	if (pImageOut.isNull())
+	{
 		return false;
 	}
 
-	int pitch = img.bytesPerLine();
-
 	if (tjDecompress2(
-		handle,
-		(unsigned char*)data.data(), data.size(),
-		img.bits(),
-		width,
-		pitch,
-		height,
+		lHandle,
+		(unsigned char*)pImageData.data(), pImageData.size(),
+		pImageOut.bits(),
+		lWidth,
+		pImageOut.bytesPerLine(),
+		lHeight,
 		TJPF_RGBA,
 		TJFLAG_FASTDCT) != 0)
 	{
@@ -108,7 +109,7 @@ void ESImage::unloadImage()
 {
 	if(mIsLoaded)
 	{
-		mImage = QImage();
+		QImage().swap(mImage);
 		mIsLoaded = false;
 		mIsQueueForLoading = false;
 	}
@@ -195,8 +196,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 	if(!mIsLoading.compare_exchange_strong(isLoading, true))
 		return;
 
-	// RAII reset mIsLoading
-	std::shared_ptr<void> lResetIsLoading(nullptr, [this](void*) { mIsLoading = false; });
+	std::shared_ptr<void> lRAIIResetIsLoading(nullptr, [this](void*) { mIsLoading = false; });
 	
 	const bool lReadCache = hasCacheFile();
 	const QString& lImagePath = lReadCache ? mImageCachePath : mImagePath.getString();
@@ -218,14 +218,19 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 		}
 		mImageFileData = lImageFile.readAll();
 		if (mCancelLoading)
+		{
+			mImageFileData.clear();
+			mImageFileData.squeeze();
 			return;
+		}
 
-		QtConcurrent::run([this, aMaxSize, lResetIsLoading, lReadCache]()
+		QtConcurrent::run([this, aMaxSize, lRAIIResetIsLoading, lReadCache]()
 		{
 			if (!mCancelLoading)
 			{
 				readImage(mImageFileData, aMaxSize);
 				mImageFileData.clear();
+				mImageFileData.squeeze();
 				if(mCancelLoading)
 				{
 					mImage = QImage();

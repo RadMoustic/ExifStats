@@ -39,20 +39,20 @@ bool QJpegTurboHandler::loadJpeg(QImage* pImage)
 	tjhandle lHandle = tjInitDecompress();
 	if (!lHandle)
 		return false;
+	
+	std::shared_ptr<void> lRAIIDestroyHandle(nullptr, [lHandle](void*) { tjDestroy(lHandle); });
 
 	int lWidth, lHeight, lSubsamp, lColorSpace;
 	if (tjDecompressHeader3(lHandle,
 		(unsigned char*)lData.data(), lData.size(),
 		&lWidth, &lHeight, &lSubsamp, &lColorSpace) != 0)
 	{
-		tjDestroy(lHandle);
 		return false;
 	}
 
 	*pImage = QImage(lWidth, lHeight, QImage::Format_RGBA8888);
 	if (pImage->isNull())
 	{
-		tjDestroy(lHandle);
 		return false;
 	}
 
@@ -66,11 +66,8 @@ bool QJpegTurboHandler::loadJpeg(QImage* pImage)
 		TJPF_RGBA,
 		TJFLAG_FASTDCT) != 0)
 	{
-		tjDestroy(lHandle);
 		return false;
 	}
-
-	tjDestroy(lHandle);
 
 	return true;
 }
