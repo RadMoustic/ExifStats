@@ -278,7 +278,7 @@ void ESImageCache::unloadUnusedImages()
 			{
 				std::lock_guard<std::shared_mutex> lock(mImagesMutex);
 				for (auto&& lImage : mImages)
-					if (lImage.second->isLoaded() && (lImage.second->isLoading() && !lImage.second->hasCacheFile())) // Don't cancel files queued for caching
+					if (lImage.second->isLoaded() || (lImage.second->isLoading() && !lImage.second->hasCacheFile())) // Don't cancel files queued for caching
 						lLoadedImages.push_back(lImage.second);
 			}
 			if (lLoadedImages.size() <= MAX_NUM_IMAGE_LOADED)
