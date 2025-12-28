@@ -4,7 +4,7 @@ Exif statistics of your JPEG and HEIF library
 ![](ExifStats.png)
 
 ## Usage
-* Open or add a folder containing JPEG or HEIF images. All files will be parsed recursively to read their EXIF data
+* Open or add a folder containing **JPEG** or **HEIF** images. All files will be parsed recursively to read their EXIF data
 * You can use the Refresh button to find new files without reparsing all the files already there
 * You can right click on a camera in the list on the left penel to set a 35mm equivalent focal factor if the camera does not add it automatically to the EXIF
 * You can zoom with the mouse wheel in all charts, use Ctrl + Wheel to zoom vertically, or Double Click to reset the view
@@ -15,12 +15,12 @@ Exif statistics of your JPEG and HEIF library
 * You can Double Click on an image in the image grid to open it with the default image viewer
 * You can use the **Restrict to View** option of the map to filter out files not in the actual map view
 * You can click on the map to see the images around the clicked position (if you want to reset the click in an empty space)
-* All files (database, presets, logs and image cache are stored in %localappdata%/ExifStats/ExifStats
-* All settings are stored in HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats
+* All files (database, presets, logs and image cache are stored in **%localappdata%/ExifStats/ExifStats**
+* All settings are stored in **HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats**
 
 ## Customize UI / QML
 
-Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in %localappdata%\ExifStats\ExifStats\ExifStats.log
+Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in **%localappdata%\ExifStats\ExifStats\ExifStats.log**
 
 ## Compilation
 
@@ -42,18 +42,22 @@ Download and extract the CustomizeQML.zip into the same directory as ExifStats.e
   * (optional) set QT_MSVC_DIR=msvc2019_64 (Project.Setup.bat already set a default value)
   * (optional) set HEIF_PLUGIN_ENABLE=true (See Heif / Turbojpeg plugins section)
   * (optional) set TURBOJPEG_PLUGIN_ENABLE=true (See Heif / Turbojpeg plugins section)
-* Use a bat in the Scripts folder
-  * **Scripts/CMake.bat**: CMake only
-  * **Scripts/Build.bat**: Build release only (need CMake)
-  * **Scripts/Deploy.bat**: Deploy files required to launch the debug/release/relwithdebuginfo binaries (dlls, qml ...)(need Build)
-  * **Scripts/Run.bat**: Run the release bin (need Build and Deploy)
-  * **Scripts/DeleteGenerated.bat**: Delete the Generated folder and all its content
-  * **Scripts/OpenSln.bat**: Open the Visual Studio solution (need CMake)
-  * **Scripts/OpenQtCreator.bat**: Open Qt Creator with the folder (Qt Creator is not officially supported)
-  * **Scripts/BuildDeployRun.bat**: Build, Deploy, Run (Release)
-  * **Scripts/CleanBuildDebugDeployOpenSln.bat**: Delete Generated, CMake, Build, Deploy, Open Sln (Debug)
-  * **Scripts/CleanBuildRun.bat**: Delete Generated, CMake, Build, Run (Release)
-* The binaries are and all generated files are located in the **generated** folder
+* Use a bat in the Scripts folder:
+
+The binaries and all generated files are located in the **generated** folder
+
+| Script | Description | Requirements |
+| --- | --- | --- |
+| Scripts/CMake.bat | CMake only |  |
+| Scripts/Build.bat | Build release only | CMake |
+| Scripts/Deploy.bat | Deploy files required to launch the debug/release/relwithdebuginfo binaries (dlls, qml ...) | Build |
+| Scripts/Run.bat | Run the release bin | Build, Deploy |
+| Scripts/DeleteGenerated.bat | Delete the Generated folder and all its content |  |
+| Scripts/OpenSln.bat | Open the Visual Studio solution | CMake |
+| Scripts/OpenQtCreator.bat | Open Qt Creator with the folder (Qt Creator is not officially supported) |  |
+| Scripts/BuildDeployRun.bat | Build, Deploy, Run (Release) | CMake |
+| Scripts/CleanBuildDebugDeployOpenSln.bat | Delete Generated, CMake, Build, Deploy, Open Sln (Debug) |  |
+| Scripts/CleanBuildRun.bat | Delete Generated, CMake, Build, Run (Release) |  |
 
 # Other
 Not supported. With a bit of work it should compile on all platforms supported by Qt.
@@ -68,9 +72,8 @@ cd /d "C:\Dev\Qt\6.6.1\Src"
 call configure.bat -prefix BuildStatic -static -static-runtime -no-libjpeg -release
 cmake --build . --clean-first
 cmake --install .
-### Setup ExifStats to use Qt Static
-This will build Qt in release only in "C:\Dev\Qt\6.6.1\Src\BuildStatic"
 ```
+This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"
 Then you need to set the following env var in User.Setup.bat or Project.Setup.bat:
 ```
 set QT_STATIC_DIR=Src\BuildStatic
