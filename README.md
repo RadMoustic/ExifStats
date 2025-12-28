@@ -4,12 +4,12 @@ Exif statistics of your JPEG and HEIF library
 ![](ExifStats.png)
 
 ## Usage
-* Open or add a folder containing **JPEG** or **HEIF** images. All files will be parsed recursively to read their EXIF data
-* You can use the Refresh button to find new files without reparsing all the files already there
+* **Open** or **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data.
+* You can use the **Refresh** button to find new files without reparsing all the files already there or the **Full Refresh** to reparse all files.
 * You can right click on a camera in the list on the left penel to set a 35mm equivalent focal factor if the camera does not add it automatically to the EXIF
 * You can zoom with the mouse wheel in all charts, use Ctrl + Wheel to zoom vertically, or Double Click to reset the view
 * You can click on a bar in a chart to get the value
-* You can right click on a bar chart to edit the filters
+* You can right click on a bar chart to set the from/to filters
 * You can use the Ctrl + Wheel on the image grid to zoon
 * You can use Ctrl + Double Click on the image grid to reset the zoom
 * You can Double Click on an image in the image grid to open it with the default image viewer
@@ -73,7 +73,7 @@ call configure.bat -prefix BuildStatic -static -static-runtime -no-libjpeg -rele
 cmake --build . --clean-first
 cmake --install .
 ```
-This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"
+This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"  
 Then you need to set the following env var in User.Setup.bat or Project.Setup.bat:
 ```
 set QT_STATIC_DIR=Src\BuildStatic
