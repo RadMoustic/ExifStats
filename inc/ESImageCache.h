@@ -71,7 +71,9 @@ private:
 #endif
 		
 	public:
-		void init(std::function<void(std::shared_ptr<ESImage>)> pProcessFct)
+		using ProcessFunction = std::function<void(std::shared_ptr<ESImage>, std::atomic_int32_t&)>;
+
+		void init(ProcessFunction pProcessFct)
 		{
 			assert(!mProcessFct);
 			mProcessFct = std::move(pProcessFct);
@@ -87,8 +89,9 @@ private:
 		std::mutex mQueueMutex;
 		QFuture<void> mLoadingThread;
 		std::deque<std::shared_ptr<ESImage>> mLoadingQueue;
-		std::function<void(std::shared_ptr<ESImage>)> mProcessFct;
+		ProcessFunction mProcessFct;
 		bool mStop = false;
+		std::atomic_int32_t mNumAsyncTaskStarted = 0;
 	};
 
 	std::map<QChar, std::shared_ptr<LoadingThreadTask>> mDriveLoadingTasks;

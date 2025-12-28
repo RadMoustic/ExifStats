@@ -38,9 +38,10 @@ ESImageCache::ESImageCache()
 	lDir.mkpath(mCacheFolderPath);
 
 
-	mCacheLoadingTask.init([this](const std::shared_ptr<ESImage>& pImage)
+	mCacheLoadingTask.init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
 		{
-			pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true);
+			++pNumAsyncTaskStarted;
+			pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true, &pNumAsyncTaskStarted);
 			unloadUnusedImages();
 		});
 }
@@ -123,7 +124,6 @@ void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pIma
 	// Initialize cache file after emitting the signal to avoid delaying UI startup
 	for (std::shared_ptr<ESImage>& lImage : pImages)
 	{
-		lImage->updateLastUsed();
 		if (!lImage->hasCacheFile()) // Slow so initialize that too
 			queueImageLoading(lImage);
 	}
@@ -204,9 +204,10 @@ void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage)
 		if(itFound == mDriveLoadingTasks.end())
 		{
 			driveLoadingTask = std::make_shared<LoadingThreadTask>();
-			driveLoadingTask->init([this](const std::shared_ptr<ESImage>& pImage)
+			driveLoadingTask->init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
 				{
-					pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true);
+					++pNumAsyncTaskStarted;
+					pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true, &pNumAsyncTaskStarted);
 					unloadUnusedImages();
 				});
 			mDriveLoadingTasks[lDriveLetter] = driveLoadingTask;
@@ -236,21 +237,28 @@ void ESImageCache::LoadingThreadTask::processImage(const std::shared_ptr<ESImage
 		{
 			while (!mStop)
 			{
-				std::shared_ptr<ESImage> currentImage;
+				if(mNumAsyncTaskStarted < QThreadPool::globalInstance()->maxThreadCount())
 				{
-					std::lock_guard<std::mutex> lock(mQueueMutex);
-					if (mLoadingQueue.empty())
+					std::shared_ptr<ESImage> currentImage;
 					{
-						break;
+						std::lock_guard<std::mutex> lock(mQueueMutex);
+						if (mLoadingQueue.empty())
+						{
+							break;
+						}
+						else
+						{
+							currentImage = mLoadingQueue.front();
+							mLoadingQueue.pop_front();
+						}
 					}
-					else
-					{
-						currentImage = mLoadingQueue.front();
-						mLoadingQueue.pop_front();
-					}
-				}
 
-				mProcessFct(currentImage);
+					mProcessFct(currentImage, mNumAsyncTaskStarted);
+				}
+				else
+				{
+					QThread::sleep(std::chrono::nanoseconds(500000));
+				}
 			}
 		});
 }
@@ -278,7 +286,7 @@ void ESImageCache::unloadUnusedImages()
 			{
 				std::lock_guard<std::shared_mutex> lock(mImagesMutex);
 				for (auto&& lImage : mImages)
-					if (lImage.second->isLoaded() || (lImage.second->isLoading() && !lImage.second->hasCacheFile())) // Don't cancel files queued for caching
+					if (lImage.second->isLoaded() || (lImage.second->isLoading() && lImage.second->hasCacheFile())) // Don't cancel files queued for caching
 						lLoadedImages.push_back(lImage.second);
 			}
 			if (lLoadedImages.size() <= MAX_NUM_IMAGE_LOADED)

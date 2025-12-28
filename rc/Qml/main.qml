@@ -27,6 +27,7 @@ Item
 		id: settings
         property alias width: mainWindow.width
         property alias height: mainWindow.height
+		property alias pathListVisible: foldersList.visible
 		property alias panel35mmVisible: focalLength35mmCounter.visible
 		property alias panelApertureVisible: apertureCounter.visible
 		property alias panelLensVisible: lensModelsCounter.visible
@@ -714,7 +715,7 @@ Item
 			ColumnLayout
 			{
 				id: topToolbar
-				Layout.preferredHeight: 160
+				Layout.preferredHeight: 70
 				Layout.preferredWidth: parent.width
 				
 				RowLayout
@@ -771,6 +772,17 @@ Item
 					Item
 					{
 						width: 100
+					}
+					RegularButton
+					{
+						text:"Folders"
+						highlighted: foldersList.visible
+						
+						onReleased:
+						{
+							foldersList.visible = !foldersList.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
 					}
 					RegularButton
 					{
@@ -853,18 +865,6 @@ Item
 					}
 				}
 
-				ScrollView
-				{
-					Layout.preferredWidth: parent.width
-					Layout.preferredHeight: 80
-					clip: true
-					Label
-					{
-						id: pathLbl
-						text: MainQmlBinder.ProcessedFolders.join("\n")
-					}
-				}
-				
 				ProgressBar
 				{
 					id: processingProgressBar
@@ -878,324 +878,348 @@ Item
 			
 			SplitView
 			{
-				id: chartsPanel
-				orientation: Qt.Vertical
-				spacing: 0
+				id: centerPanel
+				orientation: Qt.Horizontal
+				
 				Layout.preferredHeight: parent.height - topToolbar.Layout.preferredHeight
 				Layout.preferredWidth: parent.width
 				
-				property int visibleCharts: 0
-				
-				function updateVisibleChartsCount()
+				SplitView
 				{
-					chartsPanel.visibleCharts = 0;
-					for(var i=0; i < children.length; ++i)
+					id: chartsPanel
+					orientation: Qt.Vertical
+					spacing: 0
+					
+					SplitView.minimumWidth: 350
+					
+					
+					property int visibleCharts: 0
+					
+					function updateVisibleChartsCount()
 					{
-						if(children[i].visible)
-							chartsPanel.visibleCharts++;
-					}
-				}
-
-				Component.onCompleted:
-				{
-					updateVisibleChartsCount();
-					chartsPanel.restoreState(settings.chartsPanelState);
-				}
-				
-				Component.onDestruction:
-				{
-					settings.chartsPanelState = chartsPanel.saveState();
-				}
-				
-				CounterChartFromTo
-				{
-					id: focalLength35mmCounter
-					title: "35 mm Focal Length Stats"
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					
-					fromPropertyName: "FocalLengthFrom"
-					toPropertyName: "FocalLengthTo"
-					minPropertyName: "MinFocalLength35mm"
-					maxPropertyName: "MaxFocalLength35mm"
-				}
-				
-				CounterChartFromTo
-				{
-					id: apertureCounter
-					title: "Aperture Stats"
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					
-					fromPropertyName: "ApertureFrom"
-					toPropertyName: "ApertureTo"
-					minPropertyName: "MinAperture"
-					maxPropertyName: "MaxAperture"
-				}
-
-				CounterChart
-				{
-					id: lensModelsCounter
-					title: "Lens Models Stats"
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					barChartChild.mAllCategoriesOnly: true
-				}
-				
-				CounterChart
-				{
-					id: cameraModelsCounter
-					title: "Camera Models Stats"
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					barChartChild.mAllCategoriesOnly: true
-				}
-				
-				CounterChartFromTo
-				{
-					id: timelineCounter
-					title: "Timeline Stats"
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					
-					fromPropertyName: "TimeFrom"
-					toPropertyName: "TimeTo"
-					minPropertyName: "MinTime"
-					maxPropertyName: "MaxTime"
-					
-					selectedValueFrom: function(pValue)
-					{
-						return pValue;
-					}
-					
-					selectedValueTo: function(pValue)
-					{
-						var locale = Qt.locale();
-						
-						var dateTime = Date.fromLocaleString(locale, pValue, "yyyy/MM/dd");
-						var toDate = new Date(dateTime)
-						toDate.setDate(dateTime.getDate() + Math.ceil(timeLineStep.value));
-
-						return toDate.toLocaleDateString(locale, "yyyy/MM/dd");
-					}
-					
-					SpinBox
-					{
-						id: timeLineStep
-						x: 100
-						y: 20
-						value: MainQmlBinder.TimelineStep / (24 * 3600)
-						from: 1
-						to: 365
-						stepSize: 1
-						editable: true
-						background: Rectangle
+						chartsPanel.visibleCharts = 0;
+						for(var i=0; i < children.length; ++i)
 						{
-							color: "white"
-							border.color: "gray"
-							border.width: 2
-							radius: 10
-						}
-						
-						onValueChanged:
-						{
-							MainQmlBinder.TimelineStep = value*24*3600;
+							if(children[i].visible)
+								chartsPanel.visibleCharts++;
 						}
 					}
-				}
 
-				Item
-				{
-					id: mapRoot
-					
-					SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-					SplitView.preferredWidth: parent.width
-					
-					Map
+					Component.onCompleted:
 					{
-						id: map
-						anchors.fill: parent
-
-						plugin: mapPlugin
-						center: QtPositioning.coordinate(43.61, 3.87)
-						zoomLevel: 14
-						property geoCoordinate startCentroid
+						updateVisibleChartsCount();
+						chartsPanel.restoreState(settings.chartsPanelState);
+					}
+					
+					Component.onDestruction:
+					{
+						settings.chartsPanelState = chartsPanel.saveState();
+					}
+					
+					ScrollView
+					{
+						id: foldersList
 						
-						Timer
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						clip: true
+						Label
 						{
-							id: updateGeoShapeFilterTimer
-							interval: 100
-							running: false
-							repeat: false
+							id: pathLbl
+							text: MainQmlBinder.ProcessedFolders.join("\n")
+						}
+					}
+					
+					CounterChartFromTo
+					{
+						id: focalLength35mmCounter
+						title: "35 mm Focal Length Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						fromPropertyName: "FocalLengthFrom"
+						toPropertyName: "FocalLengthTo"
+						minPropertyName: "MinFocalLength35mm"
+						maxPropertyName: "MaxFocalLength35mm"
+					}
+					
+					CounterChartFromTo
+					{
+						id: apertureCounter
+						title: "Aperture Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						fromPropertyName: "ApertureFrom"
+						toPropertyName: "ApertureTo"
+						minPropertyName: "MinAperture"
+						maxPropertyName: "MaxAperture"
+					}
+
+					CounterChart
+					{
+						id: lensModelsCounter
+						title: "Lens Models Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						barChartChild.mAllCategoriesOnly: true
+					}
+					
+					CounterChart
+					{
+						id: cameraModelsCounter
+						title: "Camera Models Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						barChartChild.mAllCategoriesOnly: true
+					}
+					
+					CounterChartFromTo
+					{
+						id: timelineCounter
+						title: "Timeline Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						fromPropertyName: "TimeFrom"
+						toPropertyName: "TimeTo"
+						minPropertyName: "MinTime"
+						maxPropertyName: "MaxTime"
+						
+						selectedValueFrom: function(pValue)
+						{
+							return pValue;
+						}
+						
+						selectedValueTo: function(pValue)
+						{
+							var locale = Qt.locale();
 							
-							onTriggered:
-							{
-								if(restrictToViewCheckbox.checked)
-								{
-									MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
-								}
-							}
+							var dateTime = Date.fromLocaleString(locale, pValue, "yyyy/MM/dd");
+							var toDate = new Date(dateTime)
+							toDate.setDate(dateTime.getDate() + Math.ceil(timeLineStep.value));
+
+							return toDate.toLocaleDateString(locale, "yyyy/MM/dd");
 						}
 						
-						WheelHandler
+						SpinBox
 						{
-							id: wheel
-							// workaround for QTBUG-87646 / QTBUG-112394 / QTBUG-112432:
-							// Magic Mouse pretends to be a trackpad but doesn't work with PinchHandler
-							// and we don't yet distinguish mice and trackpads on Wayland either
-							acceptedDevices: Qt.platform.pluginName === "cocoa" || Qt.platform.pluginName === "wayland"
-											 ? PointerDevice.Mouse | PointerDevice.TouchPad
-											 : PointerDevice.Mouse
-							onWheel: (event) =>
+							id: timeLineStep
+							x: 100
+							y: 20
+							value: MainQmlBinder.TimelineStep / (24 * 3600)
+							from: 1
+							to: 365
+							stepSize: 1
+							editable: true
+							background: Rectangle
 							{
-								const loc = map.toCoordinate(wheel.point.position);
-								map.zoomLevel += event.angleDelta.y / 120;
-								map.alignCoordinateToPoint(loc, wheel.point.position);
-								mapDots.refresh();
-								updateGeoShapeFilterTimer.restart();
+								color: "white"
+								border.color: "gray"
+								border.width: 2
+								radius: 10
+							}
+							
+							onValueChanged:
+							{
+								MainQmlBinder.TimelineStep = value*24*3600;
 							}
 						}
-						DragHandler
+					}
+
+					Item
+					{
+						id: mapRoot
+						
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						Map
 						{
-							id: drag
-							target: null
-							onTranslationChanged: (delta) =>
-							{
-								map.pan(-delta.x, -delta.y);
-								mapDots.refresh();
-								updateGeoShapeFilterTimer.restart();
-							}
-						}
-						MouseArea
-						{
+							id: map
 							anchors.fill: parent
-							onClicked: (pMouse)=>
+
+							plugin: mapPlugin
+							center: QtPositioning.coordinate(43.61, 3.87)
+							zoomLevel: 14
+							property geoCoordinate startCentroid
+							
+							Timer
 							{
-								const loc = map.toCoordinate(Qt.point(pMouse.x, pMouse.y));
-								const precision = 10; // in pixel
-								const loc2 = map.toCoordinate(Qt.point(pMouse.x + precision, pMouse.y + precision));
-								var files = MainQmlBinder.getFilesAtLocation(Qt.point(loc.latitude, loc.longitude), loc2.distanceTo(loc));
-								imageGrid.mImageFiles = files;
+								id: updateGeoShapeFilterTimer
+								interval: 100
+								running: false
+								repeat: false
+								
+								onTriggered:
+								{
+									if(restrictToViewCheckbox.checked)
+									{
+										MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
+									}
+								}
+							}
+							
+							WheelHandler
+							{
+								id: wheel
+								// workaround for QTBUG-87646 / QTBUG-112394 / QTBUG-112432:
+								// Magic Mouse pretends to be a trackpad but doesn't work with PinchHandler
+								// and we don't yet distinguish mice and trackpads on Wayland either
+								acceptedDevices: Qt.platform.pluginName === "cocoa" || Qt.platform.pluginName === "wayland"
+												 ? PointerDevice.Mouse | PointerDevice.TouchPad
+												 : PointerDevice.Mouse
+								onWheel: (event) =>
+								{
+									const loc = map.toCoordinate(wheel.point.position);
+									map.zoomLevel += event.angleDelta.y / 120;
+									map.alignCoordinateToPoint(loc, wheel.point.position);
+									mapDots.refresh();
+									updateGeoShapeFilterTimer.restart();
+								}
+							}
+							DragHandler
+							{
+								id: drag
+								target: null
+								onTranslationChanged: (delta) =>
+								{
+									map.pan(-delta.x, -delta.y);
+									mapDots.refresh();
+									updateGeoShapeFilterTimer.restart();
+								}
+							}
+							MouseArea
+							{
+								anchors.fill: parent
+								onClicked: (pMouse)=>
+								{
+									const loc = map.toCoordinate(Qt.point(pMouse.x, pMouse.y));
+									const precision = 10; // in pixel
+									const loc2 = map.toCoordinate(Qt.point(pMouse.x + precision, pMouse.y + precision));
+									var files = MainQmlBinder.getFilesAtLocation(Qt.point(loc.latitude, loc.longitude), loc2.distanceTo(loc));
+									imageGrid.mImageFiles = files;
+								}
+							}
+							
+							CheckBox
+							{
+								id: restrictToViewCheckbox
+								checked: false
+								text: "Restrict to view"
+								onCheckedChanged:
+								{
+									if(restrictToViewCheckbox.checked)
+									{
+										MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
+									}
+									else
+									{
+										MainQmlBinder.setGeoShapeFilter(QtPositioning.shape());
+									}
+								}
+							}
+						}
+						ESMapDotsQuickItem
+						{
+							id: mapDots
+							anchors.fill: parent
+						}
+					}
+				}
+				ESImageGridQuickItem
+				{
+					id: imageGrid
+					
+					visible: false
+					
+					SplitView.preferredWidth: 200
+					SplitView.preferredHeight: parent.height
+					SplitView.minimumWidth: 270
+					
+					property real imageScale: 1.0
+					
+					mImageWidth: 250 * imageScale
+					mImageHeight: 250 * imageScale
+
+					onMImageFilesChanged:
+					{
+						mYOffset = 0;
+					}
+					
+					MouseArea
+					{
+						anchors.fill: parent
+						onDoubleClicked: (pMouse)=>
+						{
+							if(MainQmlBinder.isCtrlPressed())
+							{
+								imageGrid.imageScale = 1.0;
+							}
+							else
+							{
+								var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
+								if(selectedFile !== "")
+									Qt.openUrlExternally("file:///" + selectedFile);
 							}
 						}
 						
-						CheckBox
+						property real pressX
+						property real lastY
+
+						onPressed:
 						{
-							id: restrictToViewCheckbox
-							checked: false
-							text: "Restrict to view"
-							onCheckedChanged:
+							pressX = mouseX;
+							lastY = mouseY;
+						}
+						onPositionChanged:
+						{
+							var dy = mouseY - lastY;
+							var newYOffset = 0;
+							if(pressX > width - scrollBar.width)
 							{
-								if(restrictToViewCheckbox.checked)
-								{
-									MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
-								}
-								else
-								{
-									MainQmlBinder.setGeoShapeFilter(QtPositioning.shape());
-								}
+								newYOffset = imageGrid.mYOffset + dy / parent.height * imageGrid.mContentHeight;
 							}
+							else
+							{
+								newYOffset = imageGrid.mYOffset - dy;
+							}
+							imageGrid.mYOffset = Math.max(0, Math.min(imageGrid.mContentHeight-height, newYOffset));
+							lastY = mouseY;
+						}
+
+						onWheel:
+						{
+							if(MainQmlBinder.isCtrlPressed())
+								imageGrid.imageScale = Math.min(2.0, Math.max(0.5, imageGrid.imageScale + (wheel.angleDelta.y > 0 ? 0.1 : -0.1)));
+							else
+								imageGrid.mYOffset = Math.max(0, Math.min(imageGrid.mContentHeight-height, imageGrid.mYOffset - wheel.angleDelta.y));
 						}
 					}
-					ESMapDotsQuickItem
+					
+					Rectangle
 					{
-						id: mapDots
-						anchors.fill: parent
+						id: scrollBar
+						width: 10
+						
+						radius: 3
+						color: "#55000000"
+						anchors.right: parent.right
+						height: Math.max(32, parent.height * parent.height / imageGrid.mContentHeight)
+						y: parent.height * (imageGrid.mYOffset / imageGrid.mContentHeight)
+					}
+					
+					ProgressBar
+					{
+						id: loadingProgressBar
+						anchors.top: parent.top
+						width: parent.width
+						value: imageGrid.mLoadingProgress
+						opacity: imageGrid.mLoading ? 1.0 : 0.0
+						height: 15
 					}
 				}
-			}
-		}
-		
-		ESImageGridQuickItem
-		{
-			id: imageGrid
-			
-			visible: false
-			
-			SplitView.preferredWidth: 200
-			SplitView.preferredHeight: parent.height
-			SplitView.minimumWidth: 270
-			
-			property real imageScale: 1.0
-			
-			mImageWidth: 250 * imageScale
-			mImageHeight: 250 * imageScale
-
-			onMImageFilesChanged:
-			{
-				mYOffset = 0;
-			}
-			
-			MouseArea
-			{
-				anchors.fill: parent
-				onDoubleClicked: (pMouse)=>
-				{
-					if(MainQmlBinder.isCtrlPressed())
-					{
-						imageGrid.imageScale = 1.0;
-					}
-					else
-					{
-						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
-						if(selectedFile !== "")
-							Qt.openUrlExternally("file:///" + selectedFile);
-					}
-				}
-				
-				property real pressX
-				property real lastY
-
-				onPressed:
-				{
-					pressX = mouseX;
-					lastY = mouseY;
-				}
-				onPositionChanged:
-				{
-					var dy = mouseY - lastY;
-					var newYOffset = 0;
-					if(pressX > width - scrollBar.width)
-					{
-						newYOffset = imageGrid.mYOffset + dy / parent.height * imageGrid.mContentHeight;
-					}
-					else
-					{
-						newYOffset = imageGrid.mYOffset - dy;
-					}
-					imageGrid.mYOffset = Math.max(0, Math.min(imageGrid.mContentHeight-height, newYOffset));
-					lastY = mouseY;
-				}
-
-				onWheel:
-				{
-					if(MainQmlBinder.isCtrlPressed())
-						imageGrid.imageScale = Math.min(2.0, Math.max(0.5, imageGrid.imageScale + (wheel.angleDelta.y > 0 ? 0.1 : -0.1)));
-					else
-						imageGrid.mYOffset = Math.max(0, Math.min(imageGrid.mContentHeight-height, imageGrid.mYOffset - wheel.angleDelta.y));
-				}
-			}
-			
-			Rectangle
-			{
-				id: scrollBar
-				width: 10
-				
-				radius: 3
-				color: "#55000000"
-				anchors.right: parent.right
-				height: Math.max(32, parent.height * parent.height / imageGrid.mContentHeight)
-				y: parent.height * (imageGrid.mYOffset / imageGrid.mContentHeight)
-			}
-			
-			ProgressBar
-			{
-				id: loadingProgressBar
-				anchors.top: parent.top
-				width: parent.width
-				value: imageGrid.mLoadingProgress
-				opacity: imageGrid.mLoading ? 1.0 : 0.0
-				height: 15
 			}
 		}
 	}

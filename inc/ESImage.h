@@ -65,7 +65,7 @@ private:
 
 	explicit ESImage(const StringId pImagePath, const QString pImageCachePath, const UsefullExif* pImageExif);
 
-	void loadImageInternal(const QSize pMaxSize, bool pAsync);
+	void loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted);
 	void readImage(const QString& pImagePath, QSize aMaxSize);
 	void readImage(QByteArray& pImageData, QSize aMaxSize);
 	void readImage(QImageReader& pImageReader, QSize aMaxSize);

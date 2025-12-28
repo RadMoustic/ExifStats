@@ -178,9 +178,12 @@ QChar ESImage::getDriveLetter() const
 
 /********************************************************************************/
 
-void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
+void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted)
 {
 	assert(!aMaxSize.isEmpty());
+
+	std::shared_ptr<void> lRAIIDecNumAsyncTaskStarted(nullptr, [pNumAsyncTaskStarted](void*) { if (pNumAsyncTaskStarted) { --(*pNumAsyncTaskStarted); } });
+
 	if (mIsLoaded)
 		return;
 
@@ -224,7 +227,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync)
 			return;
 		}
 
-		QtConcurrent::run([this, aMaxSize, lRAIIResetIsLoading, lReadCache]()
+		QtConcurrent::run([this, aMaxSize, lRAIIResetIsLoading, lReadCache, lRAIIDecNumAsyncTaskStarted]()
 		{
 			if (!mCancelLoading)
 			{
