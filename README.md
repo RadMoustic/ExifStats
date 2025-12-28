@@ -73,7 +73,8 @@ call configure.bat -prefix BuildStatic -static -static-runtime -no-libjpeg -rele
 cmake --build . --clean-first
 cmake --install .
 ```
-This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"  
+This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"
+### Setup ExifStats
 Then you need to set the following env var in User.Setup.bat or Project.Setup.bat:
 ```
 set QT_STATIC_DIR=Src\BuildStatic
