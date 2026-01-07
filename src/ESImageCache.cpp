@@ -118,7 +118,7 @@ void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pIma
 	std::sort(pImages.begin(), pImages.end(),
 		[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
 		{
-			return a->getExifDateTime() < b->getExifDateTime();
+			return a->getExif().mDateTime < b->getExif().mDateTime;
 		});
 
 	// Initialize cache file after emitting the signal to avoid delaying UI startup

@@ -31,7 +31,7 @@ public:
 
 	const QImage& getImage() const;
 	StringId getImagePath() const;
-	uint64_t getExifDateTime() const;
+	const UsefullExif& getExif() const;
 	
 	bool hasCacheFile() const;
 
@@ -59,7 +59,7 @@ private:
 	QImage mImage;
 	QByteArray mImageFileData;
 
-	uint64_t mExifDateTime; // Used for sorting
+	UsefullExif mExif;
 
 	/********************************* METHODS ***********************************/
 

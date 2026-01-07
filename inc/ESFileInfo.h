@@ -43,6 +43,17 @@ enum ReadExifFileResult
 	eParseExifErrorCorrupt = 1985, // EXIF header was found, but data was corrupted.
 };
 
+// First byte orientation
+enum ESExifOrientation : unsigned short
+{
+	Unspecified = 0,
+	UpperLeft = 1,
+	LowerRight = 3,
+	UpperRight = 6,
+	LowerLeft = 8,
+	Undefined = 9
+};
+
 struct UsefullExif
 {
 	StringId mCameraModel;
@@ -57,6 +68,7 @@ struct UsefullExif
 	} mGeoLococation;
 	unsigned short mFocalLengthIn35mm;
 	unsigned short mFocalLength;
+	ESExifOrientation mOrientation;
 };
 
 struct FileInfo

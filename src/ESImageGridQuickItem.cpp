@@ -251,6 +251,6 @@ void ESImageGridQuickItem::sort()
 	std::sort(mImages.begin(), mImages.end(),
 	[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
 	{
-		return a->getExifDateTime() < b->getExifDateTime();
+		return a->getExif().mDateTime < b->getExif().mDateTime;
 	});
 }

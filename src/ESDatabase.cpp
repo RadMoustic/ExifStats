@@ -21,7 +21,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 4;
+constexpr uint DATABASE_VERSION = 5;
 
 /********************************************************************************/
 
@@ -279,6 +279,7 @@ UsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& aFullExif
 	result.mGeoLococation.mLongitude = static_cast<float>(aFullExif.GeoLocation.Longitude);
 	result.mFocalLength = aFullExif.FocalLength;
 	result.mFocalLengthIn35mm = aFullExif.FocalLengthIn35mm;
+	result.mOrientation = ESExifOrientation(aFullExif.Orientation);
 
 	return result;
 }
@@ -288,14 +289,14 @@ UsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& aFullExif
 template<class SERIALIZER>
 bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 {
-	if (!pSerializer.SerializeCheck(DATABASE_MAGIC_NUMBER, std::equal_to()))
+	if (!pSerializer.SerializeCheck(DATABASE_MAGIC_NUMBER))
 	{
 		qWarning() << "Cannot load database: corrupted file: " << pFilePath;
 		return false;
 	}
 
-	uint lDatabaseVersion = 0;
-	if (!pSerializer.SerializeCheck(DATABASE_VERSION, std::equal_to(), lDatabaseVersion))
+	uint lDatabaseVersion = DATABASE_VERSION;
+	if (!pSerializer.SerializeCheck(uint(4), std::greater_equal(), lDatabaseVersion, DATABASE_VERSION))
 	{
 		qWarning() << "Cannot load database: version '" << lDatabaseVersion << "' not supported: " << pFilePath;
 		return false;
@@ -321,8 +322,10 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLococation.mLatitude);
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLococation.mLongitude);
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
+			if(lDatabaseVersion >= 5)
+				pSerializer.Serialize(pFileInfo.mExif.mOrientation);
 
-			if (pSerializer.mIsReading)
+			if constexpr (pSerializer.msIsReading)
 			{
 				pStringId = pFileInfo.mFilePath;
 
@@ -330,6 +333,10 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					pFileInfo.mExif.mCameraModel = mAllCameraModels[pFileInfo.mCameraModelIdx];
 				if (pFileInfo.mLensModelIdx != std::numeric_limits<decltype(pFileInfo.mLensModelIdx)>::max())
 					pFileInfo.mExif.mLensModel = mAllLensModels[pFileInfo.mLensModelIdx];
+			}
+			else
+			{
+				(void)pStringId;
 			}
 		}
 	);

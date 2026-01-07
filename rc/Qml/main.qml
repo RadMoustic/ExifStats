@@ -37,6 +37,7 @@ Item
 		property alias panelImagesVisible: imageGrid.visible
 		property var mainSplitViewState
 		property var leftPanelState
+		property var centerPanelState
 		property var chartsPanelState
     }
 			
@@ -114,6 +115,7 @@ Item
 		
 		mainSplitView.restoreState(settings.mainSplitViewState);
 		leftPanel.restoreState(settings.leftPanelState);
+		centerPanel.restoreState(settings.centerPanelState);
 		chartsPanel.restoreState(settings.chartsPanelState);
 	}
 	
@@ -121,6 +123,7 @@ Item
 	{
 		settings.mainSplitViewState = mainSplitView.saveState();
 		settings.leftPanelState = leftPanel.saveState();
+		settings.centerPanelState = centerPanel.saveState();
 		settings.chartsPanelState = chartsPanel.saveState();
 	}
 

@@ -12,7 +12,7 @@ template<bool READ>
 class ESSerializer
 {
 public:
-	const bool mIsReading = READ;
+	static constexpr bool msIsReading = READ;
 
 	ESSerializer(QIODevice* pDevice)
 		: mDataStream(pDevice)
@@ -127,15 +127,15 @@ public:
 		}
 	}
 
-	template<typename T, class COMP>
-	bool SerializeCheck(const T& pValue, COMP pComparer)
+	template<typename T>
+	bool SerializeCheck(const T& pValue)
 	{
 		T lReadValue;
-		return SerializeCheck(pValue, pComparer, lReadValue);
+		return SerializeCheck(pValue, std::equal_to(), lReadValue, pValue);
 	}
 
 	template<typename T, class COMP>
-	bool SerializeCheck(const T& pValue, COMP pComparer, T& pReadValue)
+	bool SerializeCheck(const T& pValue, COMP pComparer, T& pReadValue, const T& pWriteValue)
 	{
 		if constexpr (READ)
 		{
@@ -147,7 +147,8 @@ public:
 		{
 			Q_UNUSED(pComparer);
 			Q_UNUSED(pReadValue);
-			mDataStream << pValue;
+			Q_UNUSED(pWriteValue);
+			mDataStream << pWriteValue;
 			return true;
 		}
 	}

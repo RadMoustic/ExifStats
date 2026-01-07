@@ -65,10 +65,13 @@ ESImage::ESImage(StringId pImagePath, const QString pImageCachePath, const Usefu
 	, mIsQueueForLoading(false)
 	, mIsLoading(false)
 	, mCancelLoading(false)
-	, mExifDateTime(pImageExif ? pImageExif->mDateTime : 0)
 	, mCacheFileChecked(false)
 	, mHasCacheFile(false)
 {
+	if (pImageExif)
+	{
+		mExif = *pImageExif;
+	}
 }
 
 /********************************************************************************/
@@ -149,9 +152,9 @@ StringId ESImage::getImagePath() const
 
 /********************************************************************************/
 
-uint64_t ESImage::getExifDateTime() const
+const UsefullExif& ESImage::getExif() const
 {
-	return mExifDateTime;
+	return mExif;
 }
 
 /********************************************************************************/
@@ -298,7 +301,6 @@ void ESImage::readImage(QByteArray& pImageData, QSize aMaxSize)
 
 void ESImage::readImage(QImageReader& pImageReader, QSize aMaxSize)
 {
-	pImageReader.setAutoTransform(!mHasCacheFile);
 	QImage lFullImage = pImageReader.read();
 	if (mCancelLoading)
 		return;
@@ -309,6 +311,29 @@ void ESImage::readImage(QImageReader& pImageReader, QSize aMaxSize)
 	else
 	{
 		mImage = lFullImage.scaled(aMaxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+		// Manually rotate the image because the custom turbojpeg loader does not support auto rotate
+		// TODO: Extend the turbojpeg loader to support auto rotate and add back the "pImageReader.setAutoTransform(!mHasCacheFile);"
+		if (mExif.mOrientation != ESExifOrientation::Unspecified && mExif.mOrientation != ESExifOrientation::UpperLeft)
+		{
+			QTransform lTransform;
+			switch (mExif.mOrientation)
+			{
+			case ESExifOrientation::UpperRight:
+				lTransform.rotate(90);
+				break;
+			case ESExifOrientation::LowerRight:
+				lTransform.rotate(180);
+				break;
+			case ESExifOrientation::LowerLeft:
+				lTransform.rotate(270);
+				break;
+			default:
+				break;
+			}
+			mImage = mImage.transformed(lTransform, Qt::SmoothTransformation);
+		}
+
 		mImage.save(mImageCachePath, "JPG", 90);
 	}
 
