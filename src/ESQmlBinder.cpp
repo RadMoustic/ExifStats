@@ -41,6 +41,7 @@ ESQmlBinder::ESQmlBinder()
 	mStats.push_back(&mDateTimeStat);
 	mStats.push_back(&mGeoLocationStat);
 	mStats.push_back(&mListFilesStat);
+	mStats.push_back(&mOrientationStat);
 
 	mCameraModelFilter.mKeepCategory = true;
 	mLensModelFilter.mKeepCategory = true;
@@ -54,6 +55,7 @@ ESQmlBinder::ESQmlBinder()
 	mDateTimeFilter.mName = "DateTime";
 	mGeoLocationFilter.mName = "GeoLocation";
 	mPathFilter.mName = "Path";
+	mOrientationFilter.mName = "Orientation";
 
 	mFilters.push_back(&m35mmFilter);
 	mFilters.push_back(&mApertureFilter);
@@ -62,6 +64,7 @@ ESQmlBinder::ESQmlBinder()
 	mFilters.push_back(&mDateTimeFilter);
 	mFilters.push_back(&mGeoLocationFilter);
 	mFilters.push_back(&mPathFilter);
+	mFilters.push_back(&mOrientationFilter);
 }
 
 /********************************************************************************/
@@ -474,6 +477,20 @@ const ESExifStatListFiles* ESQmlBinder::getFilteredFilesList() const
 
 /********************************************************************************/
 
+QVector<QString> ESQmlBinder::getOrientations() const
+{
+	return mOrientationStat.mCountComp.getLabels();
+}
+
+/********************************************************************************/
+
+QVector<int> ESQmlBinder::getOrientationsCount() const
+{
+	return mOrientationStat.mCountComp.getCounters();
+}
+
+/********************************************************************************/
+
 void ESQmlBinder::resetFilters()
 {
 	for (ExifFilter* lFilter : mFilters)
@@ -482,6 +499,7 @@ void ESQmlBinder::resetFilters()
 	updateFiltersFromData();
 
 	emit propertyPathInclusiveFiltersChanged();
+	emit propertyOrientationFilterModeChanged();
 }
 
 /********************************************************************************/
@@ -574,6 +592,7 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	emit timeFromChanged();
 	emit timeToChanged();
 	emit propertyPathInclusiveFiltersChanged();
+	emit propertyOrientationFilterModeChanged();
 
 	return true;
 }

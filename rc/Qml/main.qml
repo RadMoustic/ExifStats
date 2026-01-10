@@ -33,6 +33,7 @@ Item
 		property alias panelLensVisible: lensModelsCounter.visible
 		property alias panelCameraVisible: cameraModelsCounter.visible
 		property alias panelTimelineVisible: timelineCounter.visible
+		property alias panelOrientationsCounterVisible: orientationsCounter.visible
 		property alias panelMapVisible: mapRoot.visible
 		property alias panelImagesVisible: imageGrid.visible
 		property var mainSplitViewState
@@ -77,6 +78,12 @@ Item
 		
 		cameraModelsCounter.max = maxList(cameraModelsCounter.values)
 		cameraModelsCounter.resetView();
+
+		orientationsCounter.categories = MainQmlBinder.getOrientations();
+		orientationsCounter.values = MainQmlBinder.getOrientationsCount();
+		
+		orientationsCounter.max = maxList(orientationsCounter.values)
+		orientationsCounter.resetView();
 		
 		timelineCounter.categories = MainQmlBinder.getTimeLabels();
 		timelineCounter.values = MainQmlBinder.getTimeCounts();
@@ -594,6 +601,61 @@ Item
 					Layout.fillWidth: true
 				}
 			}
+			
+			RowLayout
+			{
+				id: orientationFilters
+				
+				SplitView.fillWidth: true
+				SplitView.preferredHeight: parent.height / parent.children.length
+				
+				function updateOrientationFilterMode()
+				{
+					if(portraitFilterCheckbox.checked && landcapeFilterCheckbox.checked)
+						MainQmlBinder.OrientationFilterMode = 0;
+					else if(landcapeFilterCheckbox.checked)
+						MainQmlBinder.OrientationFilterMode = 1;
+					else if(portraitFilterCheckbox.checked)
+						MainQmlBinder.OrientationFilterMode = 2;
+					else
+						MainQmlBinder.OrientationFilterMode = 3;
+				}
+				
+				RegularButton
+				{
+					text:"X"
+					
+					implicitWidth: 30
+					implicitHeight: 30
+
+					onReleased:
+					{
+						MainQmlBinder.OrientationFilterMode = 0;
+					}
+				}
+				
+				CheckBox
+				{
+					id: portraitFilterCheckbox
+					checked: MainQmlBinder.OrientationFilterMode == 0 || MainQmlBinder.OrientationFilterMode == 2
+					text: "Portrait"
+					onCheckedChanged:
+					{
+						orientationFilters.updateOrientationFilterMode();
+					}
+				}
+				
+				CheckBox
+				{
+					id: landcapeFilterCheckbox
+					checked: MainQmlBinder.OrientationFilterMode == 0 || MainQmlBinder.OrientationFilterMode == 1
+					text: "Landscape"
+					onCheckedChanged:
+					{
+						orientationFilters.updateOrientationFilterMode();
+					}
+				}
+			}
 				
 			SplitView
 			{
@@ -846,6 +908,18 @@ Item
 					
 					RegularButton
 					{
+						text:"Orientation"
+						highlighted: orientationsCounter.visible
+						
+						onReleased:
+						{
+							orientationsCounter.visible = !orientationsCounter.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					
+					RegularButton
+					{
 						text:"Map"
 						highlighted: mapRoot.visible
 						
@@ -1029,6 +1103,15 @@ Item
 								MainQmlBinder.TimelineStep = value*24*3600;
 							}
 						}
+					}
+					
+					CounterChart
+					{
+						id: orientationsCounter
+						title: "Orientation Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						barChartChild.mAllCategoriesOnly: true
 					}
 
 					Item

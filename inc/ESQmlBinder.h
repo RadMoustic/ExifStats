@@ -22,11 +22,13 @@
 #include "ESExifStatCountDateTime.h"
 #include "ESExifStatGeoLocation.h"
 #include "ESExifStatListFiles.h"
+#include "ESExifStatCountOrientation.h"
 #include "ESExifFilter.h"
 #include "ESExifFromToFilter.h"
 #include "ESExifListFilter.h"
 #include "ESExifGeoLocationFilter.h"
 #include "ESExifPathFilter.h"
+#include "ESExifOrientationFilter.h"
 #include "ESFileInfo.h"
 
 // External
@@ -51,9 +53,11 @@ class ESDatabase;
 	} \
 	void set##pName(pType p##pName) \
 	{ \
-		if(pVarName != p##pName) \
+		auto lValue = static_cast<decltype(pVarName)>(p##pName); \
+		 \
+		if(pVarName != lValue) \
 		{ \
-			pVarName = p##pName; \
+			pVarName = lValue; \
 			emit property##pName##Changed(); \
 			updateStats(false); \
 		} \
@@ -92,6 +96,7 @@ public:
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
+	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 
 	/********************************* METHODS ***********************************/
 
@@ -151,6 +156,10 @@ public:
 	// List Files
 	Q_INVOKABLE const ESExifStatListFiles* getFilteredFilesList() const;
 
+	// Orientation
+	Q_INVOKABLE QVector<QString> getOrientations() const;
+	Q_INVOKABLE QVector<int> getOrientationsCount() const;
+
 	// Filter Presets
 	Q_INVOKABLE void resetFilters();
 	Q_INVOKABLE bool saveFilters(QString pPresetName);
@@ -180,6 +189,7 @@ private:
 	ExifStatCountDateTime mDateTimeStat;
 	ExifStatGeoLocation mGeoLocationStat;
 	ESExifStatListFiles mListFilesStat;
+	ESExifStatCountOrientation mOrientationStat;
 
 	ExifFromToFilter<int, ExifStatCountFocalLengthIn35mm> m35mmFilter;
 	ExifFromToFilter<float, ESExifStatCountAperture> mApertureFilter;
@@ -188,6 +198,7 @@ private:
 	ExifFromToFilter<uint64_t, ExifStatCountDateTime>  mDateTimeFilter;
 	ExifGeoLocationFilter mGeoLocationFilter;
 	ESExifPathFilter mPathFilter;
+	ESExifOrientationFilter mOrientationFilter;
 
 	std::vector<ExifStat*> mStats;
 	std::vector<ExifFilter*> mFilters;
