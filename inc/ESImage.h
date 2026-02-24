@@ -29,6 +29,7 @@ public:
 	bool isLoaded() const;
 	bool isNull() const;
 
+	QChar getDriveLetter() const;
 	const QImage& getImage() const;
 	StringId getImagePath() const;
 	const UsefullExif& getExif() const;
@@ -72,6 +73,4 @@ private:
 
 	void cancelLoading();
 	void unloadImage();
-
-	QChar getDriveLetter() const;
 };

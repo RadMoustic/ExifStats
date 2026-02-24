@@ -363,6 +363,59 @@ Item
 				onReleased:
 				{
 					MainQmlBinder.resetFilters();
+					actualSearchedTags.text = ""
+				}
+			}
+			
+			RowLayout
+			{
+				id: tagsInclusiveFilters
+				
+				SplitView.fillWidth: true
+				SplitView.preferredHeight: parent.height / parent.children.length
+				
+				RegularButton
+				{
+					text:"X"
+					
+					implicitWidth: 30
+					implicitHeight: 30
+
+					onReleased:
+					{
+						MainQmlBinder.TagsInclusiveFilters = [];
+						actualSearchedTags.text = ""
+					}
+				}
+				
+				Text
+				{
+					text: "Tags contain: "
+					Layout.fillWidth: false
+				}
+
+				TextInput
+				{
+					x: 0
+					Layout.fillWidth: true
+					text: MainQmlBinder.TagsInclusiveFilters.join(" ")
+					onEditingFinished:
+					{
+						MainQmlBinder.TagsInclusiveFilters = text.split(" ");
+						actualSearchedTags.text = MainQmlBinder.getActualSearchedTags().join(", ");
+					}
+				}
+			}
+			
+			RowLayout
+			{
+				visible: MainQmlBinder.isTokenizerEnabled()
+				Text
+				{
+					id: actualSearchedTags
+					Layout.fillWidth: true
+					color: "darkgrey"
+					horizontalAlignment: Text.AlignHCenter
 				}
 			}
 			
@@ -780,7 +833,7 @@ Item
 			ColumnLayout
 			{
 				id: topToolbar
-				Layout.preferredHeight: 70
+				Layout.preferredHeight: 90
 				Layout.preferredWidth: parent.width
 				
 				RowLayout
@@ -827,11 +880,50 @@ Item
 					}
 					RegularButton
 					{
+						text:"ReTag"
+						enabled: MainQmlBinder.isImageTaggerEnabled()
+
+						onReleased:
+						{
+							MainQmlBinder.retag();
+						}
+					}
+					RegularButton
+					{
 						text:"Clear"
 
 						onReleased:
 						{
 							MainQmlBinder.clear();
+						}
+					}
+					ColumnLayout
+					{
+						Layout.preferredHeight: 50
+						CheckBox
+						{
+							id: pauseCaching
+							Layout.preferredHeight: 25
+							padding: 0
+							checked: MainQmlBinder.mPauseCaching
+							text: "Pause Caching"
+							onCheckedChanged:
+							{
+								MainQmlBinder.mPauseCaching = pauseCaching.checked;
+							}
+						}
+						CheckBox
+						{
+							id: pauseTagging
+							enabled: MainQmlBinder.isImageTaggerEnabled()
+							Layout.preferredHeight: 25
+							padding: 0
+							checked: MainQmlBinder.mPauseTagging
+							text: "Pause Tagging"
+							onCheckedChanged:
+							{
+								MainQmlBinder.mPauseTagging = pauseTagging.checked;
+							}
 						}
 					}
 					Item
@@ -946,10 +1038,21 @@ Item
 				{
 					id: processingProgressBar
 					Layout.preferredWidth: parent.width
-					Layout.preferredHeight: 20
+					Layout.preferredHeight: 10
 					value: MainQmlBinder.ProcessingProgress
 					opacity: MainQmlBinder.Processing ? 1.0 : 0.0
-					height: 20
+					height: 10
+				}
+				ProgressBar
+				{
+					id: taggingProgressBar
+					Layout.preferredWidth: parent.width
+					Layout.preferredHeight: 10
+					value: MainQmlBinder.mTaggingProgress
+					opacity: MainQmlBinder.mTagging ? 1.0 : 0.0
+					height: 10
+					
+					Material.accent: Material.Green
 				}
 			}
 			
@@ -1293,7 +1396,7 @@ Item
 						color: "#55000000"
 						anchors.right: parent.right
 						height: Math.max(32, parent.height * parent.height / imageGrid.mContentHeight)
-						y: parent.height * (imageGrid.mYOffset / imageGrid.mContentHeight)
+						y: (parent.height-height) * (imageGrid.mYOffset / imageGrid.mContentHeight)
 					}
 					
 					ProgressBar

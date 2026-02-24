@@ -7,6 +7,7 @@
 #include "ESMapDotsQuickItem.h"
 #include "ESBarChartQuickItem.h"
 #include "ESImageGridQuickItem.h"
+#include "ESImageTaggerManager.h"
 
 // Qt
 #include <qdir.h>
@@ -46,6 +47,12 @@ ESWindow::ESWindow()
 	setSurfaceType(QSurface::OpenGLSurface);
 	QQuickStyle::setStyle("Material");
 
+	ESDatabase::getInstance();
+	ESImageCache::getInstance();
+#ifdef IMAGETAGGER_ENABLE
+	ESImageTaggerManager::getInstance();
+#endif // IMAGETAGGER_ENABLE
+
 	mBinder = std::make_shared<ESQmlBinder>();
 	mDebugBinder = std::make_shared<ESDebugQmlBinder>();
 }
@@ -71,6 +78,9 @@ void ESWindow::initialize()
 	QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
+#ifdef IMAGETAGGER_ENABLE
+			ESImageTaggerManager::getInstance().initialize();
+#endif // IMAGETAGGER_ENABLE
 		});
 }
 

@@ -67,6 +67,6 @@ private:
 	/********************************* METHODS ***********************************/
 
 	void updateInternal();
-	void onImageCachingProgressUpdated(int pCachedCount, int pCachingCount);
+	void onImageCachingProgress(int pLoadedCount, int pLoadingCount);
 	void sort();
 };

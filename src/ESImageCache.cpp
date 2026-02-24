@@ -32,12 +32,14 @@ static const int MAX_NUM_IMAGE_LOADED = 512;
 ESImageCache::ESImageCache()
 	: mIsUpdating(false)
 {
+	mMaxAsyncTask = QThreadPool::globalInstance()->maxThreadCount();
+
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 	mCacheFolderPath = lDataBaseDir + QDir::separator() + "ImageCache";
 	QDir lDir;
 	lDir.mkpath(mCacheFolderPath);
 
-
+	mCacheLoadingTask.mMaxAsyncTask = mMaxAsyncTask;
 	mCacheLoadingTask.init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
 		{
 			++pNumAsyncTaskStarted;
@@ -172,7 +174,7 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 
 /********************************************************************************/
 
-void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage)
+/*virtual*/ void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage) /*override*/
 {
 	if (pImage->isLoading() || pImage->isLoaded())
 		return;
@@ -180,97 +182,15 @@ void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage)
 	pImage->mCancelLoading = false; // The ONLY ALLOWED place to reset the cancel loading state
 	pImage->mIsQueueForLoading = true;
 
-	if(pImage->hasCacheFile())
+	if (pImage->hasCacheFile())
 	{
 		mCacheLoadingTask.processImage(pImage);
 		return;
 	}
 	else
 	{
-		++mImagesCachingCount;
+		ESImageLoader::queueImageLoading(pImage);
 	}
-	
-	QChar lDriveLetter = pImage->getDriveLetter();
-
-	std::shared_ptr<LoadingThreadTask> driveLoadingTask;
-	mDriveLoadingTasksMutex.lock_shared();
-	auto itFound = mDriveLoadingTasks.find(lDriveLetter);
-	if(itFound == mDriveLoadingTasks.end())
-	{
-		mDriveLoadingTasksMutex.unlock_shared();
-		std::unique_lock<std::shared_mutex> uniqueLock(mDriveLoadingTasksMutex);
-		// Double check
-		itFound = mDriveLoadingTasks.find(lDriveLetter);
-		if(itFound == mDriveLoadingTasks.end())
-		{
-			driveLoadingTask = std::make_shared<LoadingThreadTask>();
-			driveLoadingTask->init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
-				{
-					++pNumAsyncTaskStarted;
-					pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true, &pNumAsyncTaskStarted);
-					unloadUnusedImages();
-				});
-			mDriveLoadingTasks[lDriveLetter] = driveLoadingTask;
-		}
-		uniqueLock.unlock();
-	}
-	else
-	{
-		driveLoadingTask = itFound->second;
-		mDriveLoadingTasksMutex.unlock_shared();
-	}
-
-	driveLoadingTask->processImage(pImage);
-}
-
-/********************************************************************************/
-
-void ESImageCache::LoadingThreadTask::processImage(const std::shared_ptr<ESImage>& pImage)
-{
-	{
-		std::lock_guard<std::mutex> lock(mQueueMutex);
-		mLoadingQueue.push_back(pImage);
-	}
-	if (mLoadingThread.isRunning())
-		return;
-	mLoadingThread = QtConcurrent::run([this]()
-		{
-			while (!mStop)
-			{
-				if(mNumAsyncTaskStarted < QThreadPool::globalInstance()->maxThreadCount())
-				{
-					std::shared_ptr<ESImage> currentImage;
-					{
-						std::lock_guard<std::mutex> lock(mQueueMutex);
-						if (mLoadingQueue.empty())
-						{
-							break;
-						}
-						else
-						{
-							currentImage = mLoadingQueue.front();
-							mLoadingQueue.pop_front();
-						}
-					}
-
-					mProcessFct(currentImage, mNumAsyncTaskStarted);
-				}
-				else
-				{
-					QThread::sleep(std::chrono::nanoseconds(500000));
-				}
-			}
-		});
-}
-
-/********************************************************************************/
-
-void ESImageCache::LoadingThreadTask::stop()
-{
-	mStop = true;
-	mLoadingThread.cancel();
-	std::lock_guard<std::mutex> lock(mQueueMutex);
-	mLoadingQueue.clear();
 }
 
 /********************************************************************************/
@@ -305,29 +225,11 @@ void ESImageCache::unloadUnusedImages()
 
 /********************************************************************************/
 
-void ESImageCache::imageCachingFinished()
-{
-	++mImagesCachedCount;
-	int currentCachingCount = mImagesCachingCount.load();
-	int currentCachedCount = mImagesCachedCount.load();
-	if(currentCachingCount == currentCachedCount)
-	{
-		mImagesCachingCount -= currentCachingCount;
-		mImagesCachedCount -= currentCachedCount;
-	}
-
-	emit imageCachingProgressUpdated(mImagesCachedCount, mImagesCachingCount);
-}
-
-/********************************************************************************/
-
-void ESImageCache::stopAndCancelAllLoadings()
+/*virtual*/ void ESImageCache::stopAndCancelAllLoadings() /*override*/
 {
 	mCacheLoadingTask.stop();
 
-	std::unique_lock<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
-	for(auto lDriveLoadingTask: mDriveLoadingTasks)
-		lDriveLoadingTask.second->stop();
+	ESImageLoader::stopAndCancelAllLoadings();
 
 	std::shared_lock<std::shared_mutex> lImagesLock(mImagesMutex);
 	for (auto&& lImage : mImages)
@@ -336,16 +238,16 @@ void ESImageCache::stopAndCancelAllLoadings()
 
 /********************************************************************************/
 
-#ifdef QT_DEBUG
-
-void ESImageCache::LoadingThreadTask::printImageDebugInfo(const QString& pTaskName, const std::shared_ptr<ESImage>& pImage)
+/*virtual*/ void ESImageCache::internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) /*override*/
 {
-	auto lItFound = std::find(mLoadingQueue.begin(), mLoadingQueue.end(), pImage);
-	if (lItFound != mLoadingQueue.end())
-	{
-		qDebug() << "    - " << pTaskName << "[" << std::distance(mLoadingQueue.begin(), lItFound) << "]";
-	}
+	++pNumAsyncTaskStarted;
+	pImage->loadImageInternal(QSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE), true, &pNumAsyncTaskStarted);
+	unloadUnusedImages();
 }
+
+/********************************************************************************/
+
+#ifdef QT_DEBUG
 
 void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage)
 {

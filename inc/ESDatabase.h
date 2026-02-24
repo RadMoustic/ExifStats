@@ -39,6 +39,11 @@
 class ESDatabase : public QObject
 {
 	Q_OBJECT
+
+#ifdef IMAGETAGGER_ENABLE
+	friend class ESImageTaggerManager;
+#endif // IMAGETAGGER_ENABLE
+
 public:
 	/******************************** ATTRIBUTES **********************************/
 
@@ -65,10 +70,16 @@ public:
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
 
+	void setAllTags(const QVector<QString>& pAllTags);
+	void getAllTags(QStringList& pOutput);
+	QString getTagLabel(uint16_t pTagIndex) const;
+	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
+
 signals:
 	/********************************** SIGNALS ***********************************/
 
 	void foldersChanged();
+	void tagsChanged();
 
 private:
 	/******************************** ATTRIBUTES **********************************/
@@ -78,9 +89,11 @@ private:
 	std::map<StringId, FileInfo> mFiles;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
+	mutable QMutex mFilesMutex;
 
 	QVector<QString> mAllLensModels;
 	QVector<QString> mAllCameraModels;
+	QVector<QString> mAllTags;
 
 	/********************************* METHODS ***********************************/
 

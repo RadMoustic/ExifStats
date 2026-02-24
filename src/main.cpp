@@ -3,6 +3,7 @@
 #include "ESWindow.h"
 #include "ESLogger.h"
 #include "ESImageCache.h"
+#include "ESImageTaggerManager.h"
 
 // Qt
 #include <QApplication>
@@ -43,6 +44,8 @@ int main(int argc, char* argv[])
 	app.setOrganizationDomain("exifstats.com");
 	app.setApplicationName("ExifStats");
 
+	QImageReader::setAllocationLimit(512);
+
 	ESStringPool lStringPool;
 
 	ESWindow lMainWindow;
@@ -52,6 +55,9 @@ int main(int argc, char* argv[])
 	int lAppResult = app.exec();
 
 	ESImageCache::getInstance().stopAndCancelAllLoadings();
+#ifdef IMAGETAGGER_ENABLE
+	ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
+#endif // IMAGETAGGER_ENABLE
 
 	QThreadPool::globalInstance()->waitForDone();
 

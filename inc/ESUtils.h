@@ -1,5 +1,8 @@
 #pragma once
 
+// Qt
+#include <QString>
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -82,3 +85,7 @@ int constexpr constExprStringLength(const char* pStr)
 {
 	return *pStr ? 1 + constExprStringLength(pStr + 1) : 0;
 }
+
+/********************************************************************************/
+
+bool getFilePathFromBase(const QString& pFilePath, const QString& pBaseFilePath, QString& pResult);

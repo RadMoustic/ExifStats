@@ -3,6 +3,9 @@
 // ES
 #include "ESExifStatListFiles.h"
 #include "ESDatabase.h"
+#include "ESImageTagger.h"
+#include "ESImageTaggerManager.h"
+#include "ESImageTagsSearchEngine.h"
 
 // Qt
 #include <QPainter>
@@ -31,7 +34,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
 
-	connect(&ESImageCache::getInstance(), &ESImageCache::imageCachingProgressUpdated, this, &ESImageGridQuickItem::onImageCachingProgressUpdated);
+	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress);
 
 	connect(this, &ESImageGridQuickItem::propertyFilteredFilesListChanged, this, 
 	[this]()
@@ -80,7 +83,14 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	if(lIndex >= 0 && lIndex < mImages.size())
 	{
 		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE)
+		if(!ESImageTaggerManager::getInstance().isLoading())
+		{
+			ESDatabase& db = ESDatabase::getInstance();
+			QStringList lTagLabels = db.getTagsLabels(db.getFileInfo(lImage->getImagePath())->mTagIndexes);
+			qDebug()  << lTagLabels.join(", ");
+		}
+
 		ESImageCache::getInstance().printImageDebugInfo(lImage);
 #endif
 		return lImage->getImagePath();
@@ -228,9 +238,9 @@ void ESImageGridQuickItem::updateInternal()
 
 /********************************************************************************/
 
-void ESImageGridQuickItem::onImageCachingProgressUpdated(int pCachedCount, int pCachingCount)
+void ESImageGridQuickItem::onImageCachingProgress(int pLoadedCount, int pLoadingCount)
 {
-	if (pCachingCount == 0)
+	if (pLoadedCount == pLoadingCount)
 	{
 		setLoadingProgress(100.f);
 		setLoading(false);
@@ -238,7 +248,7 @@ void ESImageGridQuickItem::onImageCachingProgressUpdated(int pCachedCount, int p
 	else
 	{
 		setLoading(true);
-		float loadingProgress = static_cast<float>(pCachedCount) / pCachingCount;
+		float loadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
 		if (abs(loadingProgress - getLoadingProgress()) >= 0.001)
 			setLoadingProgress(loadingProgress);
 	}

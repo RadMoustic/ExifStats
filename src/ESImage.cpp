@@ -248,7 +248,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 				}
 			}
 			if(!lReadCache)
-				ESImageCache::getInstance().imageCachingFinished();
+				ESImageCache::getInstance().imageLoadingFinished();
 			emit imageLoadedOrCanceled(this);
 		});
 	}
@@ -259,7 +259,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 		ESImageCache::getInstance().unloadUnusedImages();
 		assert(!mCancelLoading); // In synchronous mode, 1calling cancelLoading() in another thread is not supported
 		if (!lReadCache)
-			ESImageCache::getInstance().imageCachingFinished();
+			ESImageCache::getInstance().imageLoadingFinished();
 		emit imageLoadedOrCanceled(this);
 	}
 }

@@ -139,9 +139,8 @@ public:
 	{
 		if constexpr (READ)
 		{
-			T lValue;
-			mDataStream >> lValue;
-			return pComparer(lValue, pValue);
+			mDataStream >> pReadValue;
+			return pComparer(pReadValue, pValue);
 		}
 		else
 		{

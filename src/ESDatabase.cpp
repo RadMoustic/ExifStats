@@ -21,7 +21,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 5;
+constexpr uint DATABASE_VERSION = 6;
 
 /********************************************************************************/
 
@@ -76,6 +76,8 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 	
 	QtConcurrent::run([this, pFolders, pClearDB, pNewFilesOnly]()
 		{
+			mFilesMutex.lock();
+
 			if (pClearDB)
 			{
 				mFiles.clear();
@@ -93,7 +95,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				QDir lDir(*lFolderPath);
 
 				// Directories
-				QDirIterator lDirIt(*lFolderPath, { "*.jpg", "*.heic"}, QDir::Files, QDirIterator::Subdirectories);
+				QDirIterator lDirIt(*lFolderPath, { "*.jpeg", "*.jpg", "*.heic"}, QDir::Files, QDirIterator::Subdirectories);
 				while (lDirIt.hasNext())
 				{
 					StringId lFilePath = lDirIt.next();
@@ -136,6 +138,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 					}
 				});
 			res.waitForFinished();
+			mFilesMutex.unlock();
 
 			// Extract all camera models and counter
 			std::unordered_set<StringId> lCameraModels;
@@ -306,6 +309,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 	pSerializer.Serialize(mAllCameraModels);
 	pSerializer.Serialize(ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors);
 	pSerializer.Serialize(mAllLensModels);
+	if (lDatabaseVersion >= 6)
+		pSerializer.Serialize(mAllTags);
 
 	pSerializer.SerializeCustom(mFiles,
 		[&](StringId& pStringId, FileInfo& pFileInfo)
@@ -324,6 +329,11 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
 			if(lDatabaseVersion >= 5)
 				pSerializer.Serialize(pFileInfo.mExif.mOrientation);
+			if(lDatabaseVersion >= 6)
+			{
+				pSerializer.Serialize(pFileInfo.mTagsGenerated);
+				pSerializer.Serialize(pFileInfo.mTagIndexes);
+			}
 
 			if constexpr (pSerializer.msIsReading)
 			{
@@ -411,6 +421,7 @@ void ESDatabase::loadDatabase()
 	mFolders.erase(last, mFolders.end());
 
 	setProperty("Processing", false);
+	emit tagsChanged();
 	emit foldersChanged();
 }
 
@@ -451,4 +462,44 @@ const QVector<QString>& ESDatabase::getAllLensModels() const
 const QVector<QString>& ESDatabase::getAllCameraModels() const
 {
 	return mAllCameraModels;
+}
+
+/********************************************************************************/
+
+void ESDatabase::getAllTags(QStringList& pOutput)
+{
+	std::scoped_lock lock(mFilesMutex);
+	pOutput = mAllTags;
+}
+
+/********************************************************************************/
+
+void ESDatabase::setAllTags(const QVector<QString>& pAllTags)
+{
+	mAllTags = pAllTags;
+	void tagsChanged();
+}
+
+/********************************************************************************/
+
+QStringList ESDatabase::getTagsLabels(const QVector<uint16_t>& pTags)
+{
+	std::scoped_lock lock(mFilesMutex);
+	QStringList lResult;
+	for (uint16_t tag : pTags)
+	{
+		if (tag < mAllTags.size())
+			lResult.push_back(mAllTags[tag]);
+		else
+			lResult.push_back(QString("UnknownTag%1").arg(tag));
+	}
+	return lResult;
+}
+
+/********************************************************************************/
+
+QString ESDatabase::getTagLabel(uint16_t pTagIndex) const
+{
+	std::scoped_lock lock(mFilesMutex);
+	return mAllTags[pTagIndex];
 }

@@ -47,7 +47,12 @@ bool QJpegTurboHandler::loadJpeg(QImage* pImage)
 		(unsigned char*)lData.data(), lData.size(),
 		&lWidth, &lHeight, &lSubsamp, &lColorSpace) != 0)
 	{
-		return false;
+		int lErrCode = tjGetErrorCode(lHandle);
+		if(lErrCode != 0)
+		{
+			qWarning() << lErrCode << QString(tjGetErrorStr2(lHandle));
+			return false;
+		}
 	}
 
 	*pImage = QImage(lWidth, lHeight, QImage::Format_RGBA8888);
@@ -66,7 +71,12 @@ bool QJpegTurboHandler::loadJpeg(QImage* pImage)
 		TJPF_RGBA,
 		TJFLAG_FASTDCT) != 0)
 	{
-		return false;
+		int lErrCode = tjGetErrorCode(lHandle);
+		if (lErrCode != 0)
+		{
+			qWarning() << lErrCode << QString(tjGetErrorStr2(lHandle));
+			return false;
+		}
 	}
 
 	return true;

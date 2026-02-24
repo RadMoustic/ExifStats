@@ -109,6 +109,7 @@ void ESLogger::logMsg(const QString& pMsg, PpcLogLevel pLevel)
 
 	if (mLogFile.isOpen())
 	{
+		QMutexLocker lLocker(&mLogFileMutex);
 		mLogFile.write(lFormatedMsg.toLocal8Bit());
 		mLogFile.write("\n", 1);
 		mLogFile.flush();

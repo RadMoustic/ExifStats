@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.6.2)
 
-if(DEFINED ENV{VCPKG_TOOLCHAIN_FILE})
+if(DEFINED ENV{VCPKG_ROOT_DIR})
 	if(NOT DEFINED ENV{VCPKG_TARGET_TRIPLET})
 		message(FATAL_ERROR "Environment variable VCPKG_TARGET_TRIPLET missing")
 	endif()
-	set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_TOOLCHAIN_FILE})
+	set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_ROOT_DIR}/scripts/buildsystems/vcpkg.cmake)
 	set(VCPKG_TARGET_TRIPLET $ENV{VCPKG_TARGET_TRIPLET})
 endif()
 
-if("$ENV{HEIF_PLUGIN_ENABLE}" STREQUAL "true" AND NOT DEFINED ENV{VCPKG_TOOLCHAIN_FILE})
-	message(FATAL_ERROR "You must set the environment variables VCPKG_TOOLCHAIN_FILE and VCPKG_TARGET_TRIPLET to enable the HEIF plugin")
+if("$ENV{HEIF_PLUGIN_ENABLE}" STREQUAL "true" AND NOT DEFINED ENV{VCPKG_ROOT_DIR})
+	message(FATAL_ERROR "You must set the environment variables VCPKG_ROOT_DIR and VCPKG_TARGET_TRIPLET to enable the HEIF plugin")
 endif()
 
 if("$ENV{QT_STATIC}" STREQUAL "true")
@@ -27,6 +27,11 @@ if("$ENV{TURBOJPEG_PLUGIN_ENABLE}" STREQUAL "true")
 else()
 	set(TURBOJPEG_PLUGIN_ENABLE OFF)
 endif()
+if("$ENV{IMAGETAGGER_ENABLE}" STREQUAL "true")
+	set(IMAGETAGGER_ENABLE ON)
+else()
+	set(IMAGETAGGER_ENABLE OFF)
+endif()
 
 set(CMAKE_CXX_COMPILER_WORKS TRUE)
 project($ENV{SLN_NAME} LANGUAGES CXX)
@@ -36,6 +41,7 @@ set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT "$ENV{SLN_NAME}")
 
 set(GEN_DIR $ENV{GENERATED_PATH})
 set(PROJECT_SRC_DIR ${CMAKE_SOURCE_DIR})
+set(EXTERNALS_DIR ${PROJECT_SRC_DIR}/Externals)
 
 if(MSVC)
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GEN_DIR}/bin")
@@ -48,7 +54,7 @@ set(CPP_DEFINES "")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qpar /Qpar-report:1 /W4 /WX /MP -std:c++latest /wd4127 /Wv:18 /bigobj")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qpar /Qpar-report:1 /W4 /MP -std:c++latest /wd4127 /Wv:18 /bigobj")
 	if(HEIF_PLUGIN_ENABLE)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd26812")
 	endif()
@@ -81,9 +87,6 @@ if(MSVC)
 endif()
 
 source_group("Resources" FILES ${QRC_LIST} ${RC_LIST})
-
-# Include Directories
-include_directories(${PROJECT_SRC_DIR}/inc)
 
 # Qt
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Scripts/CMake)
@@ -118,14 +121,27 @@ if(TURBOJPEG_PLUGIN_ENABLE)
 	list(APPEND CPP_DEFINES TURBOJPEG_PLUGIN_ENABLED)
 endif()
 
+# IMAGE TAGGER
+set(IMAGETAGGER_LIBS "")
+set(IMAGETAGGER_INCLUDE_DIRS "")
+if(IMAGETAGGER_ENABLE)
+	set(TOKENZIER_CPP_PATH ${EXTERNALS_DIR}/tokenizers-cpp)
+	add_subdirectory(${TOKENZIER_CPP_PATH} tokenizers EXCLUDE_FROM_ALL)
+	
+	set(IMAGETAGGER_INCLUDE_DIRS ${EXTERNALS_DIR}/onnxruntime/include ${TOKENZIER_CPP_PATH}/include)
+	set(IMAGETAGGER_LIBS ${EXTERNALS_DIR}/onnxruntime/lib/onnxruntime.lib tokenizers_cpp)
+	list(APPEND CPP_DEFINES ONNX_ENABLED IMAGETAGGER_ENABLE ORT_NO_EXCEPTIONS)
+endif()
+
+# Include Directories
+include_directories(${PROJECT_SRC_DIR}/inc ${IMAGETAGGER_INCLUDE_DIRS})
+
 # Create Executable
 list(APPEND ALL_SRC_LIST ${INC_LIST} ${INL_LIST} ${SRC_LIST} ${QRC_COMPILED} ${RC_LIST} ${MOC_CPP_LIST} ExifStats.natvis)
 add_executable($ENV{SLN_NAME} ${ALL_SRC_LIST})
 
 # Defines
-target_compile_definitions($ENV{SLN_NAME} PRIVATE
-	${CPP_DEFINES}
-)
+target_compile_definitions($ENV{SLN_NAME} PRIVATE ${CPP_DEFINES})
 
 # For Static build
 qt6_import_qml_plugins(${CMAKE_PROJECT_NAME})
@@ -138,10 +154,14 @@ if(TURBOJPEG_PLUGIN_ENABLE)
 	target_link_libraries(QTurboJpegPlugin PRIVATE Qt6::Core Qt6::Gui ${TURBOJPEG_LIB})
 endif()
 
-target_link_libraries($ENV{SLN_NAME} PRIVATE ${LINK_LIB} ${QT_LINK_LIBS} ${HEIF_PLUGIN_LIB} ${TURBOJPEG_PLUGIN_LIB})
+target_link_libraries($ENV{SLN_NAME} PRIVATE ${LINK_LIB} ${QT_LINK_LIBS} ${HEIF_PLUGIN_LIB} ${TURBOJPEG_PLUGIN_LIB} ${IMAGETAGGER_LIBS})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ALL_SRC_LIST})
 
 if(MSVC)
 	set_property(TARGET $ENV{SLN_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:$ENV{SLN_NAME}>")
+	target_compile_options($ENV{SLN_NAME} PRIVATE /WX)
+	if(IMAGETAGGER_ENABLE)
+		target_compile_options(sentencepiece-static PRIVATE /w)
+	endif()
 endif()

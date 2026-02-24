@@ -55,5 +55,6 @@ protected:
 	QStringList mMsgsLogged;
 	QFile mLogFile;
 	QMutex mMutex;
+	QMutex mLogFileMutex;
 };
 

@@ -2,6 +2,7 @@
 
 // ES
 #include "ESDatabase.h"
+#include "ESImageTaggerManager.h"
 
 // Qt
 #include <QApplication>
@@ -23,6 +24,10 @@ static const char* cPresetExtension = "espreset";
 /********************************************************************************/
 
 ESQmlBinder::ESQmlBinder()
+	: mTagging(false)
+	, mTaggingProgress(100.f)
+	, mPauseCaching(false)
+	, mPauseTagging(false)
 {
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, 
 	[this]()
@@ -33,6 +38,9 @@ ESQmlBinder::ESQmlBinder()
 	});
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingProgressChanged, this, &ESQmlBinder::processingProgressChanged);
+#ifdef IMAGETAGGER_ENABLE
+	(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESQmlBinder::onTaggingProgress);
+#endif // IMAGETAGGER_ENABLE
 
 	mStats.push_back(&m35mmStat);
 	mStats.push_back(&mApertureStat);
@@ -55,6 +63,7 @@ ESQmlBinder::ESQmlBinder()
 	mDateTimeFilter.mName = "DateTime";
 	mGeoLocationFilter.mName = "GeoLocation";
 	mPathFilter.mName = "Path";
+	mTagsFilter.mName = "Tags";
 	mOrientationFilter.mName = "Orientation";
 
 	mFilters.push_back(&m35mmFilter);
@@ -64,6 +73,7 @@ ESQmlBinder::ESQmlBinder()
 	mFilters.push_back(&mDateTimeFilter);
 	mFilters.push_back(&mGeoLocationFilter);
 	mFilters.push_back(&mPathFilter);
+	mFilters.push_back(&mTagsFilter);
 	mFilters.push_back(&mOrientationFilter);
 }
 
@@ -75,6 +85,18 @@ void ESQmlBinder::refresh(bool pFullRefresh)
 	{
 		ESDatabase::getInstance().refresh(pFullRefresh);
 	}
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::retag()
+{
+#ifdef IMAGETAGGER_ENABLE
+	if (QMessageBox::question(nullptr, tr("Retag Database"), tr("Are you sure you want to retag all files in the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
+	{
+		ESImageTaggerManager::getInstance().retag();
+	}
+#endif // IMAGETAGGER_ENABLE
 }
 
 /********************************************************************************/
@@ -113,6 +135,24 @@ bool ESQmlBinder::getProcessing()
 float ESQmlBinder::getProcessingProgress()
 {
 	return ESDatabase::getInstance().getProcessingProgress();
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::onTaggingProgress(int pLoadedCount, int pLoadingCount)
+{
+	if (pLoadedCount == pLoadingCount)
+	{
+		setTaggingProgress(100.f);
+		setTagging(false);
+	}
+	else
+	{
+		setTagging(true);
+		float loadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
+		if (abs(loadingProgress - getTaggingProgress()) >= 0.001)
+			setTaggingProgress(loadingProgress);
+	}
 }
 
 /********************************************************************************/
@@ -499,6 +539,7 @@ void ESQmlBinder::resetFilters()
 	updateFiltersFromData();
 
 	emit propertyPathInclusiveFiltersChanged();
+	emit propertyTagsInclusiveFiltersChanged();
 	emit propertyOrientationFilterModeChanged();
 }
 
@@ -588,7 +629,6 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	emit propertyApertureToChanged();
 	emit propertyFocalLengthFromChanged();
 	emit propertyFocalLengthToChanged();
-	emit propertyTimelineStepChanged();
 	emit timeFromChanged();
 	emit timeToChanged();
 	emit propertyPathInclusiveFiltersChanged();
@@ -649,4 +689,33 @@ QString ESQmlBinder::getPresetsFolderPath() const
 QString ESQmlBinder::getPresetFilePathPath(const QString& pPresetName) const
 {
 	return getPresetsFolderPath() + QDir::separator() + pPresetName + "." + cPresetExtension;
+}
+
+/********************************************************************************/
+
+QStringList ESQmlBinder::getActualSearchedTags() const
+{
+	return mTagsFilter.getActualSearchedTags();
+}
+
+/********************************************************************************/
+
+bool ESQmlBinder::isImageTaggerEnabled() const
+{
+#ifdef IMAGETAGGER_ENABLE
+	return ESImageTaggerManager::getInstance().isEnabled();
+#else
+	return false;
+#endif // IMAGETAGGER_ENABLE
+}
+
+/********************************************************************************/
+
+bool ESQmlBinder::isTokenizerEnabled() const
+{
+#ifdef IMAGETAGGER_ENABLE
+	return mTagsFilter.isTokenizerEnabled();
+#else
+	return false;
+#endif // IMAGETAGGER_ENABLE
 }

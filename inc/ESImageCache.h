@@ -5,18 +5,7 @@
 /********************************************************************************/
 
 // ES
-#include "ESStringPool.h"
-#include "ESImage.h"
-
-// Qt
-#include <QObject>
-#include <QImage>
-#include <QFuture>
-
-// Stl
-#include <deque>
-#include <mutex>
-#include <shared_mutex>
+#include "ESImageLoader.h"
 
 /********************************************************************************/
 /********************************************************************************/
@@ -30,7 +19,7 @@ class ESDatabase;
 /********************************************************************************/
 /********************************************************************************/
 
-class ESImageCache : public QObject
+class ESImageCache : public ESImageLoader
 {
 	friend class ESImage;
 
@@ -45,7 +34,7 @@ public:
 	void initializeFromDatabase();
 	bool isUpdating() const;
 	std::shared_ptr<ESImage> getImage(StringId pImagePath);
-	void stopAndCancelAllLoadings();
+	virtual void stopAndCancelAllLoadings() override;
 
 #ifdef QT_DEBUG
 	void printImageDebugInfo(const std::shared_ptr<ESImage>& pImage);
@@ -55,63 +44,28 @@ signals:
 	/********************************** SIGNALS ***********************************/
 
 	void updateFinished();
-	void imageCachingProgressUpdated(int pCachedCount, int pCachingCount);
 
-private:
+protected:
 	/******************************** ATTRIBUTES **********************************/
 
 	std::unordered_map<StringId, std::shared_ptr<ESImage>> mImages;
 	std::shared_mutex mImagesMutex;
 	QString mCacheFolderPath;
+	bool mIsUpdating;
 
-	class LoadingThreadTask
-	{
-#ifdef QT_DEBUG
-		friend void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage);
-#endif
-		
-	public:
-		using ProcessFunction = std::function<void(std::shared_ptr<ESImage>, std::atomic_int32_t&)>;
-
-		void init(ProcessFunction pProcessFct)
-		{
-			assert(!mProcessFct);
-			mProcessFct = std::move(pProcessFct);
-		}
-		void processImage(const std::shared_ptr<ESImage>& pImage);
-		void stop();
-
-#ifdef QT_DEBUG
-		void printImageDebugInfo(const QString& pTaskName, const std::shared_ptr<ESImage>& pImage);
-#endif
-		
-private:
-		std::mutex mQueueMutex;
-		QFuture<void> mLoadingThread;
-		std::deque<std::shared_ptr<ESImage>> mLoadingQueue;
-		ProcessFunction mProcessFct;
-		bool mStop = false;
-		std::atomic_int32_t mNumAsyncTaskStarted = 0;
-	};
-
-	std::map<QChar, std::shared_ptr<LoadingThreadTask>> mDriveLoadingTasks;
-	std::shared_mutex mDriveLoadingTasksMutex;
 	LoadingThreadTask mCacheLoadingTask; // Cache files are loaded in another thread to not be blocked by drive loading tasks
 
 	QFuture<void> mUnloadingUnusedThread;
-	std::atomic_bool mIsUpdating;
-	std::atomic_int mImagesCachingCount;
-	std::atomic_int mImagesCachedCount;
 
 	/********************************* METHODS ***********************************/
 
 	ESImageCache();
 	QByteArray getImageHash(const QString& pImagePath);
 	QString getCacheFilePath(const QString& pImagePath);
-	void queueImageLoading(const std::shared_ptr<ESImage>& pImage);
 	void unloadUnusedImages();
-	void imageCachingFinished();
 	void onDatabaseFoldersChanged();
 	void queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pImages);
+	virtual void queueImageLoading(const std::shared_ptr<ESImage>& pImage) override;
+	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) override;
 };
 

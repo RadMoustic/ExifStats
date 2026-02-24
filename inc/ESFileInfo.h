@@ -27,7 +27,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-enum ReadExifFileResult
+enum ReadExifFileResult: int16_t
 {
 	eNone = 1,
 	eSuccess = 0,
@@ -78,4 +78,6 @@ struct FileInfo
 	uint8_t mCameraModelIdx = std::numeric_limits<uint8_t>::max();
 	uint8_t mLensModelIdx = std::numeric_limits<uint8_t>::max();
 	ReadExifFileResult mReadResult = eNone;
+	QVector<uint16_t> mTagIndexes;
+	bool mTagsGenerated = false;
 };

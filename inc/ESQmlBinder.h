@@ -28,8 +28,12 @@
 #include "ESExifListFilter.h"
 #include "ESExifGeoLocationFilter.h"
 #include "ESExifPathFilter.h"
+#include "ESExifTagsFilter.h"
 #include "ESExifOrientationFilter.h"
 #include "ESFileInfo.h"
+#include "ESUtils.h"
+#include "ESImageCache.h"
+#include "ESImageTaggerManager.h"
 
 // External
 #include "exif.h"
@@ -64,6 +68,25 @@ class ESDatabase;
 	} \
 	public:
 
+#define B_QML_PROPERTY_GETSET(pName, pType, pGetterFct, pSetterFct) \
+	Q_PROPERTY(pType pName READ get##pName WRITE set##pName NOTIFY property##pName##Changed) \
+	Q_SIGNAL void property##pName##Changed(); \
+	pType get##pName() const \
+	{ \
+		return pGetterFct(); \
+	} \
+	void set##pName(pType p##pName) \
+	{ \
+		 \
+		if(pGetterFct() != p##pName) \
+		{ \
+			pSetterFct(p##pName); \
+			emit property##pName##Changed(); \
+			updateStats(false); \
+		} \
+	} \
+	public:
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -90,12 +113,23 @@ public:
 	Q_PROPERTY(QString MinTime READ getMinTime)
 	Q_PROPERTY(QString MaxTime READ getMaxTime)
 
+	ES_QML_PROPERTY(Tagging, bool)
+	ES_QML_PROPERTY(TaggingProgress, float)
+
+	ES_QML_PROPERTY(PauseCaching, bool, ESImageCache::getInstance().setPaused(mPauseCaching))
+#ifdef IMAGETAGGER_ENABLE
+	ES_QML_PROPERTY(PauseTagging, bool, ESImageTaggerManager::getInstance().setPaused(mPauseTagging))
+#else
+	ES_QML_PROPERTY(PauseTagging, bool)
+#endif // IMAGETAGGER_ENABLE
+
 	B_QML_PROPERTY(TimelineStep, mDateTimeStat.mCountComp.mStep, double)
 	B_QML_PROPERTY(FocalLengthFrom, m35mmFilter.mFilterFrom, int)
 	B_QML_PROPERTY(FocalLengthTo, m35mmFilter.mFilterTo, int)
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
+	B_QML_PROPERTY_GETSET(TagsInclusiveFilters, QStringList, mTagsFilter.getTagsInclusiveFilters, mTagsFilter.setTagsInclusiveFilters)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 
 	/********************************* METHODS ***********************************/
@@ -108,6 +142,7 @@ public:
 
 	// General
 	Q_INVOKABLE void refresh(bool pFullRefresh);
+	Q_INVOKABLE void retag();
 	Q_INVOKABLE void clear();
 	Q_INVOKABLE bool isCtrlPressed() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
@@ -167,6 +202,11 @@ public:
 	Q_INVOKABLE bool deleteFilters(QString pPresetName);
 	Q_INVOKABLE QStringList getFiltersPresets() const;
 
+	// Search tags
+	Q_INVOKABLE QStringList getActualSearchedTags() const;
+	Q_INVOKABLE bool isImageTaggerEnabled() const;
+	Q_INVOKABLE bool isTokenizerEnabled() const;
+
 signals:
 	/********************************** SIGNALS ***********************************/
 
@@ -198,6 +238,7 @@ private:
 	ExifFromToFilter<uint64_t, ExifStatCountDateTime>  mDateTimeFilter;
 	ExifGeoLocationFilter mGeoLocationFilter;
 	ESExifPathFilter mPathFilter;
+	ESExifTagsFilter mTagsFilter;
 	ESExifOrientationFilter mOrientationFilter;
 
 	std::vector<ExifStat*> mStats;
@@ -218,6 +259,7 @@ private:
 	void updateFiltersFromData();
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
+	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<typename K, typename V>& pMap)
