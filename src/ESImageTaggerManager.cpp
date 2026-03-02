@@ -67,8 +67,8 @@ void ESImageTaggerManager::initialize()
 	loadTaggersFromDirectory(mTaggerDirectoryPath);
 	updateAllTagLabels();
 
-	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageTaggerManager::onImageCacheLoadingProgress);
-	connect(&ESImageCache::getInstance(), &ESImageCache::updateFinished, this, &ESImageTaggerManager::onImageCacheUpdateFinished);
+	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageTaggerManager::onImageCacheLoadingProgress, Qt::QueuedConnection);
+	connect(&ESImageCache::getInstance(), &ESImageCache::updateFinished, this, &ESImageTaggerManager::onImageCacheUpdateFinished, Qt::QueuedConnection);
 
 	updateDatabaseMissingTags();
 }
@@ -263,14 +263,14 @@ void ESImageTaggerManager::updateAllTagLabels()
 	{
 		std::scoped_lock lLock(lDB.mFilesMutex);
 		std::unordered_map<QString, int> lTagLabelToNewIndex;
-		for (int i = 0; i < lDB.mAllTags.count(); ++i)
+		for (int i = 0; i < lDB.mAllTags.size(); ++i)
 		{
-			int lNewIndex = mAllTagLabels.indexOf(lDB.mAllTags[i]);
+			int lNewIndex = std::distance(mAllTagLabels.begin(), std::find(mAllTagLabels.begin(), mAllTagLabels.end(), lDB.mAllTags[i]));
 
 			if (lNewIndex < 0)
 			{
 				mAllTagLabels.push_back(lDB.mAllTags[i]);
-				lNewIndex = mAllTagLabels.size() - 1;
+				lNewIndex = int(mAllTagLabels.size()) - 1;
 			}
 
 			lTagLabelToNewIndex[lDB.mAllTags[i]] = lNewIndex;
@@ -348,13 +348,17 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 		else
 		{
 			QImage lImage(pImage->getImagePath().getString());
-			assert(!lImage.isNull());
-			QVector<uint16_t> lTags = generateImageTags(lImage);
+			QVector<uint16_t> lTags;
+			if(!lImage.isNull())
+				lTags = generateImageTags(lImage);
 			ESDatabase& lDB = ESDatabase::getInstance();
-			std::scoped_lock lLock(lDB.mFilesMutex);
-			FileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
-			lFileInfo.mTagIndexes = std::move(lTags);
-			lFileInfo.mTagsGenerated = true;
+			if(!lDB.getProcessing())
+			{
+				std::scoped_lock lLock(lDB.mFilesMutex);
+				FileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
+				lFileInfo.mTagIndexes = std::move(lTags);
+				lFileInfo.mTagsGenerated = true;
+			}
 			--pNumAsyncTaskStarted;
 			imageLoadingFinished();
 		}
@@ -365,7 +369,7 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 
 void ESImageTaggerManager::updateDatabaseMissingTags()
 {
-	if(ESImageCache::getInstance().isUpdating())
+	if(ESImageCache::getInstance().isUpdating() || ESImageCache::getInstance().isLoading())
 		return;
 	ESDatabase& lDB = ESDatabase::getInstance();
 	std::scoped_lock lLock(lDB.mFilesMutex);
@@ -374,7 +378,8 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 		if(!lFileInfo.second.mTagsGenerated)
 		{
 			std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first);
-			queueImageLoading(lImage);
+			if(lImage)
+				queueImageLoading(lImage);
 		}
 	}
 }

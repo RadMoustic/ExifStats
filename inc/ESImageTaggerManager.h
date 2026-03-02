@@ -54,7 +54,7 @@ private:
 	bool mEnabled;
 	QString mTaggerDirectoryPath;
 	std::vector<std::shared_ptr<ESImageTagger>> mTaggers;
-	QStringList mAllTagLabels;
+	std::vector<QString> mAllTagLabels;
 	std::unordered_map<ESImageTagger*, QVector<uint16_t>> mTaggerTagIndexesInAllLabels;
 	int mMaxSizeOfAllTaggerInputs;
 

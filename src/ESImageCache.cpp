@@ -76,7 +76,7 @@ void ESImageCache::initializeFromDatabase()
 		
 	queueImageCaching(lImagesToInitializeCacheFileCheck);
 
-	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESImageCache::onDatabaseFoldersChanged);
+	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESImageCache::onDatabaseFoldersChanged, Qt::QueuedConnection);
 }
 
 /********************************************************************************/

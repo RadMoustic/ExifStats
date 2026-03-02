@@ -21,9 +21,8 @@ ESExifTagsFilter::ESExifTagsFilter()
 		{
 			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json"));
 			onDatabaseTagsHaveChanged();
-		});
-
-		(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESExifTagsFilter::onDatabaseTagsHaveChanged);
+			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESExifTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
+		});			
 	}
 #endif // IMAGETAGGER_ENABLE
 }
@@ -171,13 +170,11 @@ QStringList ESExifTagsFilter::getActualSearchedTags() const
 #ifdef IMAGETAGGER_ENABLE
 void ESExifTagsFilter::onDatabaseTagsHaveChanged()
 {
-	if(!mEngine)
-		return;
 	std::scoped_lock lock(mDatabaseTagsEmbeddingCacheMutex);
 	ESDatabase& lDB = ESDatabase::getInstance();
 
 	mDatabaseTagsEmbeddingCache.clear();
-	QStringList lAllTags;
+	std::vector<QString> lAllTags;
 	lDB.getAllTags(lAllTags);
 	mDatabaseTagsEmbeddingCache.resize(lAllTags.size());
 	constexpr const int cNumThreads = 4;

@@ -91,7 +91,7 @@ void ESWindow::initializeQml()
 	setResizeMode(QQuickView::SizeRootObjectToView);
 
 	connect(engine(), &QQmlEngine::quit, this, &ESWindow::onQuit);
-	connect(engine(), &QQmlEngine::warnings, this, &ESWindow::onQmlWarnings);
+	connect(engine(), &QQmlEngine::warnings, this, &ESWindow::onQmlWarnings, Qt::QueuedConnection);
 	engine()->setOutputWarningsToStandardError(false);
 
 	qmlRegisterType<ESMapDotsQuickItem>("ExifStats", 1, 0, "ESMapDotsQuickItem");

@@ -34,7 +34,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
 
-	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress);
+	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress, Qt::QueuedConnection);
 
 	connect(this, &ESImageGridQuickItem::propertyFilteredFilesListChanged, this, 
 	[this]()
@@ -57,7 +57,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 		mDataHasChanged = true;
 		updateInternal();
-	});
+	}, Qt::QueuedConnection);
 
 	connect(&ESImageCache::getInstance(), &ESImageCache::updateFinished, this, 
 	[this]()

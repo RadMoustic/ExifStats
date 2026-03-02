@@ -68,6 +68,26 @@ public:
 		}
 	}
 
+	template<typename T>
+	void Serialize(std::vector<T>& pList)
+	{
+		if constexpr (READ)
+		{
+			qsizetype lNbItem = 0;
+			mDataStream >> lNbItem;
+			pList.clear();
+			pList.resize(lNbItem);
+			for (T& lItem : pList)
+				mDataStream >> lItem;
+		}
+		else
+		{
+			mDataStream << pList.size();
+			for (const T& lItem : pList)
+				mDataStream << lItem;
+		}
+	}
+
 	template<typename KEY, typename VALUE>
 	void Serialize(std::map<KEY, VALUE>& pMap)
 	{

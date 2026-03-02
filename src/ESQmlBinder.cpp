@@ -35,11 +35,11 @@ ESQmlBinder::ESQmlBinder()
 		updateStats(true);
 		updateFiltersFromData();
 		emit processedFoldersChanged();
-	});
+	}, Qt::QueuedConnection);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingProgressChanged, this, &ESQmlBinder::processingProgressChanged);
 #ifdef IMAGETAGGER_ENABLE
-	(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESQmlBinder::onTaggingProgress);
+	(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESQmlBinder::onTaggingProgress, Qt::QueuedConnection);
 #endif // IMAGETAGGER_ENABLE
 
 	mStats.push_back(&m35mmStat);

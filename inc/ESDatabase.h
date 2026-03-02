@@ -70,8 +70,8 @@ public:
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
 
-	void setAllTags(const QVector<QString>& pAllTags);
-	void getAllTags(QStringList& pOutput);
+	void setAllTags(const std::vector<QString>& pAllTags);
+	void getAllTags(std::vector<QString>& pOutput);
 	QString getTagLabel(uint16_t pTagIndex) const;
 	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
 
@@ -93,7 +93,7 @@ private:
 
 	QVector<QString> mAllLensModels;
 	QVector<QString> mAllCameraModels;
-	QVector<QString> mAllTags;
+	std::vector<QString> mAllTags;
 
 	/********************************* METHODS ***********************************/
 

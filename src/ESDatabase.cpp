@@ -466,7 +466,7 @@ const QVector<QString>& ESDatabase::getAllCameraModels() const
 
 /********************************************************************************/
 
-void ESDatabase::getAllTags(QStringList& pOutput)
+void ESDatabase::getAllTags(std::vector<QString>& pOutput)
 {
 	std::scoped_lock lock(mFilesMutex);
 	pOutput = mAllTags;
@@ -474,10 +474,10 @@ void ESDatabase::getAllTags(QStringList& pOutput)
 
 /********************************************************************************/
 
-void ESDatabase::setAllTags(const QVector<QString>& pAllTags)
+void ESDatabase::setAllTags(const std::vector<QString>& pAllTags)
 {
 	mAllTags = pAllTags;
-	void tagsChanged();
+	emit tagsChanged();
 }
 
 /********************************************************************************/
