@@ -67,6 +67,7 @@ ESImage::ESImage(StringId pImagePath, const QString pImageCachePath, const Usefu
 	, mCancelLoading(false)
 	, mCacheFileChecked(false)
 	, mHasCacheFile(false)
+	, mCurrentSearchSimilarity(0.f)
 {
 	if (pImageExif)
 	{

@@ -33,6 +33,7 @@ public:
 
 	void initializeFromDatabase();
 	bool isUpdating() const;
+	void resetSearchSimilarityScores();
 	std::shared_ptr<ESImage> getImage(StringId pImagePath);
 	virtual void stopAndCancelAllLoadings() override;
 

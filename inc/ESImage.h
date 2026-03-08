@@ -23,6 +23,10 @@ class ESImage : public QObject, public std::enable_shared_from_this<ESImage>
 
 	Q_OBJECT
 public:
+	/******************************** ATTRIBUTES **********************************/
+
+	float mCurrentSearchSimilarity;
+
 	/********************************* METHODS ***********************************/
 
 	bool isLoading() const;

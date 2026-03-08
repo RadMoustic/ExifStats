@@ -2,6 +2,7 @@
 
 // ES
 #include "ESDatabase.h"
+#include "ESImageCache.h"
 
 // Qt
 #include <QtConcurrent>
@@ -10,6 +11,7 @@
 
 ESExifTagsFilter::ESExifTagsFilter()
 	: mTokenizerEnabled(false)
+	, mMinSimilarityScore(0.3f)
 {
 	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
 
@@ -31,14 +33,16 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /*virtual*/ void ESExifTagsFilter::reset() /*override*/
 {
-	mTagsInclusiveFilters.clear();
+	mSearchString = "";
+	mMinSimilarityScore = 0.3f;
+	ESImageCache::getInstance().resetSearchSimilarityScores();
 }
 
 /********************************************************************************/
 
 /*virtual*/ bool ESExifTagsFilter::isFileFilteredOut(const FileInfo& pFile) const /*override*/
 {
-	if (mTagsInclusiveFilters.isEmpty())
+	if (mSearchString.isEmpty())
 		return false;
 
 #ifdef IMAGETAGGER_ENABLE
@@ -47,8 +51,12 @@ ESExifTagsFilter::ESExifTagsFilter()
 		if(pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbedding.size())
 		{
 			float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
-			return lSimilarityScore < mEngine->getMinSimilarity();
+			ESImageCache::getInstance().getImage(pFile.mFilePath)->mCurrentSearchSimilarity = lSimilarityScore;
+			return lSimilarityScore < mMinSimilarityScore;
 		}
+
+		if(mSearchTagsEmbeddings.mEmbedding.size() > 0)
+			return true;
 
 		for (const std::unordered_set<uint16_t>& lSearchTags : mSearchTagIndices)
 		{
@@ -71,7 +79,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 #endif // IMAGETAGGER_ENABLE
 	{
 		QString lTags = ESDatabase::getInstance().getTagsLabels(pFile.mTagIndexes).join(" ");
-		for (const QString& lPathPart : mTagsInclusiveFilters)
+		for (const QString& lPathPart : mSearchString.split(" ", Qt::SkipEmptyParts))
 		{
 			if (lTags.contains(lPathPart, Qt::CaseInsensitive))
 				return false;
@@ -86,7 +94,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 /*virtual*/ QJsonObject ESExifTagsFilter::serialize() const /*override*/
 {
 	QJsonObject lResult;
-	lResult["TagsInclusiveFilters"] = QJsonArray::fromStringList(mTagsInclusiveFilters);
+	lResult["SearchString"] = mSearchString;
 	return lResult;
 }
 
@@ -94,69 +102,73 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /*virtual*/ bool ESExifTagsFilter::deserialize(const QJsonObject& pJson) /*override*/
 {
-	VALIDATE_JSONVALUE(pJson, "TagsInclusiveFilters", mTagsInclusiveFilters);
+	VALIDATE_JSONVALUE(pJson, "SearchString", mSearchString);
 
 	return true;
 }
 
 /********************************************************************************/
 
-QStringList ESExifTagsFilter::getTagsInclusiveFilters() const
+QString ESExifTagsFilter::getSearchString() const
 {
-	return mTagsInclusiveFilters;
+	return mSearchString;
 }
 
 /********************************************************************************/
 
-void ESExifTagsFilter::setTagsInclusiveFilters(const QStringList& pTagsInclusiveFilters)
+void ESExifTagsFilter::setSearchString(const QString& pSearchString)
 {
 #ifdef IMAGETAGGER_ENABLE
 	if(!mDatabaseTagsEmbeddingCacheMutex.tryLock())
 		return;
 #endif // IMAGETAGGER_ENABLE
 
-	mTagsInclusiveFilters = pTagsInclusiveFilters;
+	mSearchString = pSearchString;
 
 #ifdef IMAGETAGGER_ENABLE
 	if (mEngine)
 	{
 		mSearchTagIndices.clear();
 		mSearchTags.clear();
+		ESImageCache::getInstance().resetSearchSimilarityScores();
 
-		for (const QString& lSearchTag : mTagsInclusiveFilters)
+		if(mDatabaseTagsEmbeddingCache.size() > 0)
 		{
-			mSearchTagIndices.emplace_back();
-
-			std::vector<std::pair<float, uint16_t>> lScores;
-			ESImageTagsSearchEngine::TextEncodedResult lSearchTagEmbedding = mEngine->encode(lSearchTag);
-			for (uint16_t i = 0, e = uint16_t(mDatabaseTagsEmbeddingCache.size()); i < e ; ++i)
+			for (const QString& lSearchTag : mSearchString.split(" ", Qt::SkipEmptyParts))
 			{
-				const ESImageTagsSearchEngine::TextEncodedResult& lDatabaseTagEmbedding = mDatabaseTagsEmbeddingCache[i];
-				float lSimilarityScore = lSearchTagEmbedding.computeSimilarityScore(lDatabaseTagEmbedding);
-				lScores.emplace_back(lSimilarityScore, i);
-			}
+				mSearchTagIndices.emplace_back();
 
-			std::sort(lScores.begin(), lScores.end(),
-				[](const std::pair<float, uint16_t>& a, const std::pair<float, uint16_t>& b)
+				std::vector<std::pair<float, uint16_t>> lScores;
+				ESImageTagsSearchEngine::TextEncodedResult lSearchTagEmbedding = mEngine->encode(lSearchTag);
+				for (uint16_t i = 0, e = uint16_t(mDatabaseTagsEmbeddingCache.size()); i < e ; ++i)
 				{
-					return a.first > b.first;
-				});
+					const ESImageTagsSearchEngine::TextEncodedResult& lDatabaseTagEmbedding = mDatabaseTagsEmbeddingCache[i];
+					float lSimilarityScore = lSearchTagEmbedding.computeSimilarityScore(lDatabaseTagEmbedding);
+					lScores.emplace_back(lSimilarityScore, i);
+				}
 
-			for (const std::pair<float, uint16_t>& lScore : lScores)
-			{
-				if (lScore.first > 0.6)
+				std::sort(lScores.begin(), lScores.end(),
+					[](const std::pair<float, uint16_t>& a, const std::pair<float, uint16_t>& b)
+					{
+						return a.first > b.first;
+					});
+
+				for (const std::pair<float, uint16_t>& lScore : lScores)
 				{
-					mSearchTagIndices.back().insert(lScore.second);
-					QString lTagLabel = ESDatabase::getInstance().getTagLabel(lScore.second);
-					mSearchTags << lTagLabel;
-					qDebug() << "Tag Score: " << lTagLabel << "=" << lScore.first;
-					if (mSearchTagIndices.back().size() >= 3)
-						break;
+					if (lScore.first > 0.6)
+					{
+						mSearchTagIndices.back().insert(lScore.second);
+						QString lTagLabel = ESDatabase::getInstance().getTagLabel(lScore.second);
+						mSearchTags << lTagLabel;
+						qDebug() << "Tag Score: " << lTagLabel << "=" << lScore.first;
+						if (mSearchTagIndices.back().size() >= 3)
+							break;
+					}
 				}
 			}
 		}
 
-		mSearchTagsEmbeddings = mEngine->encode(mTagsInclusiveFilters.join(" "));
+		mSearchTagsEmbeddings = mEngine->encode(mSearchString);
 
 		mDatabaseTagsEmbeddingCacheMutex.unlock();
 	}
@@ -165,10 +177,10 @@ void ESExifTagsFilter::setTagsInclusiveFilters(const QStringList& pTagsInclusive
 
 /********************************************************************************/
 
-QStringList ESExifTagsFilter::getActualSearchedTags() const
+QStringList ESExifTagsFilter::getTagsFound() const
 {
 #ifdef IMAGETAGGER_ENABLE
-	return mEngine ? mSearchTags : mTagsInclusiveFilters;
+	return mEngine ? mSearchTags : QStringList();
 #else
 	return mTagsInclusiveFilters;
 #endif // IMAGETAGGER_ENABLE

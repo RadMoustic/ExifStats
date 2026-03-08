@@ -140,6 +140,15 @@ bool ESImageCache::isUpdating() const
 
 /********************************************************************************/
 
+void ESImageCache::resetSearchSimilarityScores()
+{
+	std::shared_lock lock(mImagesMutex);
+	for(auto&& lImage: mImages)
+		lImage.second->mCurrentSearchSimilarity = 0.f;
+}
+
+/********************************************************************************/
+
 std::shared_ptr<ESImage> ESImageCache::getImage(StringId pImagePath)
 {
 	std::shared_lock lock(mImagesMutex);

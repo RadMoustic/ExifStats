@@ -539,8 +539,9 @@ void ESQmlBinder::resetFilters()
 	updateFiltersFromData();
 
 	emit propertyPathInclusiveFiltersChanged();
-	emit propertyTagsInclusiveFiltersChanged();
+	emit propertyTagsSearchStringChanged();
 	emit propertyOrientationFilterModeChanged();
+	emit propertyTagsMinSimilarityScoreChanged();
 }
 
 /********************************************************************************/
@@ -693,9 +694,9 @@ QString ESQmlBinder::getPresetFilePathPath(const QString& pPresetName) const
 
 /********************************************************************************/
 
-QStringList ESQmlBinder::getActualSearchedTags() const
+QStringList ESQmlBinder::getTagsFound() const
 {
-	return mTagsFilter.getActualSearchedTags();
+	return mTagsFilter.getTagsFound();
 }
 
 /********************************************************************************/

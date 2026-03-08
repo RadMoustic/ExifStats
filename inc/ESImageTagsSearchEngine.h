@@ -44,8 +44,6 @@ public:
 
     ESImageTagsSearchEngine::TextEncodedResult encode(const QString& pText);
 
-	float getMinSimilarity() const;
-
 private:
     /******************************** ATTRIBUTES **********************************/
 
@@ -55,7 +53,6 @@ private:
 
     bool mEnabled = false;
 	bool mId32Bit = false;
-	float mMinSimilarity = 0.2f;
 	bool mHasTokenTypeIds = false;
 	std::string mInputIdsName;
     std::string mOutputEmbeddingName;

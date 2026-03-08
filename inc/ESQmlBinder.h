@@ -129,7 +129,8 @@ public:
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
-	B_QML_PROPERTY_GETSET(TagsInclusiveFilters, QStringList, mTagsFilter.getTagsInclusiveFilters, mTagsFilter.setTagsInclusiveFilters)
+	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
+	B_QML_PROPERTY(TagsMinSimilarityScore, mTagsFilter.mMinSimilarityScore, float)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 
 	/********************************* METHODS ***********************************/
@@ -203,7 +204,7 @@ public:
 	Q_INVOKABLE QStringList getFiltersPresets() const;
 
 	// Search tags
-	Q_INVOKABLE QStringList getActualSearchedTags() const;
+	Q_INVOKABLE QStringList getTagsFound() const;
 	Q_INVOKABLE bool isImageTaggerEnabled() const;
 	Q_INVOKABLE bool isTokenizerEnabled() const;
 

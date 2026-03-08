@@ -22,6 +22,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	, mImageHeight(250)
 	, mContentHeight(100)
 	, mYOffset(0.f)
+	, mSortingMode(int(eSortByDatetime))
 	, mLoading(false)
 	, mLoadingProgress(0.f)
 	, mNbRows(0)
@@ -34,7 +35,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
 
-	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress, Qt::QueuedConnection);
+	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress, Qt::DirectConnection);
 
 	connect(this, &ESImageGridQuickItem::propertyFilteredFilesListChanged, this, 
 	[this]()
@@ -259,8 +260,11 @@ void ESImageGridQuickItem::onImageCachingProgress(int pLoadedCount, int pLoading
 void ESImageGridQuickItem::sort()
 {
 	std::sort(mImages.begin(), mImages.end(),
-	[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
+	[&](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
 	{
-		return a->getExif().mDateTime < b->getExif().mDateTime;
+		if(mSortingMode == int(eSortBySimilarityScore) && (a->mCurrentSearchSimilarity > 0 || b->mCurrentSearchSimilarity > 0))
+			return a->mCurrentSearchSimilarity > b->mCurrentSearchSimilarity;
+		else
+			return a->getExif().mDateTime < b->getExif().mDateTime;
 	});
 }

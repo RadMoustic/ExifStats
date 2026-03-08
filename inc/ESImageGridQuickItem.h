@@ -22,6 +22,14 @@ class ESImageGridQuickItem : public QQuickPaintedItem
 	Q_OBJECT
 	QML_ELEMENT
 public:
+	/********************************** TYPES *************************************/
+
+	enum SortingMode
+	{
+		eSortByDatetime = 0,
+		eSortBySimilarityScore,
+	};
+
 	/******************************** ATTRIBUTES **********************************/
 
 	
@@ -35,6 +43,7 @@ public:
 	ES_QML_PROPERTY(ImageWidth, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(ImageHeight, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(YOffset, float, mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(Loading, bool)
 	ES_QML_PROPERTY(LoadingProgress, float)
 
@@ -48,7 +57,7 @@ signals:
 	/********************************** SIGNALS ***********************************/
 
 private:
-	/********************************** TYPES *************************************/
+	
 
 	
 	/******************************** ATTRIBUTES **********************************/

@@ -369,7 +369,7 @@ Item
 			
 			RowLayout
 			{
-				id: tagsInclusiveFilters
+				id: tagsSearchStringFilter
 				
 				SplitView.fillWidth: true
 				SplitView.preferredHeight: parent.height / parent.children.length
@@ -383,33 +383,62 @@ Item
 
 					onReleased:
 					{
-						MainQmlBinder.TagsInclusiveFilters = [];
+						MainQmlBinder.TagsSearchString = "";
 						actualSearchedTags.text = ""
 					}
 				}
 				
 				Text
 				{
-					text: "Tags contain: "
+					text: "Search: "
 					Layout.fillWidth: false
 				}
-
-				TextInput
+				
+				Rectangle
 				{
-					x: 0
 					Layout.fillWidth: true
-					text: MainQmlBinder.TagsInclusiveFilters.join(" ")
-					onEditingFinished:
+					x: 0
+					border.width: 2
+					border.color: searchText.focus ? "#AAAAFF" : "#CCCCCC"
+					radius: 4
+					implicitHeight: 30
+					
+					TextInput
 					{
-						MainQmlBinder.TagsInclusiveFilters = text.split(" ");
-						actualSearchedTags.text = MainQmlBinder.getActualSearchedTags().join(", ");
+						id: searchText
+						anchors.fill: parent
+						text: MainQmlBinder.TagsSearchString
+						verticalAlignment: TextInput.AlignVCenter
+						anchors.margins: 5
+
+						onEditingFinished:
+						{
+							MainQmlBinder.TagsSearchString = text.trim();
+							actualSearchedTags.text = MainQmlBinder.getTagsFound().join(", ");
+						}
+					}
+				}
+				
+				Slider
+				{
+					id: tagsMinSimilarityScore
+					from: 15
+					to: 35
+					value: MainQmlBinder.TagsMinSimilarityScore * 100
+					stepSize: 1
+					live: false
+					width: 100
+					
+					onValueChanged:
+					{
+						MainQmlBinder.TagsMinSimilarityScore = value / 100;
 					}
 				}
 			}
 			
 			RowLayout
 			{
-				visible: MainQmlBinder.isTokenizerEnabled()
+				visible: MainQmlBinder.isTokenizerEnabled() && actualSearchedTags.text !== ""
 				Text
 				{
 					id: actualSearchedTags
@@ -441,18 +470,35 @@ Item
 				
 				Text
 				{
-					text: "Path contains: "
+					text: "Path: "
 					Layout.fillWidth: false
 				}
 
-				TextInput
+				Rectangle
 				{
-					x: 0
 					Layout.fillWidth: true
-					text: MainQmlBinder.PathInclusiveFilters.join(" ")
-					onEditingFinished:
+					x: 0
+					border.width: 2
+					border.color: searchPathText.focus ? "#AAAAFF" : "#CCCCCC"
+					radius: 4
+					implicitHeight: 30
+					
+					TextInput
 					{
-						MainQmlBinder.PathInclusiveFilters = text.split(" ");
+						id: searchPathText
+						anchors.fill: parent
+						text: MainQmlBinder.PathInclusiveFilters.length > 0 ? MainQmlBinder.PathInclusiveFilters.join(" ") : ""
+						verticalAlignment: TextInput.AlignVCenter
+						anchors.margins: 5
+						
+						onEditingFinished:
+						{
+							var trimmedText = text.trim();
+							if(trimmedText === "")
+								MainQmlBinder.PathInclusiveFilters = [];
+							else
+								MainQmlBinder.PathInclusiveFilters = text.split(" ");
+						}
 					}
 				}
 			}
@@ -1407,6 +1453,21 @@ Item
 						value: imageGrid.mLoadingProgress
 						opacity: imageGrid.mLoading ? 1.0 : 0.0
 						height: 15
+					}
+					
+					RegularButton
+					{
+						id: sortMode
+						text: imageGrid.mSortingMode == 0 ? "Date Time" : "Similarity Score"
+						anchors.right: parent.right
+						anchors.margins: 10
+						
+						implicitHeight: 30
+
+						onReleased:
+						{
+							imageGrid.mSortingMode = (imageGrid.mSortingMode + 1) % 2;
+						}
 					}
 				}
 			}

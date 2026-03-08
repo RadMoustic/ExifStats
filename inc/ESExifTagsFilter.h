@@ -29,6 +29,10 @@ class ESExifTagsFilter : public QObject, public ExifFilter
 	Q_OBJECT;
 
 public:
+	/******************************** ATTRIBUTES **********************************/
+
+	float mMinSimilarityScore;
+
 	/********************************* METHODS ***********************************/
 
 	ESExifTagsFilter();
@@ -38,9 +42,9 @@ public:
 	virtual QJsonObject serialize() const override;
 	virtual bool deserialize(const QJsonObject& pJson) override;
 
-	QStringList getActualSearchedTags() const;
-	QStringList getTagsInclusiveFilters() const;
-	void setTagsInclusiveFilters(const QStringList& pTagsInclusiveFilters);
+	QStringList getTagsFound() const;
+	QString getSearchString() const;
+	void setSearchString(const QString& pSearchString);
 
 #ifdef IMAGETAGGER_ENABLE
 	bool isTokenizerEnabled() const;
@@ -49,7 +53,7 @@ public:
 private:
 	/******************************** ATTRIBUTES **********************************/
 
-	QStringList mTagsInclusiveFilters;
+	QString mSearchString;
 
 #ifdef IMAGETAGGER_ENABLE
 	QString mTokenizerDirectoryPath;

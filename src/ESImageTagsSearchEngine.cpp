@@ -57,7 +57,6 @@ void ESImageTagsSearchEngine::loadConfigFile(const QString& pConfigFile)
 	QJsonObject lRoot = lJsonDoc.object();
 
 	mId32Bit = lRoot.value("idFormat").toString() == "int32";
-	mMinSimilarity = lRoot.value("minSimilarity").toDouble(0.2);
 	mHasTokenTypeIds = lRoot.value("hasTokenTypeIds").toBool(false);
 	mInputIdsName = lRoot.value("inputIdsName").toString("").toStdString();
 	mOutputEmbeddingName = lRoot.value("outputEmbeddingName").toString("").toStdString();
@@ -80,13 +79,6 @@ ESImageTagsSearchEngine::TextEncodedResult ESImageTagsSearchEngine::encode(const
 	}
 
 	return lResult;
-}
-
-/********************************************************************************/
-
-float ESImageTagsSearchEngine::getMinSimilarity() const
-{
-	return mMinSimilarity;
 }
 
 /********************************************************************************/
