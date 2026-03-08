@@ -133,7 +133,7 @@ const QImage& ESImage::getImage() const
 
 void ESImage::loadImage()
 {
-	ESImageCache::getInstance().queueImageLoading(std::const_pointer_cast<ESImage>(shared_from_this()));
+	ESImageCache::getInstance().queueImageLoading(std::const_pointer_cast<ESImage>(shared_from_this()), true);
 }
 
 /********************************************************************************/
@@ -163,8 +163,8 @@ bool ESImage::hasCacheFile() const
 {
 	if(!mCacheFileChecked)
 	{
-		mCacheFileChecked = true;
 		mHasCacheFile = QFile::exists(mImageCachePath);
+		mCacheFileChecked = true;
 	}
 	
 	return mHasCacheFile;
@@ -210,6 +210,8 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 	if (mCancelLoading)
 	{
 		emit imageLoadedOrCanceled(this);
+		if (!lReadCache)
+			ESImageCache::getInstance().imageLoadingFinished();
 		return;
 	}
 
@@ -220,6 +222,8 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 		{
 			mIsLoaded = true;
 			emit imageLoadedOrCanceled(this);
+			if (!lReadCache)
+				ESImageCache::getInstance().imageLoadingFinished();
 			return;
 		}
 		mImageFileData = lImageFile.readAll();
@@ -227,6 +231,8 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 		{
 			mImageFileData.clear();
 			mImageFileData.squeeze();
+			if (!lReadCache)
+				ESImageCache::getInstance().imageLoadingFinished();
 			return;
 		}
 

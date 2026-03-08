@@ -48,8 +48,8 @@ private:
 	/******************************** ATTRIBUTES **********************************/
 
 	mutable qint64 mLastUsed;
-	mutable bool mCacheFileChecked;
-	mutable bool mHasCacheFile;
+	mutable std::atomic_bool mCacheFileChecked;
+	mutable std::atomic_bool mHasCacheFile;
 	mutable QChar mDriveLetter;
 	StringId mImagePath;
 	QString mImageCachePath;

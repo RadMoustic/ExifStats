@@ -67,6 +67,7 @@ void ESImageTaggerManager::initialize()
 	loadTaggersFromDirectory(mTaggerDirectoryPath);
 	updateAllTagLabels();
 
+	connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESImageTaggerManager::onDatabaseProcessingChanged, Qt::QueuedConnection);
 	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageTaggerManager::onImageCacheLoadingProgress, Qt::QueuedConnection);
 	connect(&ESImageCache::getInstance(), &ESImageCache::updateFinished, this, &ESImageTaggerManager::onImageCacheUpdateFinished, Qt::QueuedConnection);
 
@@ -95,7 +96,7 @@ void ESImageTaggerManager::retag()
 		for (auto&& lFileInfo : lDB.mFiles)
 		{
 			std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first);
-			queueImageLoading(lImage);
+			queueImageLoading(lImage, false);
 		}
 	}
 }
@@ -364,7 +365,7 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 		if(mPaused)
 		{
 			--pNumAsyncTaskStarted;
-			queueImageLoading(pImage);
+			queueImageLoading(pImage, false);
 		}
 		else
 		{
@@ -397,14 +398,9 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 	ESDatabase& lDB = ESDatabase::getInstance();
 	std::scoped_lock lLock(lDB.mFilesMutex);
 	for(auto&& lFileInfo : lDB.mFiles)
-	{
 		if(!lFileInfo.second.mTagsGenerated)
-		{
-			std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first);
-			if(lImage)
-				queueImageLoading(lImage);
-		}
-	}
+			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first))
+				queueImageLoading(lImage, false);
 }
 
 /********************************************************************************/
@@ -426,6 +422,14 @@ void ESImageTaggerManager::onImageCacheLoadingProgress(int pCachedCount, int pCa
 void ESImageTaggerManager::onImageCacheUpdateFinished()
 {
 	updateDatabaseMissingTags();
+}
+
+/********************************************************************************/
+
+void ESImageTaggerManager::onDatabaseProcessingChanged()
+{
+	if (ESDatabase::getInstance().getProcessing())
+		stopAndCancelAllLoadings();
 }
 
 #endif // IMAGETAGGER_ENABLE

@@ -65,6 +65,7 @@ private:
 	void addTagger(const QString& pTaggerFilePath);
 	void onImageCacheLoadingProgress(int pCachedCount, int pCachingCount);
 	void onImageCacheUpdateFinished();
+	void onDatabaseProcessingChanged();
 	void updateAllTagLabels();
 	void convertTagsToAllTagIndexes(std::vector<uint16_t>& pTaggerTags, ESImageTagger* pTagger);
 	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) override;

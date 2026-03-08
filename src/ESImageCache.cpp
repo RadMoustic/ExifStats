@@ -127,7 +127,7 @@ void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pIma
 	for (std::shared_ptr<ESImage>& lImage : pImages)
 	{
 		if (!lImage->hasCacheFile()) // Slow so initialize that too
-			queueImageLoading(lImage);
+			queueImageLoading(lImage, true);
 	}
 }
 
@@ -174,7 +174,7 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 
 /********************************************************************************/
 
-/*virtual*/ void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage) /*override*/
+/*virtual*/ void ESImageCache::queueImageLoading(const std::shared_ptr<ESImage>& pImage, bool pUseCacheDriveQueueIfAvailable) /*override*/
 {
 	if (pImage->isLoading() || pImage->isLoaded())
 		return;
@@ -189,7 +189,7 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 	}
 	else
 	{
-		ESImageLoader::queueImageLoading(pImage);
+		ESImageLoader::queueImageLoading(pImage, pUseCacheDriveQueueIfAvailable);
 	}
 }
 

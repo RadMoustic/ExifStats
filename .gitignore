@@ -1,3 +1,4 @@
 User.Setup.bat
 generated/
 CMakeLists.txt.user
+inc/version.h

@@ -90,7 +90,7 @@ protected:
 
 	ESImageLoader();
 
-	virtual void queueImageLoading(const std::shared_ptr<ESImage>& pImage);
+	virtual void queueImageLoading(const std::shared_ptr<ESImage>& pImage, bool pUseCacheDriveQueueIfAvailable);
 	virtual void imageLoadingFinished();
 	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) = 0;
 };

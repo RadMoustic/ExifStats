@@ -14,7 +14,7 @@ ESImageLoader::ESImageLoader()
 
 bool ESImageLoader::isLoading() const
 {
-	return mImagesLoadingCount == mImagesLoadedCount;
+	return mImagesLoadingCount != mImagesLoadedCount;
 }
 
 /********************************************************************************/
@@ -33,7 +33,7 @@ void ESImageLoader::setPaused(bool pPaused)
 
 /********************************************************************************/
 
-/*virtual*/ void ESImageLoader::queueImageLoading(const std::shared_ptr<ESImage>& pImage)
+/*virtual*/ void ESImageLoader::queueImageLoading(const std::shared_ptr<ESImage>& pImage, bool pUseCacheDriveQueueIfAvailable)
 {
 	if(pImage->getImagePath().getString().isEmpty())
 		return;
@@ -42,7 +42,7 @@ void ESImageLoader::setPaused(bool pPaused)
 
 	emit imageLoadingProgress(mImagesLoadedCount, mImagesLoadingCount);
 	
-	QChar lDriveLetter = pImage->getDriveLetter();
+	QChar lDriveLetter = pUseCacheDriveQueueIfAvailable ? pImage->getDriveLetter() : pImage->getImagePath().getString()[0];
 
 	std::shared_ptr<LoadingThreadTask> driveLoadingTask;
 	mDriveLoadingTasksMutex.lock_shared();
