@@ -43,7 +43,7 @@ public:
 	void initialize();
 	void retag();
 
-	QVector<uint16_t> generateImageTags(const QImage& pImage);
+	void processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, std::vector<float>& pEmbeddingsOut);
 	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
 
 	void updateDatabaseMissingTags();
@@ -55,7 +55,7 @@ private:
 	QString mTaggerDirectoryPath;
 	std::vector<std::shared_ptr<ESImageTagger>> mTaggers;
 	std::vector<QString> mAllTagLabels;
-	std::unordered_map<ESImageTagger*, QVector<uint16_t>> mTaggerTagIndexesInAllLabels;
+	std::unordered_map<ESImageTagger*, std::vector<uint16_t>> mTaggerTagIndexesInAllLabels;
 	int mMaxSizeOfAllTaggerInputs;
 
 	/********************************* METHODS ***********************************/
@@ -66,7 +66,7 @@ private:
 	void onImageCacheLoadingProgress(int pCachedCount, int pCachingCount);
 	void onImageCacheUpdateFinished();
 	void updateAllTagLabels();
-	void convertTagsToAllTagIndexes(QVector<uint16_t>& pTaggerTags, ESImageTagger* pTagger);
+	void convertTagsToAllTagIndexes(std::vector<uint16_t>& pTaggerTags, ESImageTagger* pTagger);
 	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) override;
 };
 

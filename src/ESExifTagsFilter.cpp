@@ -19,7 +19,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 		mTokenizerEnabled = true;
 		QtConcurrent::run([this]()
 		{
-			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json"));
+			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
 			onDatabaseTagsHaveChanged();
 			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESExifTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
 		});			
@@ -44,6 +44,12 @@ ESExifTagsFilter::ESExifTagsFilter()
 #ifdef IMAGETAGGER_ENABLE
 	if(mEngine)
 	{
+		if(pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbedding.size())
+		{
+			float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
+			return lSimilarityScore < mEngine->getMinSimilarity();
+		}
+
 		for (const std::unordered_set<uint16_t>& lSearchTags : mSearchTagIndices)
 		{
 			bool lHasAtLeastOneSearchTag = false;
@@ -149,6 +155,9 @@ void ESExifTagsFilter::setTagsInclusiveFilters(const QStringList& pTagsInclusive
 				}
 			}
 		}
+
+		mSearchTagsEmbeddings = mEngine->encode(mTagsInclusiveFilters.join(" "));
+
 		mDatabaseTagsEmbeddingCacheMutex.unlock();
 	}
 #endif // IMAGETAGGER_ENABLE

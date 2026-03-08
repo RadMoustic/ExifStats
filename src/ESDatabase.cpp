@@ -21,7 +21,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 6;
+constexpr uint DATABASE_VERSION = 7;
 
 /********************************************************************************/
 
@@ -54,6 +54,7 @@ void ESDatabase::clear()
 	mFolders.clear();
 	mAllLensModels.clear();
 	mAllCameraModels.clear();
+	mAllTags.clear();
 	mProcessedFilesCounter = 0;
 	ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors.clear();
 
@@ -333,6 +334,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			{
 				pSerializer.Serialize(pFileInfo.mTagsGenerated);
 				pSerializer.Serialize(pFileInfo.mTagIndexes);
+				if (lDatabaseVersion >= 7)
+					pSerializer.Serialize(pFileInfo.mEmbeddings);
 			}
 
 			if constexpr (pSerializer.msIsReading)
@@ -482,7 +485,7 @@ void ESDatabase::setAllTags(const std::vector<QString>& pAllTags)
 
 /********************************************************************************/
 
-QStringList ESDatabase::getTagsLabels(const QVector<uint16_t>& pTags)
+QStringList ESDatabase::getTagsLabels(const std::vector<uint16_t>& pTags)
 {
 	std::scoped_lock lock(mFilesMutex);
 	QStringList lResult;

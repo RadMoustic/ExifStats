@@ -32,8 +32,9 @@ public:
 
     enum FormatType : int
     {
-        ImageNet = 0,
-        YOLO = 1
+		Classification = 0, // Assigning class labels to the entire image, with confidence scores
+		ObjectDetection = 1, // Detection of objects in the image, with bounding boxes and class labels
+		Embedding = 2, // Vectors of features extracted from the image, used for similarity search
     };
 
     struct Format
@@ -45,44 +46,54 @@ public:
 		QVector3D mMean = { 0.0f, 0.0f, 0.0f };
 		QVector3D mStdDev = { 1.0f, 1.0f, 1.0f };
 		bool mKeepAspectRatio = false;
-		QStringList mLabels;
-        int mOutputSize = 0;
-		float mScoreThreshold = 0.f;
-		int mTopScoreCount = 0;
-
-        bool loadLabels(const QString& pFilePath);
-        virtual QVector<uint16_t> getTagsFromScores(float* pScores);
-
+	
         virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath);
     };
 
-    struct FormatYolo : public Format
+	struct FormatClassification : public Format
+    {
+        QStringList mLabels;
+        float mScoreThreshold = 0.f;
+        int mTopScoreCount = 0;
+
+        bool loadLabels(const QString& pFilePath);
+        virtual std::vector<uint16_t> getTagsFromScores(const std::vector<float>& pScores);
+        QStringList getTagsLabels(const std::vector<uint16_t>& pTags);
+
+        virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath) override;
+    };
+
+    struct FormatObjectDetection : public FormatClassification
     {
         int mOutputRows;
 		int mOutputCols;
 
         void setCocoLabels();
 
-        virtual QVector<uint16_t> getTagsFromScores(float* pScores) override;
+        virtual std::vector<uint16_t> getTagsFromScores(const std::vector<float>& pScores) override;
 
-        virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath);
+        virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath) override;
+    };
+
+    struct FormatEmbedding : public Format
+    {
+
     };
 
     /********************************* METHODS ***********************************/
 
     static std::shared_ptr<Format> CreateFormatFromType(FormatType pType);
 
-    static std::shared_ptr<Format> CreateResNetFormat();
-    static std::shared_ptr<Format> CreatePlace365Format();
-    static std::shared_ptr<Format> CreateConvNextFormat();
-    static std::shared_ptr<Format> CreateYoloFormat();
+    static std::shared_ptr<FormatClassification> CreateResNetFormat();
+    static std::shared_ptr<FormatClassification> CreatePlace365Format();
+    static std::shared_ptr<FormatClassification> CreateConvNextFormat();
+    static std::shared_ptr<FormatObjectDetection> CreateYoloFormat();
 
     ESImageTagger(const QString& pModelPath, std::shared_ptr<Format> pFormat);
 
 	std::shared_ptr<Format> getFormat() const;
 
-    QVector<uint16_t> generateImageTags(const QImage& pImage);
-    QStringList getTagsLabels(const QVector<uint16_t>& pTags);
+    std::vector<float> processImage(const QImage& pImage);
 
 private:
     /******************************** ATTRIBUTES **********************************/

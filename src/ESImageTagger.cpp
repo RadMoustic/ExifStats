@@ -74,7 +74,7 @@ bool toStdString(const QJsonValue& pVector3D, std::string& pResult)
 
 /********************************************************************************/
 
-bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
+bool ESImageTagger::FormatClassification::loadLabels(const QString& pFilePath)
 {
     mLabels.clear();
     QFile lFile(pFilePath);
@@ -90,12 +90,12 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
 
 /********************************************************************************/
 
-/*virtual*/ QVector<uint16_t> ESImageTagger::Format::getTagsFromScores(float* pScores)
+/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatClassification::getTagsFromScores(const std::vector<float>& pScores)
 {
-    assert(mLabels.size() > 0 && mLabels.size() == mOutputSize);
+    assert(mLabels.size() > 0 && mLabels.size() == int(pScores.size()));
 
     std::vector<std::pair<float, int>> lResults;
-    for (int i = 0; i < mOutputSize; ++i)
+    for (int i = 0; i < int(pScores.size()); ++i)
     {
         if (pScores[i] > mScoreThreshold)
             lResults.push_back({ pScores[i], i });
@@ -105,8 +105,8 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
         {
             return a.first > b.first;
         });
-    QVector<uint16_t> lTopTags;
-    for (int i = 0; i < mTopScoreCount && i < lResults.size(); ++i)
+    std::vector<uint16_t> lTopTags;
+    for (int i = 0; i < mTopScoreCount && i < int(lResults.size()); ++i)
     {
         int lIndex = lResults[i].second;
         if (lIndex < mLabels.size())
@@ -117,7 +117,20 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
 
 /********************************************************************************/
 
-/*virtual*/ bool ESImageTagger::Format::loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath)
+QStringList ESImageTagger::FormatClassification::getTagsLabels(const std::vector<uint16_t>& pTags)
+{
+    QStringList lLabels;
+    for (int index : pTags)
+    {
+        if (index >= 0 && index < mLabels.size())
+            lLabels << mLabels[index];
+    }
+    return lLabels;
+}
+
+/********************************************************************************/
+
+/*virtual*/ bool ESImageTagger::Format::loadFromJSON(const QJsonObject& pJsonObject, const QString& /*pFilePath*/)
 {
     READ_JSON_VALUE_CONVERT(pJsonObject, "InputName", mInputName, toStdString);
     READ_JSON_VALUE_CONVERT(pJsonObject, "OutputName", mOutputName, toStdString);
@@ -126,11 +139,21 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
     READ_JSON_VALUE_CONVERT(pJsonObject, "Mean", mMean, toQVector3D);
     READ_JSON_VALUE_CONVERT(pJsonObject, "StdDev", mStdDev, toQVector3D);
     READ_JSON_VALUE(pJsonObject, "KeepAspectRatio", mKeepAspectRatio);
-    READ_JSON_VALUE(pJsonObject, "OutputSize", mOutputSize);
+
+    return true;
+}
+
+/********************************************************************************/
+
+/*virtual*/ bool ESImageTagger::FormatClassification::loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath)
+{
+    if(!Format::loadFromJSON(pJsonObject, pFilePath))
+		return false;
+
     READ_JSON_VALUE(pJsonObject, "ScoreThreshold", mScoreThreshold);
     READ_JSON_VALUE(pJsonObject, "TopScoreCount", mTopScoreCount);
 
-	static const char* const scLabelsFilePathKey = "LabelsPath";
+    static const char* const scLabelsFilePathKey = "LabelsPath";
     static const char* const scLabelsKey = "Labels";
 
     QString lLabelsFilePath;
@@ -138,12 +161,12 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
     {
         QJsonValue lLabelPathValue = pJsonObject[scLabelsFilePathKey];
         if (lLabelPathValue.isString())
-			lLabelsFilePath = lLabelPathValue.toString();
+            lLabelsFilePath = lLabelPathValue.toString();
         else
         {
             qWarning() << scLabelsFilePathKey << " field is not a string.";
             return false;
-		}
+        }
 
         if (!getFilePathFromBase(lLabelsFilePath, pFilePath, lLabelsFilePath))
         {
@@ -157,41 +180,41 @@ bool ESImageTagger::Format::loadLabels(const QString& pFilePath)
             return false;
         }
     }
-    else if(pJsonObject.contains("Labels"))
+    else if (pJsonObject.contains("Labels"))
     {
         mLabels.clear();
-        
+
         QJsonValue lLabels = pJsonObject[scLabelsKey];
-        if(!lLabels.isArray())
+        if (!lLabels.isArray())
         {
             qWarning() << scLabelsKey << " field is not an array.";
             return false;
-		}
+        }
         QJsonArray lLabelsArray = lLabels.toArray();
-        for(const QJsonValue& lLabelValue : lLabelsArray)
+        for (const QJsonValue& lLabelValue : lLabelsArray)
         {
-            if(lLabelValue.isString())
+            if (lLabelValue.isString())
                 mLabels << lLabelValue.toString();
             else
             {
                 qWarning() << "Label value is not a string.";
                 return false;
             }
-		}
+        }
     }
     else
     {
-        qWarning() << "Format JSON object does not contain '" << scLabelsFilePathKey << "' or '" << scLabelsKey <<"' field.";
-		return false;
+        qWarning() << "Format JSON object does not contain '" << scLabelsFilePathKey << "' or '" << scLabelsKey << "' field.";
+        return false;
     }
-    
+
 
     return true;
 }
 
 /********************************************************************************/
 
-void ESImageTagger::FormatYolo::setCocoLabels()
+void ESImageTagger::FormatObjectDetection::setCocoLabels()
 {
     mLabels = {
         "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
@@ -207,7 +230,7 @@ void ESImageTagger::FormatYolo::setCocoLabels()
 
 /********************************************************************************/
 
-/*virtual*/ QVector<uint16_t> ESImageTagger::FormatYolo::getTagsFromScores(float* pScores) /*override*/
+/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatObjectDetection::getTagsFromScores(const std::vector<float>& pScores) /*override*/
 {
     assert(mLabels.size() > 0);
 
@@ -234,12 +257,12 @@ void ESImageTagger::FormatYolo::setCocoLabels()
             lFoundTags.insert(lClassId);
         }
     }
-    return QVector<uint16_t>(lFoundTags.begin(), lFoundTags.end());
+    return std::vector<uint16_t>(lFoundTags.begin(), lFoundTags.end());
 }
 
 /********************************************************************************/
 
-/*virtual*/ bool ESImageTagger::FormatYolo::loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath)
+/*virtual*/ bool ESImageTagger::FormatObjectDetection::loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath)
 {
 	if(!Format::loadFromJSON(pJsonObject, pFilePath))
         return false;
@@ -254,19 +277,21 @@ void ESImageTagger::FormatYolo::setCocoLabels()
 
 /*static*/ std::shared_ptr<ESImageTagger::Format> ESImageTagger::CreateFormatFromType(FormatType pType)
 {
-    if(pType == FormatType::ImageNet)
-        return std::make_shared<Format>();
-    else if(pType == FormatType::YOLO)
-		return std::make_shared<FormatYolo>();
+    if(pType == FormatType::Classification)
+        return std::make_shared<FormatClassification>();
+    else if(pType == FormatType::ObjectDetection)
+		return std::make_shared<FormatObjectDetection>();
+    else if (pType == FormatType::Embedding)
+        return std::make_shared<FormatEmbedding>();
     else
 		return nullptr;
 }
 
 /********************************************************************************/
 
-/*static*/ std::shared_ptr<ESImageTagger::Format> ESImageTagger::CreateResNetFormat()
+/*static*/ std::shared_ptr<ESImageTagger::FormatClassification> ESImageTagger::CreateResNetFormat()
 {
-    std::shared_ptr<Format> lFormat = std::make_shared<Format>();
+    auto lFormat = std::make_shared<FormatClassification>();
     lFormat->mInputName = "data";
     lFormat->mOutputName = "resnetv24_dense0_fwd";
     lFormat->mInputWidth = 224;
@@ -274,7 +299,6 @@ void ESImageTagger::FormatYolo::setCocoLabels()
     lFormat->mMean = { 0.485f, 0.456f, 0.406f };
     lFormat->mStdDev = { 0.229f, 0.224f, 0.225f };
     lFormat->mKeepAspectRatio = true;
-    lFormat->mOutputSize = 1000;
     lFormat->mScoreThreshold = 0.5f;
     lFormat->mTopScoreCount = 3;
     return lFormat;
@@ -282,22 +306,9 @@ void ESImageTagger::FormatYolo::setCocoLabels()
 
 /********************************************************************************/
 
-/*static*/ std::shared_ptr<ESImageTagger::Format> ESImageTagger::CreatePlace365Format()
+/*static*/ std::shared_ptr<ESImageTagger::FormatClassification> ESImageTagger::CreatePlace365Format()
 {
-    std::shared_ptr<Format> lFormat = CreateResNetFormat();
-    lFormat->mInputName = "input";
-    lFormat->mOutputName = "output";
-    lFormat->mKeepAspectRatio = false;
-    lFormat->mOutputSize = 365;
-
-    return lFormat;
-}
-
-/********************************************************************************/
-
-/*static*/ std::shared_ptr<ESImageTagger::Format> ESImageTagger::CreateConvNextFormat()
-{
-    std::shared_ptr<Format> lFormat = CreateResNetFormat();
+    std::shared_ptr<FormatClassification> lFormat = CreateResNetFormat();
     lFormat->mInputName = "input";
     lFormat->mOutputName = "output";
     lFormat->mKeepAspectRatio = false;
@@ -307,9 +318,21 @@ void ESImageTagger::FormatYolo::setCocoLabels()
 
 /********************************************************************************/
 
-/*static*/ std::shared_ptr<ESImageTagger::Format> ESImageTagger::CreateYoloFormat()
+/*static*/ std::shared_ptr<ESImageTagger::FormatClassification> ESImageTagger::CreateConvNextFormat()
 {
-    std::shared_ptr<FormatYolo> lFormat = std::make_shared<FormatYolo>();
+    std::shared_ptr<FormatClassification> lFormat = CreateResNetFormat();
+    lFormat->mInputName = "input";
+    lFormat->mOutputName = "output";
+    lFormat->mKeepAspectRatio = false;
+
+    return lFormat;
+}
+
+/********************************************************************************/
+
+/*static*/ std::shared_ptr<ESImageTagger::FormatObjectDetection> ESImageTagger::CreateYoloFormat()
+{
+    auto lFormat = std::make_shared<FormatObjectDetection>();
     lFormat->mInputName = "images";
     lFormat->mOutputName = "output0";
     lFormat->mInputWidth = 640;
@@ -347,7 +370,7 @@ std::shared_ptr<ESImageTagger::Format> ESImageTagger::getFormat() const
 
 /********************************************************************************/
 
-QVector<uint16_t> ESImageTagger::generateImageTags(const QImage& pImage)
+std::vector<float> ESImageTagger::processImage(const QImage& pImage)
 {
     QImage lResizedImage = pImage.scaled(mFormat->mInputWidth, mFormat->mInputHeight, mFormat->mKeepAspectRatio ? Qt::KeepAspectRatioByExpanding : Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
@@ -379,22 +402,14 @@ QVector<uint16_t> ESImageTagger::generateImageTags(const QImage& pImage)
 		QMutexLocker lLock(&mSessionRunMutex); // DirectML is not thread safe, CUDA is but the redist is too much of a hassle
         lOutputTensors = mSession.Run(Ort::RunOptions{ nullptr }, lInputNames, &lInputTensor, 1, lOutputNames, 1);
     }
-    float* lScores = lOutputTensors.front().GetTensorMutableData<float>();
 
-    return mFormat->getTagsFromScores(lScores);
-}
+    size_t lOutputTensorSize = mSession.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementCount();
 
-/********************************************************************************/
+    std::vector<float> lResult;
+    lResult.resize(lOutputTensorSize);
+    std::memcpy(lResult.data(), lOutputTensors.front().GetTensorMutableData<float>(), lResult.size() * sizeof(float));
 
-QStringList ESImageTagger::getTagsLabels(const QVector<uint16_t>& pTags)
-{
-    QStringList lLabels;
-	for (int index : pTags)
-    {
-        if (index >= 0 && index < mFormat->mLabels.size())
-            lLabels << mFormat->mLabels[index];
-    }
-	return lLabels;
+    return lResult;
 }
 
 #endif // IMAGETAGGER_ENABLE

@@ -78,6 +78,7 @@ struct FileInfo
 	uint8_t mCameraModelIdx = std::numeric_limits<uint8_t>::max();
 	uint8_t mLensModelIdx = std::numeric_limits<uint8_t>::max();
 	ReadExifFileResult mReadResult = eNone;
-	QVector<uint16_t> mTagIndexes;
+	std::vector<uint16_t> mTagIndexes;
+	std::vector<float> mEmbeddings;
 	bool mTagsGenerated = false;
 };

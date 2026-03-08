@@ -59,6 +59,7 @@ private:
 	std::vector<ESImageTagsSearchEngine::TextEncodedResult> mDatabaseTagsEmbeddingCache;
 	std::vector<std::unordered_set<uint16_t>> mSearchTagIndices;
 	QStringList mSearchTags;
+	ESImageTagsSearchEngine::TextEncodedResult mSearchTagsEmbeddings;
 	QMutex mDatabaseTagsEmbeddingCacheMutex;
 #endif // IMAGETAGGER_ENABLE
 

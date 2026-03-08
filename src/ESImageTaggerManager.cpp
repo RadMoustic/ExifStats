@@ -209,9 +209,8 @@ void ESImageTaggerManager::addTagger(const QString& pTaggerFilePath)
 
 /********************************************************************************/
 
-QVector<uint16_t> ESImageTaggerManager::generateImageTags(const QImage& pImage)
+void ESImageTaggerManager::processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, std::vector<float>& pEmbeddingsOut)
 {
-	QVector<uint16_t> lAllTagsVector;
 	if(!pImage.isNull())
 	{
 		float lImageRatio = float(pImage.width()) / float(pImage.height());
@@ -219,18 +218,28 @@ QVector<uint16_t> ESImageTaggerManager::generateImageTags(const QImage& pImage)
 		int lHeight = lImageRatio < 1.0f ? mMaxSizeOfAllTaggerInputs / lImageRatio : mMaxSizeOfAllTaggerInputs;
 		QImage lMaxInputResizedImage = pImage.scaled(lWidth, lHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
+		pTagsOut.clear();
+		pEmbeddingsOut.clear();
+
 		std::unordered_set<int> lAllTags;
 		for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 		{
-			QVector<uint16_t> lTaggerTags = lTagger->generateImageTags(lMaxInputResizedImage);
-			convertTagsToAllTagIndexes(lTaggerTags, lTagger.get());
-			lAllTags.insert(lTaggerTags.begin(), lTaggerTags.end());
+			std::vector<float> lTaggerResult = lTagger->processImage(lMaxInputResizedImage);
+			if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
+			{
+				std::vector<uint16_t> lTaggerTags = lTaggerClassificationFormat->getTagsFromScores(lTaggerResult);
+				convertTagsToAllTagIndexes(lTaggerTags, lTagger.get());
+				lAllTags.insert(lTaggerTags.begin(), lTaggerTags.end());
+			}
+			else if (auto lTaggerEmbeddingFormat = std::dynamic_pointer_cast<ESImageTagger::FormatEmbedding>(lTagger->getFormat()))
+			{
+				assert(pEmbeddingsOut.empty() && "Multiple embedding taggers are not supported");
+				pEmbeddingsOut = std::move(lTaggerResult);
+			}
 		}
 
-		lAllTagsVector = std::move(QVector<uint16_t>(lAllTags.begin(), lAllTags.end()));
+		pTagsOut.assign(lAllTags.begin(), lAllTags.end());
 	}
-	
-	return lAllTagsVector;
 }
 
 /********************************************************************************/
@@ -240,25 +249,37 @@ void ESImageTaggerManager::updateAllTagLabels()
 	mAllTagLabels.clear();
 	mTaggerTagIndexesInAllLabels.clear();
 
+	ESDatabase& lDB = ESDatabase::getInstance();
+
 	std::set<QString> lUniqueLabels;
 	for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
-		for (const QString& lLabel : lTagger->getFormat()->mLabels)
-			lUniqueLabels.insert(lLabel);
+	{
+		if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
+		{
+			for (const QString& lLabel : lTaggerClassificationFormat->mLabels)
+				lUniqueLabels.insert(lLabel);
+		}
+	}
+
+	for(const QString& lDBLabel: lDB.mAllTags)
+		lUniqueLabels.insert(lDBLabel);
 
 	for(const QString& lUniqueLabel: lUniqueLabels)
 		mAllTagLabels.push_back(lUniqueLabel);
 
 	for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 	{
-		QVector<uint16_t>& lTagIndexesInAllLabels = mTaggerTagIndexesInAllLabels[lTagger.get()];
-		for (const QString& lLabel : lTagger->getFormat()->mLabels)
+		if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
 		{
-			auto lItFound = lUniqueLabels.find(lLabel);
-			lTagIndexesInAllLabels.push_back(int(std::distance(lUniqueLabels.begin(), lItFound)));
+			std::vector<uint16_t>& lTagIndexesInAllLabels = mTaggerTagIndexesInAllLabels[lTagger.get()];
+			for (const QString& lLabel : lTaggerClassificationFormat->mLabels)
+			{
+				auto lItFound = lUniqueLabels.find(lLabel);
+				lTagIndexesInAllLabels.push_back(int(std::distance(lUniqueLabels.begin(), lItFound)));
+			}
 		}
 	}
 
-	ESDatabase& lDB = ESDatabase::getInstance();
 	if (lDB.mAllTags != mAllTagLabels)
 	{
 		std::scoped_lock lLock(lDB.mFilesMutex);
@@ -298,9 +319,9 @@ void ESImageTaggerManager::updateAllTagLabels()
 
 /********************************************************************************/
 
-void ESImageTaggerManager::convertTagsToAllTagIndexes(QVector<uint16_t>& pTaggerTags, ESImageTagger* pTagger)
+void ESImageTaggerManager::convertTagsToAllTagIndexes(std::vector<uint16_t>& pTaggerTags, ESImageTagger* pTagger)
 {
-	QVector<uint16_t>& lTagIndexesInAllLabels = mTaggerTagIndexesInAllLabels[pTagger];
+	std::vector<uint16_t>& lTagIndexesInAllLabels = mTaggerTagIndexesInAllLabels[pTagger];
 	for (uint16_t& lTagIndex : pTaggerTags)
 	{
 		if (lTagIndex >= 0 && lTagIndex < lTagIndexesInAllLabels.size())
@@ -348,15 +369,17 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 		else
 		{
 			QImage lImage(pImage->getImagePath().getString());
-			QVector<uint16_t> lTags;
+			std::vector<uint16_t> lTags;
+			std::vector<float> lEmbeddings;
 			if(!lImage.isNull())
-				lTags = generateImageTags(lImage);
+				processImage(lImage, lTags, lEmbeddings);
 			ESDatabase& lDB = ESDatabase::getInstance();
 			if(!lDB.getProcessing())
 			{
 				std::scoped_lock lLock(lDB.mFilesMutex);
 				FileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
 				lFileInfo.mTagIndexes = std::move(lTags);
+				lFileInfo.mEmbeddings = std::move(lEmbeddings);
 				lFileInfo.mTagsGenerated = true;
 			}
 			--pNumAsyncTaskStarted;
