@@ -5,39 +5,42 @@
 /********************************************************************************/
 
 // ES
-#include "ESExifStatCountComponent.h"
+#include "ESExifStatComponent.h"
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-template<typename T, class Derived>
-class ExifStatCountStepComponent : public ExifStatCountComponent<T, Derived>
+class ESListFilesStatComponent : public QObject, public ESStatComponent
 {
+	Q_OBJECT
 public:
-	typedef ExifStatCountComponent<T, Derived> Super;
+	std::vector<ESStringId> mFiles;
 
-	T mStep;
-
-	virtual void addFileCategory(const FileInfo& pFile) override
+	virtual void addFile(const ESFileInfo& pFile) override
 	{
-		T lFileValue = Derived::getFileValue(pFile);
-
-		T lRoundedToStepFileValue = (lFileValue / mStep) * mStep;
-		Super::mValueCounters[lRoundedToStepFileValue] += 0;
+		mFiles.push_back(pFile.mFilePath);
 	}
 
-	virtual void addFile(const FileInfo& pFile) override
+	virtual void reset() override
 	{
-		T lFileValue = Derived::getFileValue(pFile);
-
-		T lRoundedToStepFileValue = (lFileValue / mStep) * mStep;
-		Super::mValueCounters[lRoundedToStepFileValue] += 1;
+		mFiles.clear();
+		emit listFilesChanged();
 	}
+
+	virtual void onAllFilesAdded() override
+	{
+		emit listFilesChanged();
+	}
+
+signals:
+	/********************************** SIGNALS ***********************************/
+
+	void listFilesChanged();
 };

@@ -30,14 +30,14 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifFilter
+class ESFilter
 {
 public:
 	bool mKeepCategory = false;
 	QString mName;
 
 	virtual void reset() = 0;
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const = 0;
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const = 0;
 	virtual QJsonObject serialize() const = 0;
 	virtual bool deserialize(const QJsonObject& pJson) = 0;
 
