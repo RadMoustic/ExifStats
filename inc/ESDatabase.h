@@ -15,13 +15,13 @@
 #include <unordered_set>
 
 // ES
-#include "ESExifStatCountFocalLengthIn35mm.h"
-#include "ESExifStatCountCameraModel.h"
-#include "ESExifStatCountLensModel.h"
-#include "ESExifStatCountDateTime.h"
-#include "ESExifStatGeoLocation.h"
-#include "ESExifStat.h"
-#include "ESExifFilter.h"
+#include "ESFocalLengthIn35mmStat.h"
+#include "ESCameraModelStat.h"
+#include "ESLensModelStat.h"
+#include "ESDateTimeStat.h"
+#include "ESGeoLocationStat.h"
+#include "ESStat.h"
+#include "ESFilter.h"
 #include "ESFileInfo.h"
 #include "ESUtils.h"
 

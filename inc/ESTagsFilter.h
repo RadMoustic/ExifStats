@@ -9,7 +9,7 @@
 #include <QGeoRectangle>
 
 // ES
-#include "ESExifFilter.h"
+#include "ESFilter.h"
 #include "ESFileInfo.h"
 #include "ESImageTagsSearchEngine.h"
 

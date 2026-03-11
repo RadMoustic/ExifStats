@@ -5,8 +5,8 @@
 /********************************************************************************/
 
 // ES
-#include "ESExifStat.h"
-#include "ESExifStatListFilesComponent.h"
+#include "ESStat.h"
+#include "ESListFilesStatComponent.h"
 
 // Qt
 #include <QQmlEngine>

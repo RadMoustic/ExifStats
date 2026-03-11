@@ -1,7 +1,7 @@
 #include "ESImageGridQuickItem.h"
 
 // ES
-#include "ESExifStatListFiles.h"
+#include "ESListFilesStat.h"
 #include "ESDatabase.h"
 #include "ESImageTagger.h"
 #include "ESImageTaggerManager.h"

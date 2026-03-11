@@ -5,8 +5,8 @@
 /********************************************************************************/
 
 // ES
-#include "ESExifStatCountComponent.h"
-#include "ESExifStatMinMaxComponent.h"
+#include "ESCountStatComponent.h"
+#include "ESMinMaxStatComponent.h"
 
 /********************************************************************************/
 /********************************************************************************/

@@ -7,7 +7,7 @@
 // ExifStats
 #include "ESUtils.h"
 #include "ESImageCache.h"
-#include "ESExifStatListFiles.h"
+#include "ESListFilesStat.h"
 
 // Qt
 #include <QQuickPaintedItem>

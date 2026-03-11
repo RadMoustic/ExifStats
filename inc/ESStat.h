@@ -6,7 +6,7 @@
 
 // ES
 #include "ESFileInfo.h"
-#include "ESExifStatComponent.h"
+#include "ESStatComponent.h"
 
 
 /********************************************************************************/
