@@ -91,6 +91,9 @@ public:
 
     ESImageTagger(const QString& pModelPath, std::shared_ptr<Format> pFormat);
 
+    void initializeSession();
+    void cleanupSession();
+
 	std::shared_ptr<Format> getFormat() const;
 
     std::vector<float> processImage(const QImage& pImage);
@@ -98,9 +101,10 @@ public:
 private:
     /******************************** ATTRIBUTES **********************************/
 
+	QString mModelPath;
     std::shared_ptr<Format> mFormat;
     Ort::Env mEnv;
-    Ort::Session mSession{ nullptr };
+    std::unique_ptr<Ort::Session> mSession;
     QMutex mSessionRunMutex;
 };
 

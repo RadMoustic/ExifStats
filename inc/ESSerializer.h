@@ -88,6 +88,31 @@ public:
 		}
 	}
 
+	template<>
+	void Serialize(std::vector<float>& pList)
+	{
+		SerializeRaw<float>(pList);
+	}
+
+	template<typename T>
+	void SerializeRaw(std::vector<T>& pList)
+	{
+		if constexpr (READ)
+		{
+			size_t lNbItem = 0;
+			mDataStream >> lNbItem;
+			pList.clear();
+			pList.resize(lNbItem);
+			mDataStream.readRawData(reinterpret_cast<char*>(pList.data()), int(lNbItem * sizeof(T)));
+		}
+		else
+		{
+			size_t lNbItem = pList.size();
+			mDataStream << lNbItem;
+			mDataStream.writeRawData(reinterpret_cast<const char*>(pList.data()), int(lNbItem * sizeof(T)));
+		}
+	}
+
 	template<typename KEY, typename VALUE>
 	void Serialize(std::map<KEY, VALUE>& pMap)
 	{

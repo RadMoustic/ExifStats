@@ -351,14 +351,10 @@ void ESImageTagger::FormatObjectDetection::setCocoLabels()
 /********************************************************************************/
 
 ESImageTagger::ESImageTagger(const QString& pModelPath, std::shared_ptr<Format> pFormat)
-    : mFormat(pFormat)
+    : mModelPath(pModelPath)
+    , mFormat(pFormat)
 {
     mEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ESImageTagger");
-    Ort::SessionOptions lSessionOptions;
-    //OrtCUDAProviderOptions lCudaOptions;
-    //lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
-    OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
-    mSession = Ort::Session(mEnv, pModelPath.toStdWString().c_str(), lSessionOptions);
 }
 
 /********************************************************************************/
@@ -400,16 +396,34 @@ std::vector<float> ESImageTagger::processImage(const QImage& pImage)
     std::vector<Ort::Value> lOutputTensors;
     {
 		QMutexLocker lLock(&mSessionRunMutex); // DirectML is not thread safe, CUDA is but the redist is too much of a hassle
-        lOutputTensors = mSession.Run(Ort::RunOptions{ nullptr }, lInputNames, &lInputTensor, 1, lOutputNames, 1);
+        lOutputTensors = mSession->Run(Ort::RunOptions{ nullptr }, lInputNames, &lInputTensor, 1, lOutputNames, 1);
     }
 
-    size_t lOutputTensorSize = mSession.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementCount();
+    size_t lOutputTensorSize = mSession->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementCount();
 
     std::vector<float> lResult;
     lResult.resize(lOutputTensorSize);
     std::memcpy(lResult.data(), lOutputTensors.front().GetTensorMutableData<float>(), lResult.size() * sizeof(float));
 
     return lResult;
+}
+
+/********************************************************************************/
+
+void ESImageTagger::initializeSession()
+{
+    Ort::SessionOptions lSessionOptions;
+    //OrtCUDAProviderOptions lCudaOptions;
+    //lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
+    OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
+    mSession.reset(new Ort::Session(mEnv, mModelPath.toStdWString().c_str(), lSessionOptions));
+}
+
+/********************************************************************************/
+
+void ESImageTagger::cleanupSession()
+{
+	mSession.release();
 }
 
 #endif // IMAGETAGGER_ENABLE

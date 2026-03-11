@@ -90,15 +90,7 @@ void ESImageTaggerManager::retag()
 	}
 
 	updateAllTagLabels();
-
-	{
-		std::scoped_lock lLock(lDB.mFilesMutex);
-		for (auto&& lFileInfo : lDB.mFiles)
-		{
-			std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first);
-			queueImageLoading(lImage, false);
-		}
-	}
+	updateDatabaseMissingTags();
 }
 
 /********************************************************************************/
@@ -395,6 +387,10 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 {
 	if(ESImageCache::getInstance().isUpdating() || ESImageCache::getInstance().isLoading())
 		return;
+
+	for(std::shared_ptr<ESImageTagger> lTagger : mTaggers)
+		lTagger->initializeSession();
+
 	ESDatabase& lDB = ESDatabase::getInstance();
 	std::scoped_lock lLock(lDB.mFilesMutex);
 	for(auto&& lFileInfo : lDB.mFiles)
