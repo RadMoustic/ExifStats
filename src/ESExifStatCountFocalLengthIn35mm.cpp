@@ -11,13 +11,13 @@
 /********************************************************************************/
 /********************************************************************************/
 
-/*static*/ std::map<uint8_t, float> ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors;
+/*static*/ std::map<uint8_t, float> ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-/*static*/ int ExifStatCountFocalLengthIn35mm::get35mmFocalLength(const FileInfo& aFile)
+/*static*/ int ESFocalLengthIn35mmStat::get35mmFocalLength(const ESFileInfo& aFile)
 {
 	if (aFile.mExif.mFocalLengthIn35mm > 0)
 		return aFile.mExif.mFocalLengthIn35mm;

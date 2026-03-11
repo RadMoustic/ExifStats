@@ -57,7 +57,7 @@ bool loadTurboJpeg(QImage& pImageOut, const QByteArray& pImageData)
 
 /********************************************************************************/
 
-ESImage::ESImage(StringId pImagePath, const QString pImageCachePath, const UsefullExif* pImageExif)
+ESImage::ESImage(ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif* pImageExif)
 	: mLastUsed(0)
 	, mImagePath(pImagePath)
 	, mImageCachePath(pImageCachePath)
@@ -146,14 +146,14 @@ void ESImage::updateLastUsed()
 
 /********************************************************************************/
 
-StringId ESImage::getImagePath() const
+ESStringId ESImage::getImagePath() const
 {
 	return mImagePath;
 }
 
 /********************************************************************************/
 
-const UsefullExif& ESImage::getExif() const
+const ESUsefullExif& ESImage::getExif() const
 {
 	return mExif;
 }

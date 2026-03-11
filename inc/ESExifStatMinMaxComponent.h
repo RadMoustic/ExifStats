@@ -18,13 +18,13 @@
 /********************************************************************************/
 
 template<typename T, class Derived>
-class ExifStatMinMaxComponent : public ExifStatComponent
+class ESMinMaxStatComponent : public ESStatComponent
 {
 public:
 	T mValidMinValue = std::numeric_limits<T>::min();
 	T mValidMaxValue = std::numeric_limits<T>::max();
 
-	virtual void addFile(const FileInfo& pFile) override
+	virtual void addFile(const ESFileInfo& pFile) override
 	{
 		T lFileValue = Derived::getFileValue(pFile);
 		if(lFileValue >= mValidMinValue && lFileValue <= mValidMaxValue)

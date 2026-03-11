@@ -18,12 +18,12 @@
 /********************************************************************************/
 
 template<class Derived>
-class ExifStatCountIntAllValuesComponent : public ExifStatCountComponent<int, Derived>
+class ESCountIntAllValuesStatComponent : public ESCountStatComponent<int, Derived>
 {
 public:
-	typedef ExifStatCountComponent<int, Derived> Super;
+	typedef ESCountStatComponent<int, Derived> Super;
 
-	const ExifStatMinMaxComponent<int, Derived>* mMinMaxComponent;
+	const ESMinMaxStatComponent<int, Derived>* mMinMaxComponent;
 
 	virtual void onAllFilesAdded() override
 	{

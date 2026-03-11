@@ -370,7 +370,7 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 			if(!lDB.getProcessing())
 			{
 				std::scoped_lock lLock(lDB.mFilesMutex);
-				FileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
+				ESFileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
 				lFileInfo.mTagIndexes = std::move(lTags);
 				lFileInfo.mEmbeddings = std::move(lEmbeddings);
 				lFileInfo.mTagsGenerated = true;

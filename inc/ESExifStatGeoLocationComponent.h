@@ -12,19 +12,19 @@
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatGeoLocationComponent : public ExifStatComponent
+class ESGeoLocationStatComponent : public ESStatComponent
 {
 public:
 	QVector<QPointF> mGeoLocations;
-	QVector<const FileInfo*> mGeoLocationsFiles;
+	QVector<const ESFileInfo*> mGeoLocationsFiles;
 
-	virtual void addFile(const FileInfo& pFile) override
+	virtual void addFile(const ESFileInfo& pFile) override
 	{
 		if(pFile.mExif.mGeoLococation.mLatitude == 0 && pFile.mExif.mGeoLococation.mLongitude == 0)
 			return;

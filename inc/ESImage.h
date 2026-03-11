@@ -35,8 +35,8 @@ public:
 
 	QChar getDriveLetter() const;
 	const QImage& getImage() const;
-	StringId getImagePath() const;
-	const UsefullExif& getExif() const;
+	ESStringId getImagePath() const;
+	const ESUsefullExif& getExif() const;
 	
 	bool hasCacheFile() const;
 
@@ -55,7 +55,7 @@ private:
 	mutable std::atomic_bool mCacheFileChecked;
 	mutable std::atomic_bool mHasCacheFile;
 	mutable QChar mDriveLetter;
-	StringId mImagePath;
+	ESStringId mImagePath;
 	QString mImageCachePath;
 	std::atomic_bool mIsQueueForLoading;
 	std::atomic_bool mIsLoading;
@@ -64,11 +64,11 @@ private:
 	QImage mImage;
 	QByteArray mImageFileData;
 
-	UsefullExif mExif;
+	ESUsefullExif mExif;
 
 	/********************************* METHODS ***********************************/
 
-	explicit ESImage(const StringId pImagePath, const QString pImageCachePath, const UsefullExif* pImageExif);
+	explicit ESImage(const ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif* pImageExif);
 
 	void loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted);
 	void readImage(const QString& pImagePath, QSize aMaxSize);

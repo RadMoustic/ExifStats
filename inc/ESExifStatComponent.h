@@ -9,17 +9,17 @@
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatComponent
+class ESStatComponent
 {
 public:
-	virtual void addFile(const FileInfo& pFile) = 0;
-	virtual void addFileCategory(const FileInfo& /*pFile*/) {};
+	virtual void addFile(const ESFileInfo& pFile) = 0;
+	virtual void addFileCategory(const ESFileInfo& /*pFile*/) {};
 	virtual void onAllFilesAdded() {};
 	virtual void reset() = 0;
 };

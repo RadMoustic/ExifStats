@@ -9,7 +9,7 @@
 
 /********************************************************************************/
 
-ESExifTagsFilter::ESExifTagsFilter()
+ESTagsFilter::ESTagsFilter()
 	: mTokenizerEnabled(false)
 	, mMinSimilarityScore(0.3f)
 {
@@ -23,7 +23,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 		{
 			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
 			onDatabaseTagsHaveChanged();
-			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESExifTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
+			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
 		});			
 	}
 #endif // IMAGETAGGER_ENABLE
@@ -31,7 +31,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /********************************************************************************/
 
-/*virtual*/ void ESExifTagsFilter::reset() /*override*/
+/*virtual*/ void ESTagsFilter::reset() /*override*/
 {
 	mSearchString = "";
 	mMinSimilarityScore = 0.3f;
@@ -40,7 +40,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /********************************************************************************/
 
-/*virtual*/ bool ESExifTagsFilter::isFileFilteredOut(const FileInfo& pFile) const /*override*/
+/*virtual*/ bool ESTagsFilter::isFileFilteredOut(const ESFileInfo& pFile) const /*override*/
 {
 	if (mSearchString.isEmpty())
 		return false;
@@ -91,7 +91,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /********************************************************************************/
 
-/*virtual*/ QJsonObject ESExifTagsFilter::serialize() const /*override*/
+/*virtual*/ QJsonObject ESTagsFilter::serialize() const /*override*/
 {
 	QJsonObject lResult;
 	lResult["SearchString"] = mSearchString;
@@ -100,7 +100,7 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /********************************************************************************/
 
-/*virtual*/ bool ESExifTagsFilter::deserialize(const QJsonObject& pJson) /*override*/
+/*virtual*/ bool ESTagsFilter::deserialize(const QJsonObject& pJson) /*override*/
 {
 	VALIDATE_JSONVALUE(pJson, "SearchString", mSearchString);
 
@@ -109,14 +109,14 @@ ESExifTagsFilter::ESExifTagsFilter()
 
 /********************************************************************************/
 
-QString ESExifTagsFilter::getSearchString() const
+QString ESTagsFilter::getSearchString() const
 {
 	return mSearchString;
 }
 
 /********************************************************************************/
 
-void ESExifTagsFilter::setSearchString(const QString& pSearchString)
+void ESTagsFilter::setSearchString(const QString& pSearchString)
 {
 #ifdef IMAGETAGGER_ENABLE
 	if(!mDatabaseTagsEmbeddingCacheMutex.tryLock())
@@ -177,7 +177,7 @@ void ESExifTagsFilter::setSearchString(const QString& pSearchString)
 
 /********************************************************************************/
 
-QStringList ESExifTagsFilter::getTagsFound() const
+QStringList ESTagsFilter::getTagsFound() const
 {
 #ifdef IMAGETAGGER_ENABLE
 	return mEngine ? mSearchTags : QStringList();
@@ -189,7 +189,7 @@ QStringList ESExifTagsFilter::getTagsFound() const
 /********************************************************************************/
 
 #ifdef IMAGETAGGER_ENABLE
-void ESExifTagsFilter::onDatabaseTagsHaveChanged()
+void ESTagsFilter::onDatabaseTagsHaveChanged()
 {
 	std::scoped_lock lock(mDatabaseTagsEmbeddingCacheMutex);
 	ESDatabase& lDB = ESDatabase::getInstance();
@@ -219,7 +219,7 @@ void ESExifTagsFilter::onDatabaseTagsHaveChanged()
 
 /********************************************************************************/
 
-bool ESExifTagsFilter::isTokenizerEnabled() const
+bool ESTagsFilter::isTokenizerEnabled() const
 {
 #ifdef IMAGETAGGER_ENABLE
 	return mTokenizerEnabled;

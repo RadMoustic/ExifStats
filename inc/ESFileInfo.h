@@ -27,7 +27,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-enum ReadExifFileResult: int16_t
+enum ESReadExifFileResult: int16_t
 {
 	eNone = 1,
 	eSuccess = 0,
@@ -54,10 +54,10 @@ enum ESExifOrientation : unsigned short
 	Undefined = 9
 };
 
-struct UsefullExif
+struct ESUsefullExif
 {
-	StringId mCameraModel;
-	StringId mLensModel;		
+	ESStringId mCameraModel;
+	ESStringId mLensModel;		
 	uint64_t mDateTime;
 	float mShutterSpeedValue;
 	float mFNumber;
@@ -71,13 +71,13 @@ struct UsefullExif
 	ESExifOrientation mOrientation;
 };
 
-struct FileInfo
+struct ESFileInfo
 {
-	StringId mFilePath;
-	UsefullExif mExif;
+	ESStringId mFilePath;
+	ESUsefullExif mExif;
 	uint8_t mCameraModelIdx = std::numeric_limits<uint8_t>::max();
 	uint8_t mLensModelIdx = std::numeric_limits<uint8_t>::max();
-	ReadExifFileResult mReadResult = eNone;
+	ESReadExifFileResult mReadResult = eNone;
 	std::vector<uint16_t> mTagIndexes;
 	std::vector<float> mEmbeddings;
 	bool mTagsGenerated = false;

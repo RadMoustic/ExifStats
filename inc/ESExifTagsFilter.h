@@ -24,7 +24,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ESExifTagsFilter : public QObject, public ExifFilter
+class ESTagsFilter : public QObject, public ESFilter
 {
 	Q_OBJECT;
 
@@ -35,10 +35,10 @@ public:
 
 	/********************************* METHODS ***********************************/
 
-	ESExifTagsFilter();
+	ESTagsFilter();
 
 	virtual void reset() override;
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override;
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override;
 	virtual QJsonObject serialize() const override;
 	virtual bool deserialize(const QJsonObject& pJson) override;
 

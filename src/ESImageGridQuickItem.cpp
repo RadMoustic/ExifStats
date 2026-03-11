@@ -47,7 +47,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 		mFilteredFilesListComponent = mFilteredFilesList ? &mFilteredFilesList->mListFilesComp : nullptr;
 		if(mFilteredFilesListComponent)
 		{
-			connect(mFilteredFilesListComponent, &ESExifStatListFilesComponent::listFilesChanged, this, 
+			connect(mFilteredFilesListComponent, &ESListFilesStatComponent::listFilesChanged, this, 
 			[this]()
 			{
 				setYOffset(0.f);
@@ -227,7 +227,7 @@ void ESImageGridQuickItem::updateInternal()
 		else if (mFilteredFilesList)
 		{
 			mImages.reserve(mFilteredFilesList->mListFilesComp.mFiles.size());
-			for (const StringId& imageFilePath : mFilteredFilesList->mListFilesComp.mFiles)
+			for (const ESStringId& imageFilePath : mFilteredFilesList->mListFilesComp.mFiles)
 				lGetImage(imageFilePath);
 		}
 

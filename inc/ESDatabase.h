@@ -65,8 +65,8 @@ public:
 
 	const QVector<QString>& getFolders() const;
 
-	const FileInfo* getFileInfo(StringId pFile) const;
-	const std::map<StringId, FileInfo>& getFiles() const;
+	const ESFileInfo* getFileInfo(ESStringId pFile) const;
+	const std::map<ESStringId, ESFileInfo>& getFiles() const;
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
 
@@ -86,7 +86,7 @@ private:
 
 	QVector<QString> mFolders;
 
-	std::map<StringId, FileInfo> mFiles;
+	std::map<ESStringId, ESFileInfo> mFiles;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
 	mutable QMutex mFilesMutex;
@@ -99,8 +99,8 @@ private:
 
 	ESDatabase();
 
-	ReadExifFileResult readFileExif(const QString& pFilePath, easyexif::EXIFInfo& pOutExif);
-	UsefullExif convertToUsefullExif(const easyexif::EXIFInfo& aFullExif);
+	ESReadExifFileResult readFileExif(const QString& pFilePath, easyexif::EXIFInfo& pOutExif);
+	ESUsefullExif convertToUsefullExif(const easyexif::EXIFInfo& aFullExif);
 
 	template<class SERIALIZER>
 	bool Serialize(SERIALIZER& pSerializer, const QString& pFilePath);

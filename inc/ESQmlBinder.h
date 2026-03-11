@@ -190,7 +190,7 @@ public:
 	Q_INVOKABLE float getMaxAperture() const;
 
 	// List Files
-	Q_INVOKABLE const ESExifStatListFiles* getFilteredFilesList() const;
+	Q_INVOKABLE const ESListFilesStat* getFilteredFilesList() const;
 
 	// Orientation
 	Q_INVOKABLE QVector<QString> getOrientations() const;
@@ -223,27 +223,27 @@ signals:
 private:
 	/******************************** ATTRIBUTES **********************************/
 
-	ExifStatCountFocalLengthIn35mm m35mmStat;
-	ESExifStatCountAperture mApertureStat;
-	ExifStatCountCameraModel mCameraModelStat;
-	ExifStatCountLensModel mLensModelStat;
-	ExifStatCountDateTime mDateTimeStat;
-	ExifStatGeoLocation mGeoLocationStat;
-	ESExifStatListFiles mListFilesStat;
-	ESExifStatCountOrientation mOrientationStat;
+	ESFocalLengthIn35mmStat m35mmStat;
+	ESApertureStat mApertureStat;
+	ESCameraModelStat mCameraModelStat;
+	ESLensModelStat mLensModelStat;
+	ESDateTimeStat mDateTimeStat;
+	ESGeoLocationStat mGeoLocationStat;
+	ESListFilesStat mListFilesStat;
+	ESOrientationStat mOrientationStat;
 
-	ExifFromToFilter<int, ExifStatCountFocalLengthIn35mm> m35mmFilter;
-	ExifFromToFilter<float, ESExifStatCountAperture> mApertureFilter;
-	ExifListFilter<ExifStatCountCameraModel, QString> mCameraModelFilter;
-	ExifListFilter<ExifStatCountLensModel, QString> mLensModelFilter;
-	ExifFromToFilter<uint64_t, ExifStatCountDateTime>  mDateTimeFilter;
-	ExifGeoLocationFilter mGeoLocationFilter;
-	ESExifPathFilter mPathFilter;
-	ESExifTagsFilter mTagsFilter;
-	ESExifOrientationFilter mOrientationFilter;
+	ESFromToFilter<int, ESFocalLengthIn35mmStat> m35mmFilter;
+	ESFromToFilter<float, ESApertureStat> mApertureFilter;
+	ESListFilter<ESCameraModelStat, QString> mCameraModelFilter;
+	ESListFilter<ESLensModelStat, QString> mLensModelFilter;
+	ESFromToFilter<uint64_t, ESDateTimeStat>  mDateTimeFilter;
+	ESGeoLocationFilter mGeoLocationFilter;
+	ESPathFilter mPathFilter;
+	ESTagsFilter mTagsFilter;
+	ESOrientationFilter mOrientationFilter;
 
-	std::vector<ExifStat*> mStats;
-	std::vector<ExifFilter*> mFilters;
+	std::vector<ESStat*> mStats;
+	std::vector<ESFilter*> mFilters;
 
 	float mApertureMin;
 	float mApertureMax;

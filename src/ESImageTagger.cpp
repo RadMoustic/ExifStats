@@ -412,11 +412,14 @@ std::vector<float> ESImageTagger::processImage(const QImage& pImage)
 
 void ESImageTagger::initializeSession()
 {
-    Ort::SessionOptions lSessionOptions;
-    //OrtCUDAProviderOptions lCudaOptions;
-    //lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
-    OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
-    mSession.reset(new Ort::Session(mEnv, mModelPath.toStdWString().c_str(), lSessionOptions));
+    if(!mSession)
+    {
+        Ort::SessionOptions lSessionOptions;
+        //OrtCUDAProviderOptions lCudaOptions;
+        //lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
+        OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
+        mSession.reset(new Ort::Session(mEnv, mModelPath.toStdWString().c_str(), lSessionOptions));
+    }
 }
 
 /********************************************************************************/

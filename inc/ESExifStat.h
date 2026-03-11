@@ -13,25 +13,25 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifFilter;
+class ESFilter;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStat
+class ESStat
 {
 public:
-	ExifStat(){}
-	virtual ~ExifStat(){}
+	ESStat(){}
+	virtual ~ESStat(){}
 
-	void addFileCategory(const FileInfo& pFile)
+	void addFileCategory(const ESFileInfo& pFile)
 	{
 		for (auto& lComp : mComponents)
 			lComp->addFileCategory(pFile);
 	}
 
-	void addFile(const FileInfo& pFile)
+	void addFile(const ESFileInfo& pFile)
 	{
 		for(auto& lComp : mComponents)
 			lComp->addFile(pFile);
@@ -48,11 +48,11 @@ public:
 			lComp->reset();
 	}
 
-	void addComponent(ExifStatComponent* pComponent)
+	void addComponent(ESStatComponent* pComponent)
 	{
 		mComponents.push_back(pComponent);
 	}
 
 protected:
-	std::vector<ExifStatComponent*> mComponents;
+	std::vector<ESStatComponent*> mComponents;
 };

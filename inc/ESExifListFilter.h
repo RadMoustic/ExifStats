@@ -12,7 +12,7 @@
 /********************************************************************************/
 
 template<class ExifStatType, typename T>
-class ExifListFilter: public ExifFilter
+class ESListFilter: public ESFilter
 {
 public:
 	virtual void reset() override
@@ -43,7 +43,7 @@ public:
 		}
 	}
 
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		if (mVectorFilters.empty())
 			return false;

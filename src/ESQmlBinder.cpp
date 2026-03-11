@@ -106,9 +106,9 @@ void ESQmlBinder::clear()
 	if (QMessageBox::question(nullptr, tr("Clear Database"), tr("Are you sure you want to clear the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 	{
 		ESDatabase::getInstance().clear();
-		ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors.clear();
+		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
 
-		for (ExifStat* lStat : mStats)
+		for (ESStat* lStat : mStats)
 			lStat->reset();
 
 		emit dataHasChanged();
@@ -195,9 +195,9 @@ void ESQmlBinder::updateFiltersFromData()
 
 void ESQmlBinder::updateStats(bool pIgnoreFilters)
 {
-	for (ExifStat* lStat : mStats)
+	for (ESStat* lStat : mStats)
 		lStat->reset();
-	for (ExifStat* lStat : mStats)
+	for (ESStat* lStat : mStats)
 	{
 		for (auto&& lProcessedFile : ESDatabase::getInstance().getFiles())
 		{
@@ -208,7 +208,7 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 			bool lKeepCategory = false;
 			if(!pIgnoreFilters)
 			{
-				for (const ExifFilter* lFilter : mFilters)
+				for (const ESFilter* lFilter : mFilters)
 				{
 					if (lFilter->isFileFilteredOut(lProcessedFile.second))
 					{
@@ -317,9 +317,9 @@ void ESQmlBinder::setCameraModelsFilter(const QVariantMap& pSelectedCameras)
 void ESQmlBinder::setCameraModelTo35mmFocalLengthFactor(QString pCameraModel, float pFactor)
 {
 	uint8_t lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
-	if (lCameraModelIndex < ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors.size())
+	if (lCameraModelIndex < ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.size())
 	{
-		ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors[lCameraModelIndex] = pFactor;
+		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors[lCameraModelIndex] = pFactor;
 		updateStats(false);
 	}
 	else
@@ -333,9 +333,9 @@ void ESQmlBinder::setCameraModelTo35mmFocalLengthFactor(QString pCameraModel, fl
 float ESQmlBinder::getCameraModelTo35mmFocalLengthFactor(QString pCameraModel) const
 {
 	uint8_t lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
-	if (lCameraModelIndex < ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors.size())
+	if (lCameraModelIndex < ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.size())
 	{
-		return ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors[lCameraModelIndex];
+		return ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors[lCameraModelIndex];
 	}
 	else
 	{
@@ -491,14 +491,14 @@ int ESQmlBinder::getMaxFocalLength35mm() const
 
 QString ESQmlBinder::getMinTime() const
 {
-	return QDateTime::fromSecsSinceEpoch(mDateTimeMin).toString(ExifStatCountDateTime::msTimeFormat);
+	return QDateTime::fromSecsSinceEpoch(mDateTimeMin).toString(ESDateTimeStat::msTimeFormat);
 }
 
 /********************************************************************************/
 
 QString ESQmlBinder::getMaxTime() const
 {
-	return QDateTime::fromSecsSinceEpoch(mDateTimeMax).toString(ExifStatCountDateTime::msTimeFormat);
+	return QDateTime::fromSecsSinceEpoch(mDateTimeMax).toString(ESDateTimeStat::msTimeFormat);
 }
 
 /********************************************************************************/
@@ -510,7 +510,7 @@ bool ESQmlBinder::isCtrlPressed() const
 
 /********************************************************************************/
 
-const ESExifStatListFiles* ESQmlBinder::getFilteredFilesList() const
+const ESListFilesStat* ESQmlBinder::getFilteredFilesList() const
 {
 	return &mListFilesStat;
 }
@@ -533,7 +533,7 @@ QVector<int> ESQmlBinder::getOrientationsCount() const
 
 void ESQmlBinder::resetFilters()
 {
-	for (ExifFilter* lFilter : mFilters)
+	for (ESFilter* lFilter : mFilters)
 		lFilter->reset();
 	updateStats(true);
 	updateFiltersFromData();
@@ -568,7 +568,7 @@ bool ESQmlBinder::saveFilters(QString pPresetName)
 	}
 
 	QJsonObject lPresetJson;
-	for(const ExifFilter* lFilter: mFilters)
+	for(const ESFilter* lFilter: mFilters)
 	{
 		assert(!lFilter->mName.isEmpty());
 		QJsonObject lStatJson;
@@ -615,7 +615,7 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 		return false;
 	}
 	QJsonObject lPresetJson = lPresetDoc.object();
-	for (ExifFilter* lFilter : mFilters)
+	for (ESFilter* lFilter : mFilters)
 	{
 		assert(!lFilter->mName.isEmpty());
 		if (lPresetJson.contains(lFilter->mName))

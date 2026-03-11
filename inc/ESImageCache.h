@@ -34,7 +34,7 @@ public:
 	void initializeFromDatabase();
 	bool isUpdating() const;
 	void resetSearchSimilarityScores();
-	std::shared_ptr<ESImage> getImage(StringId pImagePath);
+	std::shared_ptr<ESImage> getImage(ESStringId pImagePath);
 	virtual void stopAndCancelAllLoadings() override;
 
 #ifdef QT_DEBUG
@@ -49,7 +49,7 @@ signals:
 protected:
 	/******************************** ATTRIBUTES **********************************/
 
-	std::unordered_map<StringId, std::shared_ptr<ESImage>> mImages;
+	std::unordered_map<ESStringId, std::shared_ptr<ESImage>> mImages;
 	std::shared_mutex mImagesMutex;
 	QString mCacheFolderPath;
 	bool mIsUpdating;

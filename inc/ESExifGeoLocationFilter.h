@@ -21,7 +21,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifGeoLocationFilter : public ExifFilter
+class ESGeoLocationFilter : public ESFilter
 {
 public:
 	QGeoShape mGeoShapeFilter;
@@ -31,7 +31,7 @@ public:
 		mGeoShapeFilter = QGeoShape();
 	}
 
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		return		mGeoShapeFilter.isValid()
 				&&	(	(	pFile.mExif.mGeoLococation.mLatitude == 0

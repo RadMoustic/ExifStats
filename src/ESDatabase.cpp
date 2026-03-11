@@ -21,7 +21,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 7;
+constexpr uint DATABASE_VERSION = 8;
 
 /********************************************************************************/
 
@@ -56,7 +56,7 @@ void ESDatabase::clear()
 	mAllCameraModels.clear();
 	mAllTags.clear();
 	mProcessedFilesCounter = 0;
-	ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors.clear();
+	ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
 
 	emit foldersChanged();
 }
@@ -85,7 +85,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				mFolders.clear();
 			}
 
-			QVector<StringId> lAllImageFiles;
+			QVector<ESStringId> lAllImageFiles;
 
 			std::set<const QString*> lUniqueFolders;
 			for (const QString& lFolderPath : pFolders)
@@ -99,8 +99,8 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				QDirIterator lDirIt(*lFolderPath, { "*.jpeg", "*.jpg", "*.heic"}, QDir::Files, QDirIterator::Subdirectories);
 				while (lDirIt.hasNext())
 				{
-					StringId lFilePath = lDirIt.next();
-					FileInfo& lFileInfo = mFiles[lFilePath];
+					ESStringId lFilePath = lDirIt.next();
+					ESFileInfo& lFileInfo = mFiles[lFilePath];
 					if(!pNewFilesOnly || !lFileInfo.mFilePath.isValid() || lFileInfo.mReadResult != eSuccess)
 						lAllImageFiles << lFilePath;
 				}
@@ -116,9 +116,9 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			constexpr uint cNbFilesPerThread = 256;
 
 			QFuture<void> res = QtConcurrent::map(lAllImageFiles,
-				[&](const StringId& pFilePath)
+				[&](const ESStringId& pFilePath)
 				{
-					FileInfo& lFileInfo = mFiles[pFilePath];
+					ESFileInfo& lFileInfo = mFiles[pFilePath];
 					lFileInfo.mFilePath = pFilePath;
 
 					easyexif::EXIFInfo lExifData;
@@ -142,9 +142,9 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			mFilesMutex.unlock();
 
 			// Extract all camera models and counter
-			std::unordered_set<StringId> lCameraModels;
-			std::unordered_set<StringId> lLensModels;
-			for (std::pair<const StringId, FileInfo>& lProcessedFile : mFiles)
+			std::unordered_set<ESStringId> lCameraModels;
+			std::unordered_set<ESStringId> lLensModels;
+			for (std::pair<const ESStringId, ESFileInfo>& lProcessedFile : mFiles)
 			{
 				if (lProcessedFile.second.mReadResult == eSuccess)
 				{
@@ -188,7 +188,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 
 /********************************************************************************/
 
-ReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif::EXIFInfo& pOutExif)
+ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif::EXIFInfo& pOutExif)
 {
 	QFile lFile(pFilePath);
 	if (!lFile.exists())
@@ -226,7 +226,7 @@ ReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif::
 			return eParseExifErrorNoExif;
 
 		// Parse EXIF
-		return static_cast<ReadExifFileResult>(pOutExif.parseFromEXIFSegment(reinterpret_cast<unsigned char*>(&tHeaderBuffer[lOffset]), static_cast<unsigned int>(tHeaderSize - lOffset)));
+		return static_cast<ESReadExifFileResult>(pOutExif.parseFromEXIFSegment(reinterpret_cast<unsigned char*>(&tHeaderBuffer[lOffset]), static_cast<unsigned int>(tHeaderSize - lOffset)));
 	}
 	else
 	{
@@ -262,15 +262,15 @@ ReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif::
 			return eFailedToRead;
 
 		// Parse EXIF
-		return static_cast<ReadExifFileResult>(pOutExif.parseFrom(reinterpret_cast<unsigned char *>(tHeaderBuffer.get()), lHeaderIncludingExifSize));
+		return static_cast<ESReadExifFileResult>(pOutExif.parseFrom(reinterpret_cast<unsigned char *>(tHeaderBuffer.get()), lHeaderIncludingExifSize));
 	}
 }
 
 /********************************************************************************/
 
-UsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& aFullExif)
+ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& aFullExif)
 {
-	UsefullExif result;
+	ESUsefullExif result;
 
 	result.mCameraModel = QString(aFullExif.Model.c_str());
 	result.mLensModel = QString(aFullExif.LensInfo.Model.c_str());
@@ -308,13 +308,13 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 	pSerializer.Serialize(mFolders);
 	pSerializer.Serialize(mAllCameraModels);
-	pSerializer.Serialize(ExifStatCountFocalLengthIn35mm::msCameraModelsTo35mmFocalFactors);
+	pSerializer.Serialize(ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors);
 	pSerializer.Serialize(mAllLensModels);
 	if (lDatabaseVersion >= 6)
 		pSerializer.Serialize(mAllTags);
 
 	pSerializer.SerializeCustom(mFiles,
-		[&](StringId& pStringId, FileInfo& pFileInfo)
+		[&](ESStringId& pStringId, ESFileInfo& pFileInfo)
 		{
 			pSerializer.Serialize(pFileInfo.mFilePath);
 			pSerializer.Serialize(pFileInfo.mCameraModelIdx);
@@ -437,9 +437,9 @@ const QVector<QString>& ESDatabase::getFolders() const
 
 /********************************************************************************/
 
-const FileInfo* ESDatabase::getFileInfo(StringId pFile) const
+const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 {
-	const FileInfo* lResult = nullptr;
+	const ESFileInfo* lResult = nullptr;
 	auto itFound = mFiles.find(pFile);
 	if (itFound != mFiles.end())
 		lResult = &itFound->second;
@@ -448,7 +448,7 @@ const FileInfo* ESDatabase::getFileInfo(StringId pFile) const
 
 /********************************************************************************/
 
-const std::map<StringId, FileInfo>& ESDatabase::getFiles() const
+const std::map<ESStringId, ESFileInfo>& ESDatabase::getFiles() const
 {
 	return mFiles;
 }

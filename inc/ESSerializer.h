@@ -34,7 +34,7 @@ public:
 	}
 
 	template<>
-	void Serialize(StringId& pValue)
+	void Serialize(ESStringId& pValue)
 	{
 		if constexpr (READ)
 		{

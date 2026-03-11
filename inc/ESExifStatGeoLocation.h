@@ -17,12 +17,12 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatGeoLocation: public ExifStat
+class ESGeoLocationStat: public ESStat
 {
 public:
-	ExifStatGeoLocationComponent mGeoLocComp;
+	ESGeoLocationStatComponent mGeoLocComp;
 
-	ExifStatGeoLocation()
+	ESGeoLocationStat()
 	{
 		addComponent(&mGeoLocComp);
 	}

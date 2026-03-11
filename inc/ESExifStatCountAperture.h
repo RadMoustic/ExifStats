@@ -18,18 +18,18 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ESExifStatCountAperture : public ExifStat
+class ESApertureStat : public ESStat
 {
 public:
-	ExifStatMinMaxComponent<float, ESExifStatCountAperture> mMinMaxComp;
-	ExifStatCountComponent<float, ESExifStatCountAperture> mCountComp;
+	ESMinMaxStatComponent<float, ESApertureStat> mMinMaxComp;
+	ESCountStatComponent<float, ESApertureStat> mCountComp;
 
-	ESExifStatCountAperture()
+	ESApertureStat()
 	{
 		addComponent(&mMinMaxComp);
 		addComponent(&mCountComp);
 	}
 
-	static float getFileValue(const FileInfo& pFile) { return pFile.mExif.mFNumber; }
+	static float getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mFNumber; }
 	static QString getValueLabel(float aValue) { return QString::number(aValue); }
 };

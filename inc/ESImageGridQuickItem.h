@@ -38,7 +38,7 @@ public:
 	ESImageGridQuickItem();
 	virtual ~ESImageGridQuickItem();
 
-	ES_QML_PROPERTY(FilteredFilesList, const ESExifStatListFiles*)
+	ES_QML_PROPERTY(FilteredFilesList, const ESListFilesStat*)
 	ES_QML_PROPERTY(ImageFiles, QVector<QString>, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(ImageWidth, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(ImageHeight, int, mDataHasChanged = true; update();)
@@ -71,7 +71,7 @@ private:
 	bool mGeometryHasChanged;
 
 	std::vector<std::shared_ptr<ESImage>> mImages;
-	const ESExifStatListFilesComponent* mFilteredFilesListComponent;
+	const ESListFilesStatComponent* mFilteredFilesListComponent;
 
 	/********************************* METHODS ***********************************/
 

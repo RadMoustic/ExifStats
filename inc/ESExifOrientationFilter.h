@@ -11,7 +11,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ESExifOrientationFilter : public ExifFilter
+class ESOrientationFilter : public ESFilter
 {
 public:
 	enum FilterMode : int
@@ -29,7 +29,7 @@ public:
 		mFilterMode = eNoFilter;
 	}
 
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		if(mFilterMode == eNoFilter)
 			return false;

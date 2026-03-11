@@ -12,23 +12,23 @@
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
 // Bool: True => Portrait, False => Landscape
-class ESExifStatCountOrientation : public ExifStat
+class ESOrientationStat : public ESStat
 {
 public:
-	ExifStatCountComponent<bool, ESExifStatCountOrientation> mCountComp;
+	ESCountStatComponent<bool, ESOrientationStat> mCountComp;
 
-	ESExifStatCountOrientation()
+	ESOrientationStat()
 	{
 		addComponent(&mCountComp);
 	}
 
-	static bool getFileValue(const FileInfo& pFile) { return pFile.mExif.mOrientation == UpperRight || pFile.mExif.mOrientation == LowerLeft; }
+	static bool getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mOrientation == UpperRight || pFile.mExif.mOrientation == LowerLeft; }
 	static QString getValueLabel(bool aValue) { return aValue ? "Portrait" : "Landscape"; }
 };

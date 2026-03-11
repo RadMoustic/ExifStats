@@ -11,24 +11,24 @@
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
 template<typename T, class Derived>
-class ExifStatCountComponent : public ExifStatCounterComponentInterface
+class ESCountStatComponent : public ESCounterStatComponentInterface
 {
 public:
 
-	virtual void addFileCategory(const FileInfo& pFile) override
+	virtual void addFileCategory(const ESFileInfo& pFile) override
 	{
 		T lFileValue = Derived::getFileValue(pFile);
 		mValueCounters[lFileValue] += 0;
 	}
 
-	virtual void addFile(const FileInfo& pFile) override
+	virtual void addFile(const ESFileInfo& pFile) override
 	{
 		T lFileValue = Derived::getFileValue(pFile);
 		mValueCounters[lFileValue] += 1;

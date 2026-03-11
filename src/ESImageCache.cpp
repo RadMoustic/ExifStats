@@ -149,7 +149,7 @@ void ESImageCache::resetSearchSimilarityScores()
 
 /********************************************************************************/
 
-std::shared_ptr<ESImage> ESImageCache::getImage(StringId pImagePath)
+std::shared_ptr<ESImage> ESImageCache::getImage(ESStringId pImagePath)
 {
 	std::shared_lock lock(mImagesMutex);
 	auto itFound = mImages.find(pImagePath);

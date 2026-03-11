@@ -14,7 +14,7 @@
 
 class ESStringPool
 {
-	friend class StringId;
+	friend class ESStringId;
 
 public:
 	/********************************** TYPES *************************************/
@@ -40,18 +40,18 @@ private:
 
 /********************************************************************************/
 
-class StringId
+class ESStringId
 {
 public:
 	/********************************* METHODS ***********************************/
 
-	StringId();
-	StringId(const StringId& aString);
-	StringId(const QString& aString);
-	StringId(const std::string& aString);
+	ESStringId();
+	ESStringId(const ESStringId& aString);
+	ESStringId(const QString& aString);
+	ESStringId(const std::string& aString);
 	const QString& getString() const;
 	ESStringPool::InternalId getId() const;
-	auto operator<=>(const StringId& aString) const = default;
+	auto operator<=>(const ESStringId& aString) const = default;
 	operator QString() const;
 
 	bool isValid() const;
@@ -65,9 +65,9 @@ private:
 /********************************************************************************/
 
 template <>
-struct std::hash<StringId>
+struct std::hash<ESStringId>
 {
-	std::size_t operator()(const StringId& aStringId) const
+	std::size_t operator()(const ESStringId& aStringId) const
 	{
 		return std::hash<ESStringPool::InternalId>()(aStringId.getId());
 	}

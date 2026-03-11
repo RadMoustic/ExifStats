@@ -16,7 +16,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ESExifPathFilter : public ExifFilter
+class ESPathFilter : public ESFilter
 {
 public:
 	QStringList mPathInclusiveFilters;
@@ -26,7 +26,7 @@ public:
 		mPathInclusiveFilters.clear();
 	}
 
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		if(mPathInclusiveFilters.isEmpty())
 			return false;

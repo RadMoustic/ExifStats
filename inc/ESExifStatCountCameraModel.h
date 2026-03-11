@@ -13,23 +13,23 @@
 /********************************************************************************/
 /********************************************************************************/
 
-struct FileInfo;
+struct ESFileInfo;
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatCountCameraModel : public ExifStat
+class ESCameraModelStat : public ESStat
 {
 public:
-	ExifStatCountComponent<StringId, ExifStatCountCameraModel> mCountComp;
+	ESCountStatComponent<ESStringId, ESCameraModelStat> mCountComp;
 
-	ExifStatCountCameraModel()
+	ESCameraModelStat()
 	{
 		addComponent(&mCountComp);
 	}
 
-	static StringId getFileValue(const FileInfo& pFile) { return pFile.mExif.mCameraModel; }
-	static uint8_t getFileValueIndex(const FileInfo& pFile) { return pFile.mCameraModelIdx; }
-	static QString getValueLabel(StringId aValue) { return aValue.getString(); }
+	static ESStringId getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mCameraModel; }
+	static uint8_t getFileValueIndex(const ESFileInfo& pFile) { return pFile.mCameraModelIdx; }
+	static QString getValueLabel(ESStringId aValue) { return aValue.getString(); }
 };

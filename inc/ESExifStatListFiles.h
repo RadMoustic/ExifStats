@@ -22,13 +22,13 @@ class ESDatabase;
 /********************************************************************************/
 /********************************************************************************/
 
-class ESExifStatListFiles : public QObject, public ExifStat
+class ESListFilesStat : public QObject, public ESStat
 {
 	Q_OBJECT
 public:
-	ESExifStatListFilesComponent mListFilesComp;
+	ESListFilesStatComponent mListFilesComp;
 
-	ESExifStatListFiles()
+	ESListFilesStat()
 	{
 		QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
 

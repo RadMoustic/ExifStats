@@ -17,13 +17,13 @@
 /********************************************************************************/
 
 template<typename T, class ExifStatType>
-class ExifFromToFilter : public ExifFilter
+class ESFromToFilter : public ESFilter
 {
 public:
 	T mFilterFrom;
 	T mFilterTo;
 
-	ExifFromToFilter()
+	ESFromToFilter()
 	 : mFilterFrom(std::numeric_limits<T>::min())
 	 , mFilterTo(std::numeric_limits<T>::max())
 	{
@@ -36,7 +36,7 @@ public:
 		mFilterTo = std::numeric_limits<T>::max();
 	}
 
-	virtual bool isFileFilteredOut(const FileInfo& pFile) const override
+	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		auto lFileValue = ExifStatType::getFileValue(pFile);
 		return		lFileValue < mFilterFrom

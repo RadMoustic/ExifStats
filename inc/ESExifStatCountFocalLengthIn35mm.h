@@ -18,14 +18,14 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatCountFocalLengthIn35mm : public ExifStat
+class ESFocalLengthIn35mmStat : public ESStat
 {
 public:
 	
-	ExifStatMinMaxComponent<int, ExifStatCountFocalLengthIn35mm> mMinMaxComp;
-	ExifStatCountIntAllValuesComponent<ExifStatCountFocalLengthIn35mm> mCountComp;
+	ESMinMaxStatComponent<int, ESFocalLengthIn35mmStat> mMinMaxComp;
+	ESCountIntAllValuesStatComponent<ESFocalLengthIn35mmStat> mCountComp;
 
-	ExifStatCountFocalLengthIn35mm()
+	ESFocalLengthIn35mmStat()
 	{
 		mCountComp.mMinMaxComponent = &mMinMaxComp;
 
@@ -33,9 +33,9 @@ public:
 		addComponent(&mCountComp);
 	}
 
-	static int getFileValue(const FileInfo& pFile) { return get35mmFocalLength(pFile); }
+	static int getFileValue(const ESFileInfo& pFile) { return get35mmFocalLength(pFile); }
 	static QString getValueLabel(int aValue) { return QString::number(aValue); }
 
 	static std::map<uint8_t, float> msCameraModelsTo35mmFocalFactors;
-	static int get35mmFocalLength(const FileInfo& aFile);
+	static int get35mmFocalLength(const ESFileInfo& aFile);
 };

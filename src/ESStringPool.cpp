@@ -54,7 +54,7 @@ ESStringPool::InternalId ESStringPool::getStringId(const QString& aString)
 
 /********************************************************************************/
 
-StringId::StringId()
+ESStringId::ESStringId()
 	: mId(0)
 {
 
@@ -62,7 +62,7 @@ StringId::StringId()
 
 /********************************************************************************/
 
-StringId::StringId(const StringId& aString)
+ESStringId::ESStringId(const ESStringId& aString)
 	: mId(aString.mId)
 {
 
@@ -70,42 +70,42 @@ StringId::StringId(const StringId& aString)
 
 /********************************************************************************/
 
-StringId::StringId(const QString& aString)
+ESStringId::ESStringId(const QString& aString)
 {
 	mId = ESStringPool::msInstance->getStringId(aString);
 }
 
 /********************************************************************************/
 
-StringId::StringId(const std::string& aString)
+ESStringId::ESStringId(const std::string& aString)
 {
 	mId = ESStringPool::msInstance->getStringId(aString.c_str());
 }
 
 /********************************************************************************/
 
-const QString& StringId::getString() const
+const QString& ESStringId::getString() const
 {
 	return mId == 0 ? ESStringPool::msInstance->mNullString : *reinterpret_cast<QString*>(mId);
 }
 
 /********************************************************************************/
 
-ESStringPool::InternalId StringId::getId() const
+ESStringPool::InternalId ESStringId::getId() const
 {
 	return mId;
 }
 
 /********************************************************************************/
 
-bool StringId::isValid() const
+bool ESStringId::isValid() const
 {
 	return mId != 0;
 }
 
 /********************************************************************************/
 
-StringId::operator QString() const
+ESStringId::operator QString() const
 {
 	return getString();
 }

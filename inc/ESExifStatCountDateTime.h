@@ -18,15 +18,15 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatCountDateTime : public ExifStat
+class ESDateTimeStat : public ESStat
 {
 public:
 	static const char* msTimeFormat;
 
-	ExifStatMinMaxComponent<uint64_t, ExifStatCountDateTime> mMinMaxComp;
-	ExifStatCountStepComponent<uint64_t, ExifStatCountDateTime> mCountComp;
+	ESMinMaxStatComponent<uint64_t, ESDateTimeStat> mMinMaxComp;
+	ESCountStepStatComponent<uint64_t, ESDateTimeStat> mCountComp;
 
-	ExifStatCountDateTime()
+	ESDateTimeStat()
 	{
 		addComponent(&mMinMaxComp);
 		addComponent(&mCountComp);
@@ -36,6 +36,6 @@ public:
 		mMinMaxComp.mValidMaxValue = 0xfffffffffffff000 - 1;
 	}
 
-	static uint64_t getFileValue(const FileInfo& pFile) { return pFile.mExif.mDateTime; }
+	static uint64_t getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mDateTime; }
 	static QString getValueLabel(uint64_t aValue) { return QDateTime::fromSecsSinceEpoch(aValue).toString(msTimeFormat); }
 };

@@ -16,7 +16,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ExifStatCounterComponentInterface : public ExifStatComponent
+class ESCounterStatComponentInterface : public ESStatComponent
 {
 public:
 	virtual const QVector<int>& getCounters() const = 0;
