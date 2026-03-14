@@ -1,6 +1,6 @@
 #ifdef IMAGETAGGER_ENABLE
 
-#include <ESImageTagsSearchEngine.h>
+#include <ESTextEncoder.h>
 
 // Onnxruntime
 #include <dml_provider_factory.h>

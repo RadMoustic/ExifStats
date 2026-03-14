@@ -11,7 +11,7 @@
 // ES
 #include "ESFilter.h"
 #include "ESFileInfo.h"
-#include "ESImageTagsSearchEngine.h"
+#include "ESTextEncoder.h"
 
 // Stl
 #include <unordered_set>
