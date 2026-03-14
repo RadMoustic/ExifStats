@@ -2,6 +2,7 @@
 
 // ES
 #include "ESDatabase.h"
+#include "ESPerfLog.h"
 #include "ESImageTaggerManager.h"
 
 // Qt
@@ -195,6 +196,8 @@ void ESQmlBinder::updateFiltersFromData()
 
 void ESQmlBinder::updateStats(bool pIgnoreFilters)
 {
+	ESPerfLog lPerfLog(__FUNCTION__);
+	
 	for (ESStat* lStat : mStats)
 		lStat->reset();
 	for (ESStat* lStat : mStats)

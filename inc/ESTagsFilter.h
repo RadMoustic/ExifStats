@@ -20,6 +20,14 @@
 /********************************************************************************/
 /********************************************************************************/
 
+namespace hnswlib
+{
+	template<typename dist_t>
+	class HierarchicalNSW;
+
+	class InnerProductSpace;
+}
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -29,13 +37,10 @@ class ESTagsFilter : public QObject, public ESFilter
 	Q_OBJECT;
 
 public:
-	/******************************** ATTRIBUTES **********************************/
-
-	float mMinSimilarityScore;
-
 	/********************************* METHODS ***********************************/
 
 	ESTagsFilter();
+	virtual ~ESTagsFilter();
 
 	virtual void reset() override;
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override;
@@ -46,6 +51,9 @@ public:
 	QString getSearchString() const;
 	void setSearchString(const QString& pSearchString);
 
+	float getMinSimilarityScore() const;
+	void setMinSimilarityScore(float pMinSimilarityScore);
+
 #ifdef IMAGETAGGER_ENABLE
 	bool isTokenizerEnabled() const;
 #endif // IMAGETAGGER_ENABLE
@@ -54,6 +62,7 @@ private:
 	/******************************** ATTRIBUTES **********************************/
 
 	QString mSearchString;
+	float mMinSimilarityScore;
 
 #ifdef IMAGETAGGER_ENABLE
 	QString mTokenizerDirectoryPath;
@@ -65,11 +74,20 @@ private:
 	QStringList mSearchTags;
 	ESImageTagsSearchEngine::TextEncodedResult mSearchTagsEmbeddings;
 	QMutex mDatabaseTagsEmbeddingCacheMutex;
+#ifdef HNSWLIB_ENABLED
+	std::unique_ptr<hnswlib::InnerProductSpace> mHnswSpace;
+	std::unique_ptr<hnswlib::HierarchicalNSW<float>> mHnswIndex;
+	std::unordered_set<ESStringId> mHnswSearchResults;
+#endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 
 	/********************************* METHODS ***********************************/
 
 #ifdef IMAGETAGGER_ENABLE
 	void onDatabaseTagsHaveChanged();
+#ifdef HNSWLIB_ENABLED
+	void onDatabaseFoldersHaveChanged();
+	void updateHnswSearchResults();
+#endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 };

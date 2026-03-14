@@ -88,14 +88,14 @@ public:
 		}
 	}
 
-	template<>
-	void Serialize(std::vector<float>& pList)
+	template<typename A>
+	void Serialize(std::vector<float, A>& pList)
 	{
 		SerializeRaw<float>(pList);
 	}
 
-	template<typename T>
-	void SerializeRaw(std::vector<T>& pList)
+	template<typename T, typename A>
+	void SerializeRaw(std::vector<T, A>& pList)
 	{
 		if constexpr (READ)
 		{

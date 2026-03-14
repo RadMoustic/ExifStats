@@ -36,6 +36,7 @@ constexpr uint DATABASE_VERSION = 8;
 ESDatabase::ESDatabase()
 	: mProcessing(false)
 	, mProcessingProgress(0.f)
+	, mEmbeddingsDimension(0)
 {
 }
 
@@ -56,6 +57,7 @@ void ESDatabase::clear()
 	mAllCameraModels.clear();
 	mAllTags.clear();
 	mProcessedFilesCounter = 0;
+	mEmbeddingsDimension = 0;
 	ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
 
 	emit foldersChanged();
@@ -346,6 +348,13 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					pFileInfo.mExif.mCameraModel = mAllCameraModels[pFileInfo.mCameraModelIdx];
 				if (pFileInfo.mLensModelIdx != std::numeric_limits<decltype(pFileInfo.mLensModelIdx)>::max())
 					pFileInfo.mExif.mLensModel = mAllLensModels[pFileInfo.mLensModelIdx];
+
+				if (pFileInfo.mEmbeddings.size() > 0)
+				{
+					if(mEmbeddingsDimension == 0)
+						mEmbeddingsDimension = int(pFileInfo.mEmbeddings.size());
+					assert(mEmbeddingsDimension == pFileInfo.mEmbeddings.size());
+				}
 			}
 			else
 			{
@@ -448,6 +457,13 @@ const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 
 /********************************************************************************/
 
+std::shared_mutex& ESDatabase::getFilesMutex() const
+{
+	return mFilesMutex;
+}
+
+/********************************************************************************/
+
 const std::map<ESStringId, ESFileInfo>& ESDatabase::getFiles() const
 {
 	return mFiles;
@@ -471,7 +487,7 @@ const QVector<QString>& ESDatabase::getAllCameraModels() const
 
 void ESDatabase::getAllTags(std::vector<QString>& pOutput)
 {
-	std::scoped_lock lock(mFilesMutex);
+	std::shared_lock lock(mFilesMutex);
 	pOutput = mAllTags;
 }
 
@@ -487,7 +503,7 @@ void ESDatabase::setAllTags(const std::vector<QString>& pAllTags)
 
 QStringList ESDatabase::getTagsLabels(const std::vector<uint16_t>& pTags)
 {
-	std::scoped_lock lock(mFilesMutex);
+	std::shared_lock lock(mFilesMutex);
 	QStringList lResult;
 	for (uint16_t tag : pTags)
 	{
@@ -503,6 +519,21 @@ QStringList ESDatabase::getTagsLabels(const std::vector<uint16_t>& pTags)
 
 QString ESDatabase::getTagLabel(uint16_t pTagIndex) const
 {
-	std::scoped_lock lock(mFilesMutex);
+	std::shared_lock lock(mFilesMutex);
 	return mAllTags[pTagIndex];
+}
+
+/********************************************************************************/
+
+int ESDatabase::getEmbeddingsDimension() const
+{
+	return mEmbeddingsDimension;
+}
+
+/********************************************************************************/
+
+void ESDatabase::setEmbeddingsDimension(int pEmbeddingsDimension)
+{
+	assert(mEmbeddingsDimension == 0);
+	mEmbeddingsDimension = pEmbeddingsDimension;
 }

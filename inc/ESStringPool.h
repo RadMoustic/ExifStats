@@ -35,7 +35,7 @@ private:
 
 	/********************************* METHODS ***********************************/
 
-	InternalId getStringId(const QString& aString);
+	InternalId getStringId(const QString& pString);
 };
 
 /********************************************************************************/
@@ -46,12 +46,13 @@ public:
 	/********************************* METHODS ***********************************/
 
 	ESStringId();
-	ESStringId(const ESStringId& aString);
-	ESStringId(const QString& aString);
-	ESStringId(const std::string& aString);
+	ESStringId(ESStringPool::InternalId pId);
+	ESStringId(const ESStringId& pString);
+	ESStringId(const QString& pString);
+	ESStringId(const std::string& pString);
 	const QString& getString() const;
 	ESStringPool::InternalId getId() const;
-	auto operator<=>(const ESStringId& aString) const = default;
+	auto operator<=>(const ESStringId& pString) const = default;
 	operator QString() const;
 
 	bool isValid() const;
@@ -67,8 +68,8 @@ private:
 template <>
 struct std::hash<ESStringId>
 {
-	std::size_t operator()(const ESStringId& aStringId) const
+	std::size_t operator()(const ESStringId& pStringId) const
 	{
-		return std::hash<ESStringPool::InternalId>()(aStringId.getId());
+		return std::hash<ESStringPool::InternalId>()(pStringId.getId());
 	}
 };

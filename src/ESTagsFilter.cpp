@@ -4,6 +4,14 @@
 #include "ESDatabase.h"
 #include "ESImageCache.h"
 
+// Hnswlib
+#ifdef HNSWLIB_ENABLED
+#pragma warning( push, 0 )
+#pragma warning( disable : 4701 )
+#include "hnswlib/hnswlib.h"
+#pragma warning( pop )
+#endif // HNSWLIB_ENABLED
+
 // Qt
 #include <QtConcurrent>
 
@@ -11,7 +19,7 @@
 
 ESTagsFilter::ESTagsFilter()
 	: mTokenizerEnabled(false)
-	, mMinSimilarityScore(0.3f)
+	, mMinSimilarityScore(0.2f)
 {
 	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
 
@@ -22,12 +30,20 @@ ESTagsFilter::ESTagsFilter()
 		QtConcurrent::run([this]()
 		{
 			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
+#ifdef HNSWLIB_ENABLED
+			onDatabaseFoldersHaveChanged();
+			(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESTagsFilter::onDatabaseFoldersHaveChanged, Qt::QueuedConnection);
+#endif // HNSWLIB_ENABLED
 			onDatabaseTagsHaveChanged();
 			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
 		});			
 	}
 #endif // IMAGETAGGER_ENABLE
 }
+
+/********************************************************************************/
+
+ESTagsFilter::~ESTagsFilter() = default;
 
 /********************************************************************************/
 
@@ -40,6 +56,39 @@ ESTagsFilter::ESTagsFilter()
 
 /********************************************************************************/
 
+float ESTagsFilter::getMinSimilarityScore() const
+{
+	return mMinSimilarityScore;
+}
+
+/********************************************************************************/
+
+void ESTagsFilter::setMinSimilarityScore(float pMinSimilarityScore)
+{
+	mMinSimilarityScore = pMinSimilarityScore;
+	updateHnswSearchResults();
+}
+
+/********************************************************************************/
+
+#ifdef HNSWLIB_ENABLED
+void ESTagsFilter::onDatabaseFoldersHaveChanged()
+{
+	const ESDatabase& lDB = ESDatabase::getInstance();
+	if (lDB.getEmbeddingsDimension() > 0)
+	{
+		std::shared_lock lock(lDB.getFilesMutex());
+		mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
+		mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+		for (auto&& lFileInfo : lDB.getFiles())
+			if (lFileInfo.second.mEmbeddings.size() > 0)
+				mHnswIndex->addPoint(lFileInfo.second.mEmbeddings.data(), lFileInfo.first.getId());
+	}
+}
+#endif // HNSWLIB_ENABLED
+
+/********************************************************************************/
+
 /*virtual*/ bool ESTagsFilter::isFileFilteredOut(const ESFileInfo& pFile) const /*override*/
 {
 	if (mSearchString.isEmpty())
@@ -48,14 +97,23 @@ ESTagsFilter::ESTagsFilter()
 #ifdef IMAGETAGGER_ENABLE
 	if(mEngine)
 	{
-		if(pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbedding.size())
+		if (pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbeddings.size())
 		{
-			float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
-			ESImageCache::getInstance().getImage(pFile.mFilePath)->mCurrentSearchSimilarity = lSimilarityScore;
-			return lSimilarityScore < mMinSimilarityScore;
+#ifdef HNSWLIB_ENABLED
+			if (mHnswIndex)
+			{
+				return mHnswSearchResults.find(pFile.mFilePath) == mHnswSearchResults.end();
+			}
+			else
+#endif // HNSWLIB_ENABLED
+			{
+				float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
+				ESImageCache::getInstance().getImage(pFile.mFilePath)->mCurrentSearchSimilarity = lSimilarityScore;
+				return lSimilarityScore < mMinSimilarityScore;
+			}
 		}
 
-		if(mSearchTagsEmbeddings.mEmbedding.size() > 0)
+		if(mSearchTagsEmbeddings.mEmbeddings.size() > 0)
 			return true;
 
 		for (const std::unordered_set<uint16_t>& lSearchTags : mSearchTagIndices)
@@ -170,10 +228,41 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 
 		mSearchTagsEmbeddings = mEngine->encode(mSearchString);
 
+#ifdef HNSWLIB_ENABLED
+		updateHnswSearchResults();
+#endif // HNSWLIB_ENABLED
+
 		mDatabaseTagsEmbeddingCacheMutex.unlock();
 	}
 #endif // IMAGETAGGER_ENABLE
 }
+
+/********************************************************************************/
+
+#ifdef HNSWLIB_ENABLED
+void ESTagsFilter::updateHnswSearchResults()
+{
+	if (mHnswIndex)
+	{
+		constexpr size_t cMaxResults = 10000;
+		mHnswSearchResults.clear();
+		mHnswSearchResults.reserve(cMaxResults);
+		hnswlib::EpsilonSearchStopCondition<float> lStopCondition(1.f - mMinSimilarityScore, 100, cMaxResults);
+		std::vector<std::pair<float, uint64_t>> lSearchResults = mHnswIndex->searchStopConditionClosest(mSearchTagsEmbeddings.mEmbeddings.data(), lStopCondition);
+		for (std::pair<float, ESStringPool::InternalId> lResult : lSearchResults)
+		{
+			const float lSimilarityScore = 1.f - lResult.first;
+			if (lSimilarityScore >= mMinSimilarityScore) // HNSWLIB InnerProductSpace: d = 1.0 - sum(Ai*Bi)
+			{
+				ESStringId lImagePath(mHnswIndex->getExternalLabel(hnswlib::tableint(lResult.second)));
+				mHnswSearchResults.insert(lImagePath);
+				ESImageCache::getInstance().getImage(lImagePath)->mCurrentSearchSimilarity = lSimilarityScore;
+			}
+		}
+	}
+
+}
+#endif // HNSWLIB_ENABLED
 
 /********************************************************************************/
 

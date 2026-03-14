@@ -130,7 +130,7 @@ public:
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
-	B_QML_PROPERTY(TagsMinSimilarityScore, mTagsFilter.mMinSimilarityScore, float)
+	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 
 	/********************************* METHODS ***********************************/

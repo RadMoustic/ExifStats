@@ -6,6 +6,9 @@
 /********************************************************************************/
 /********************************************************************************/
 
+// ES
+#include "ESFileInfo.h"
+
 // ONNX Runtime
 #include <onnxruntime_cxx_api.h>
 
@@ -57,7 +60,7 @@ public:
         int mTopScoreCount = 0;
 
         bool loadLabels(const QString& pFilePath);
-        virtual std::vector<uint16_t> getTagsFromScores(const std::vector<float>& pScores);
+        virtual std::vector<uint16_t> getTagsFromScores(const ESEmbeddings& pScores);
         QStringList getTagsLabels(const std::vector<uint16_t>& pTags);
 
         virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath) override;
@@ -70,7 +73,7 @@ public:
 
         void setCocoLabels();
 
-        virtual std::vector<uint16_t> getTagsFromScores(const std::vector<float>& pScores) override;
+        virtual std::vector<uint16_t> getTagsFromScores(const ESEmbeddings& pScores) override;
 
         virtual bool loadFromJSON(const QJsonObject& pJsonObject, const QString& pFilePath) override;
     };
@@ -96,7 +99,7 @@ public:
 
 	std::shared_ptr<Format> getFormat() const;
 
-    std::vector<float> processImage(const QImage& pImage);
+    ESEmbeddings processImage(const QImage& pImage);
 
 private:
     /******************************** ATTRIBUTES **********************************/

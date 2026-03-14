@@ -90,7 +90,7 @@ bool ESImageTagger::FormatClassification::loadLabels(const QString& pFilePath)
 
 /********************************************************************************/
 
-/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatClassification::getTagsFromScores(const std::vector<float>& pScores)
+/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatClassification::getTagsFromScores(const ESEmbeddings& pScores)
 {
     assert(mLabels.size() > 0 && mLabels.size() == int(pScores.size()));
 
@@ -230,7 +230,7 @@ void ESImageTagger::FormatObjectDetection::setCocoLabels()
 
 /********************************************************************************/
 
-/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatObjectDetection::getTagsFromScores(const std::vector<float>& pScores) /*override*/
+/*virtual*/ std::vector<uint16_t> ESImageTagger::FormatObjectDetection::getTagsFromScores(const ESEmbeddings& pScores) /*override*/
 {
     assert(mLabels.size() > 0);
 
@@ -366,7 +366,7 @@ std::shared_ptr<ESImageTagger::Format> ESImageTagger::getFormat() const
 
 /********************************************************************************/
 
-std::vector<float> ESImageTagger::processImage(const QImage& pImage)
+ESEmbeddings ESImageTagger::processImage(const QImage& pImage)
 {
     QImage lResizedImage = pImage.scaled(mFormat->mInputWidth, mFormat->mInputHeight, mFormat->mKeepAspectRatio ? Qt::KeepAspectRatioByExpanding : Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
@@ -401,7 +401,7 @@ std::vector<float> ESImageTagger::processImage(const QImage& pImage)
 
     size_t lOutputTensorSize = mSession->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementCount();
 
-    std::vector<float> lResult;
+    ESEmbeddings lResult;
     lResult.resize(lOutputTensorSize);
     std::memcpy(lResult.data(), lOutputTensors.front().GetTensorMutableData<float>(), lResult.size() * sizeof(float));
 

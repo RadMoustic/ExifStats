@@ -13,6 +13,7 @@
 // Stl
 #include <functional>
 #include <unordered_set>
+#include <shared_mutex>
 
 // ES
 #include "ESFocalLengthIn35mmStat.h"
@@ -66,6 +67,7 @@ public:
 	const QVector<QString>& getFolders() const;
 
 	const ESFileInfo* getFileInfo(ESStringId pFile) const;
+	std::shared_mutex& getFilesMutex() const;
 	const std::map<ESStringId, ESFileInfo>& getFiles() const;
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
@@ -74,6 +76,9 @@ public:
 	void getAllTags(std::vector<QString>& pOutput);
 	QString getTagLabel(uint16_t pTagIndex) const;
 	QStringList getTagsLabels(const std::vector<uint16_t>& pTags);
+
+	int getEmbeddingsDimension() const;
+	void setEmbeddingsDimension(int pEmbeddingsDimension);
 
 signals:
 	/********************************** SIGNALS ***********************************/
@@ -89,11 +94,12 @@ private:
 	std::map<ESStringId, ESFileInfo> mFiles;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
-	mutable QMutex mFilesMutex;
+	mutable std::shared_mutex mFilesMutex;
 
 	QVector<QString> mAllLensModels;
 	QVector<QString> mAllCameraModels;
 	std::vector<QString> mAllTags;
+	int mEmbeddingsDimension;
 
 	/********************************* METHODS ***********************************/
 

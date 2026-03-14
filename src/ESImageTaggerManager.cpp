@@ -82,6 +82,7 @@ void ESImageTaggerManager::retag()
 	{
 		std::scoped_lock lLock(lDB.mFilesMutex);
 		lDB.mAllTags.clear();
+		lDB.mEmbeddingsDimension = 0;
 		for (auto&& lFileInfo : lDB.mFiles)
 		{
 			lFileInfo.second.mTagsGenerated = false;
@@ -202,7 +203,7 @@ void ESImageTaggerManager::addTagger(const QString& pTaggerFilePath)
 
 /********************************************************************************/
 
-void ESImageTaggerManager::processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, std::vector<float>& pEmbeddingsOut)
+void ESImageTaggerManager::processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, ESEmbeddings& pEmbeddingsOut)
 {
 	if(!pImage.isNull())
 	{
@@ -217,7 +218,7 @@ void ESImageTaggerManager::processImage(const QImage& pImage, std::vector<uint16
 		std::unordered_set<int> lAllTags;
 		for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 		{
-			std::vector<float> lTaggerResult = lTagger->processImage(lMaxInputResizedImage);
+			ESEmbeddings lTaggerResult = lTagger->processImage(lMaxInputResizedImage);
 			if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
 			{
 				std::vector<uint16_t> lTaggerTags = lTaggerClassificationFormat->getTagsFromScores(lTaggerResult);
@@ -363,7 +364,7 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 		{
 			QImage lImage(pImage->getImagePath().getString());
 			std::vector<uint16_t> lTags;
-			std::vector<float> lEmbeddings;
+			ESEmbeddings lEmbeddings;
 			if(!lImage.isNull())
 				processImage(lImage, lTags, lEmbeddings);
 			ESDatabase& lDB = ESDatabase::getInstance();
@@ -373,6 +374,9 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 				ESFileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
 				lFileInfo.mTagIndexes = std::move(lTags);
 				lFileInfo.mEmbeddings = std::move(lEmbeddings);
+				if(lDB.getEmbeddingsDimension() == 0 && !lFileInfo.mEmbeddings.empty())
+					lDB.setEmbeddingsDimension(int(lFileInfo.mEmbeddings.size()));
+				assert(lFileInfo.mEmbeddings.empty() || lFileInfo.mEmbeddings.size() == lDB.getEmbeddingsDimension());
 				lFileInfo.mTagsGenerated = true;
 			}
 			--pNumAsyncTaskStarted;
@@ -392,7 +396,7 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 		lTagger->initializeSession();
 
 	ESDatabase& lDB = ESDatabase::getInstance();
-	std::scoped_lock lLock(lDB.mFilesMutex);
+	std::shared_lock lLock(lDB.mFilesMutex);
 	for(auto&& lFileInfo : lDB.mFiles)
 		if(!lFileInfo.second.mTagsGenerated)
 			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first))

@@ -43,7 +43,7 @@ public:
 	void initialize();
 	void retag();
 
-	void processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, std::vector<float>& pEmbeddingsOut);
+	void processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, ESEmbeddings& pEmbeddingsOut);
 	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
 
 	void updateDatabaseMissingTags();

@@ -16,6 +16,7 @@
 
 // ES
 #include "ESStringPool.h"
+#include "ESUtils.h"
 #include "exif.h"
 
 /********************************************************************************/
@@ -71,6 +72,8 @@ struct ESUsefullExif
 	ESExifOrientation mOrientation;
 };
 
+typedef std::vector<float, ESAlignedAllocator<float, 64>> ESEmbeddings;
+
 struct ESFileInfo
 {
 	ESStringId mFilePath;
@@ -79,6 +82,6 @@ struct ESFileInfo
 	uint8_t mLensModelIdx = std::numeric_limits<uint8_t>::max();
 	ESReadExifFileResult mReadResult = eNone;
 	std::vector<uint16_t> mTagIndexes;
-	std::vector<float> mEmbeddings;
+	ESEmbeddings mEmbeddings;
 	bool mTagsGenerated = false;
 };

@@ -85,19 +85,19 @@ ESImageTagsSearchEngine::TextEncodedResult ESImageTagsSearchEngine::encode(const
 
 float ESImageTagsSearchEngine::TextEncodedResult::computeSimilarityScore(const TextEncodedResult& pOther) const
 {
-	return computeSimilarityScore(pOther.mEmbedding);
+	return computeSimilarityScore(pOther.mEmbeddings);
 }
 
 /********************************************************************************/
 
-float ESImageTagsSearchEngine::TextEncodedResult::computeSimilarityScore(const std::vector<float>& pEmbeddings) const
+float ESImageTagsSearchEngine::TextEncodedResult::computeSimilarityScore(const ESEmbeddings& pEmbeddings) const
 {
-    assert(mEmbedding.size() == pEmbeddings.size());
+    assert(mEmbeddings.size() == pEmbeddings.size());
 
     float lDot = 0;
 
-    for (int i = 0; i < mEmbedding.size(); ++i)
-        lDot += mEmbedding[i] * pEmbeddings[i];
+    for (int i = 0; i < mEmbeddings.size(); ++i)
+        lDot += mEmbeddings[i] * pEmbeddings[i];
 
     return lDot;
 }

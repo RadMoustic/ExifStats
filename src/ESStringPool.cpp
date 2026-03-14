@@ -24,21 +24,21 @@ ESStringPool::~ESStringPool()
 
 /********************************************************************************/
 
-ESStringPool::InternalId ESStringPool::getStringId(const QString& aString)
+ESStringPool::InternalId ESStringPool::getStringId(const QString& pString)
 {
-	if(aString.isEmpty())
+	if(pString.isEmpty())
 		return 0;
 	std::unique_ptr<QString>* lStringData = nullptr;
 
 	mStringsMutex.lockForRead();
-	auto itFound = mStrings.find(aString);
+	auto itFound = mStrings.find(pString);
 	if (itFound == mStrings.end())
 	{
 		mStringsMutex.unlock();
 		mStringsMutex.lockForWrite();
-		lStringData = &mStrings[aString];
+		lStringData = &mStrings[pString];
 		if(!lStringData->get()) // Can be written by another thread between the unlock and the lockforwrite
-			lStringData->reset(new QString(aString));
+			lStringData->reset(new QString(pString));
 		mStringsMutex.unlock();
 	}
 	else
@@ -62,24 +62,31 @@ ESStringId::ESStringId()
 
 /********************************************************************************/
 
-ESStringId::ESStringId(const ESStringId& aString)
-	: mId(aString.mId)
+ESStringId::ESStringId(ESStringPool::InternalId pId)
+	: mId(pId)
+{
+}
+
+/********************************************************************************/
+
+ESStringId::ESStringId(const ESStringId& pString)
+	: mId(pString.mId)
 {
 
 }
 
 /********************************************************************************/
 
-ESStringId::ESStringId(const QString& aString)
+ESStringId::ESStringId(const QString& pString)
 {
-	mId = ESStringPool::msInstance->getStringId(aString);
+	mId = ESStringPool::msInstance->getStringId(pString);
 }
 
 /********************************************************************************/
 
-ESStringId::ESStringId(const std::string& aString)
+ESStringId::ESStringId(const std::string& pString)
 {
-	mId = ESStringPool::msInstance->getStringId(aString.c_str());
+	mId = ESStringPool::msInstance->getStringId(pString.c_str());
 }
 
 /********************************************************************************/

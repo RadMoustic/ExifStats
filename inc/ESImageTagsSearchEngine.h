@@ -6,6 +6,9 @@
 /********************************************************************************/
 /********************************************************************************/
 
+// ES
+#include "ESFileInfo.h"
+
 // ONNX Runtime
 #include <onnxruntime_cxx_api.h>
 
@@ -30,10 +33,10 @@ class ESImageTagsSearchEngine
 public:
     struct TextEncodedResult
     {
-        std::vector<float> mEmbedding;
+        ESEmbeddings mEmbeddings;
 
         float computeSimilarityScore(const TextEncodedResult& pOther) const;
-        float computeSimilarityScore(const std::vector<float>& pEmbeddings) const;
+        float computeSimilarityScore(const ESEmbeddings& pEmbeddings) const;
 	};
 
     /********************************* METHODS ***********************************/
@@ -108,19 +111,19 @@ private:
         const std::vector<int64_t> lOutputShape = lOutputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
         const int64_t lDim = lOutputShape[lOutputShape.size() == 3 ? 2 : 1];
 
-        lResult.mEmbedding.assign(lDim, 0.0f);
+        lResult.mEmbeddings.assign(lDim, 0.0f);
 
         for (int64_t d = 0; d < lDim; ++d)
-            lResult.mEmbedding[d] = lRawData[d];
+            lResult.mEmbeddings[d] = lRawData[d];
 
         // Normalize
         double lNorm = 0;
-        for (float x : lResult.mEmbedding)
+        for (float x : lResult.mEmbeddings)
             lNorm += x * x;
         if (lNorm > 0.f)
         {
             lNorm = std::sqrt(lNorm);
-            for (float& x : lResult.mEmbedding)
+            for (float& x : lResult.mEmbeddings)
                 x /= lNorm;
         }
  
