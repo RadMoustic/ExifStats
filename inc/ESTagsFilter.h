@@ -67,12 +67,12 @@ private:
 #ifdef IMAGETAGGER_ENABLE
 	QString mTokenizerDirectoryPath;
 	bool mTokenizerEnabled;
-	std::unique_ptr<ESImageTagsSearchEngine> mEngine;
+	std::unique_ptr<ESTextEncoder> mEngine;
 
-	std::vector<ESImageTagsSearchEngine::TextEncodedResult> mDatabaseTagsEmbeddingCache;
+	std::vector<ESTextEncoder::TextEncodedResult> mDatabaseTagsEmbeddingCache;
 	std::vector<std::unordered_set<uint16_t>> mSearchTagIndices;
 	QStringList mSearchTags;
-	ESImageTagsSearchEngine::TextEncodedResult mSearchTagsEmbeddings;
+	ESTextEncoder::TextEncodedResult mSearchTagsEmbeddings;
 	QMutex mDatabaseTagsEmbeddingCacheMutex;
 #ifdef HNSWLIB_ENABLED
 	std::unique_ptr<hnswlib::InnerProductSpace> mHnswSpace;

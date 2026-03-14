@@ -29,7 +29,7 @@ ESTagsFilter::ESTagsFilter()
 		mTokenizerEnabled = true;
 		QtConcurrent::run([this]()
 		{
-			mEngine.reset(new ESImageTagsSearchEngine(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
+			mEngine.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
 #ifdef HNSWLIB_ENABLED
 			onDatabaseFoldersHaveChanged();
 			(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESTagsFilter::onDatabaseFoldersHaveChanged, Qt::QueuedConnection);
@@ -197,10 +197,10 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 				mSearchTagIndices.emplace_back();
 
 				std::vector<std::pair<float, uint16_t>> lScores;
-				ESImageTagsSearchEngine::TextEncodedResult lSearchTagEmbedding = mEngine->encode(lSearchTag);
+				ESTextEncoder::TextEncodedResult lSearchTagEmbedding = mEngine->encode(lSearchTag);
 				for (uint16_t i = 0, e = uint16_t(mDatabaseTagsEmbeddingCache.size()); i < e ; ++i)
 				{
-					const ESImageTagsSearchEngine::TextEncodedResult& lDatabaseTagEmbedding = mDatabaseTagsEmbeddingCache[i];
+					const ESTextEncoder::TextEncodedResult& lDatabaseTagEmbedding = mDatabaseTagsEmbeddingCache[i];
 					float lSimilarityScore = lSearchTagEmbedding.computeSimilarityScore(lDatabaseTagEmbedding);
 					lScores.emplace_back(lSimilarityScore, i);
 				}

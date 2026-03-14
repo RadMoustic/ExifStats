@@ -15,7 +15,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-ESImageTagsSearchEngine::ESImageTagsSearchEngine(const QString& pModelFilePath, const QString& pTokenizerJSONFilePath, const QString& pConfigFile)
+ESTextEncoder::ESTextEncoder(const QString& pModelFilePath, const QString& pTokenizerJSONFilePath, const QString& pConfigFile)
 {
     mEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ESImageTagsSearchEngine");
     Ort::SessionOptions lSessionOptions;
@@ -35,7 +35,7 @@ ESImageTagsSearchEngine::ESImageTagsSearchEngine(const QString& pModelFilePath, 
 
 /********************************************************************************/
 
-void ESImageTagsSearchEngine::loadConfigFile(const QString& pConfigFile)
+void ESTextEncoder::loadConfigFile(const QString& pConfigFile)
 {
 	QFile lFile(pConfigFile);
 	if (!lFile.open(QIODevice::ReadOnly))
@@ -66,9 +66,9 @@ void ESImageTagsSearchEngine::loadConfigFile(const QString& pConfigFile)
 
 /********************************************************************************/
 
-ESImageTagsSearchEngine::TextEncodedResult ESImageTagsSearchEngine::encode(const QString& pText)
+ESTextEncoder::TextEncodedResult ESTextEncoder::encode(const QString& pText)
 {
-	ESImageTagsSearchEngine::TextEncodedResult lResult;
+	ESTextEncoder::TextEncodedResult lResult;
 
 	if(mEnabled)
 	{
@@ -83,14 +83,14 @@ ESImageTagsSearchEngine::TextEncodedResult ESImageTagsSearchEngine::encode(const
 
 /********************************************************************************/
 
-float ESImageTagsSearchEngine::TextEncodedResult::computeSimilarityScore(const TextEncodedResult& pOther) const
+float ESTextEncoder::TextEncodedResult::computeSimilarityScore(const TextEncodedResult& pOther) const
 {
 	return computeSimilarityScore(pOther.mEmbeddings);
 }
 
 /********************************************************************************/
 
-float ESImageTagsSearchEngine::TextEncodedResult::computeSimilarityScore(const ESEmbeddings& pEmbeddings) const
+float ESTextEncoder::TextEncodedResult::computeSimilarityScore(const ESEmbeddings& pEmbeddings) const
 {
     assert(mEmbeddings.size() == pEmbeddings.size());
 

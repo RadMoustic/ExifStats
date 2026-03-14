@@ -28,7 +28,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-class ESImageTagsSearchEngine
+class ESTextEncoder
 {
 public:
     struct TextEncodedResult
@@ -41,11 +41,11 @@ public:
 
     /********************************* METHODS ***********************************/
 
-    ESImageTagsSearchEngine(const QString& pModelFilePath, const QString& pTokenizerJSONFilePath, const QString& pConfigFile);
+    ESTextEncoder(const QString& pModelFilePath, const QString& pTokenizerJSONFilePath, const QString& pConfigFile);
 
     void loadConfigFile(const QString& pConfigFile);
 
-    ESImageTagsSearchEngine::TextEncodedResult encode(const QString& pText);
+    ESTextEncoder::TextEncodedResult encode(const QString& pText);
 
 private:
     /******************************** ATTRIBUTES **********************************/
@@ -63,7 +63,7 @@ private:
     /********************************* METHODS ***********************************/
 
     template<typename EmbeddingType>
-    ESImageTagsSearchEngine::TextEncodedResult internalEncode(const QString& pText)
+    ESTextEncoder::TextEncodedResult internalEncode(const QString& pText)
     {
         TextEncodedResult lResult;
 
