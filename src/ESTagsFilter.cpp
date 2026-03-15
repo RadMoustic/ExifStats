@@ -3,6 +3,7 @@
 // ES
 #include "ESDatabase.h"
 #include "ESImageCache.h"
+#include "ESPerfLog.h"
 
 // Hnswlib
 #ifdef HNSWLIB_ENABLED
@@ -19,7 +20,7 @@
 
 ESTagsFilter::ESTagsFilter()
 	: mTokenizerEnabled(false)
-	, mMinSimilarityScore(0.2f)
+	, mMinSimilarityScore(0.25f)
 {
 	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
 
@@ -29,13 +30,27 @@ ESTagsFilter::ESTagsFilter()
 		mTokenizerEnabled = true;
 		QtConcurrent::run([this]()
 		{
-			mEngine.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
+			mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
 #ifdef HNSWLIB_ENABLED
-			onDatabaseFoldersHaveChanged();
-			(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESTagsFilter::onDatabaseFoldersHaveChanged, Qt::QueuedConnection);
+			onDatabaseDataChanged();
+			(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this,
+				[this]()
+				{
+					QtConcurrent::run([this]()
+					{
+						onDatabaseDataChanged();
+					});
+				}, Qt::DirectConnection);
 #endif // HNSWLIB_ENABLED
 			onDatabaseTagsHaveChanged();
-			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this, &ESTagsFilter::onDatabaseTagsHaveChanged, Qt::QueuedConnection);
+			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
+				[this]()
+				{
+					QtConcurrent::run([this]()
+						{
+							onDatabaseTagsHaveChanged();
+						});
+				}, Qt::DirectConnection);
 		});			
 	}
 #endif // IMAGETAGGER_ENABLE
@@ -66,23 +81,39 @@ float ESTagsFilter::getMinSimilarityScore() const
 void ESTagsFilter::setMinSimilarityScore(float pMinSimilarityScore)
 {
 	mMinSimilarityScore = pMinSimilarityScore;
+#ifdef HNSWLIB_ENABLED
 	updateHnswSearchResults();
+#endif // HNSWLIB_ENABLED
 }
 
 /********************************************************************************/
 
 #ifdef HNSWLIB_ENABLED
-void ESTagsFilter::onDatabaseFoldersHaveChanged()
+void ESTagsFilter::onDatabaseDataChanged()
 {
 	const ESDatabase& lDB = ESDatabase::getInstance();
 	if (lDB.getEmbeddingsDimension() > 0)
 	{
 		std::shared_lock lock(lDB.getFilesMutex());
+		mHnswIndexUpdating = true;
+		ESPerfLog lPerfLog("Updating HNSW index");
+		qInfo() << "Updating HNSW index with " << lDB.getFiles().size() << " files...";
 		mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
 		mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
 		for (auto&& lFileInfo : lDB.getFiles())
+		{
 			if (lFileInfo.second.mEmbeddings.size() > 0)
 				mHnswIndex->addPoint(lFileInfo.second.mEmbeddings.data(), lFileInfo.first.getId());
+			if(lDB.isUnlockDatabaseRequested())
+			{
+				mHnswSpace.reset();
+				mHnswIndex.reset();
+				qInfo() << "HNSW index update cancelled.";
+				break;
+			}
+		}
+		qInfo() << "HNSW index updated.";
+		mHnswIndexUpdating = false;
 	}
 }
 #endif // HNSWLIB_ENABLED
@@ -95,12 +126,12 @@ void ESTagsFilter::onDatabaseFoldersHaveChanged()
 		return false;
 
 #ifdef IMAGETAGGER_ENABLE
-	if(mEngine)
+	if(mTextEncoder)
 	{
 		if (pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbeddings.size())
 		{
 #ifdef HNSWLIB_ENABLED
-			if (mHnswIndex)
+			if (!mHnswIndexUpdating && mHnswIndex)
 			{
 				return mHnswSearchResults.find(pFile.mFilePath) == mHnswSearchResults.end();
 			}
@@ -184,7 +215,7 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 	mSearchString = pSearchString;
 
 #ifdef IMAGETAGGER_ENABLE
-	if (mEngine)
+	if (mTextEncoder)
 	{
 		mSearchTagIndices.clear();
 		mSearchTags.clear();
@@ -197,7 +228,7 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 				mSearchTagIndices.emplace_back();
 
 				std::vector<std::pair<float, uint16_t>> lScores;
-				ESTextEncoder::TextEncodedResult lSearchTagEmbedding = mEngine->encode(lSearchTag);
+				ESTextEncoder::TextEncodedResult lSearchTagEmbedding = mTextEncoder->encode(lSearchTag);
 				for (uint16_t i = 0, e = uint16_t(mDatabaseTagsEmbeddingCache.size()); i < e ; ++i)
 				{
 					const ESTextEncoder::TextEncodedResult& lDatabaseTagEmbedding = mDatabaseTagsEmbeddingCache[i];
@@ -226,7 +257,7 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 			}
 		}
 
-		mSearchTagsEmbeddings = mEngine->encode(mSearchString);
+		mSearchTagsEmbeddings = mTextEncoder->encode(mSearchString);
 
 #ifdef HNSWLIB_ENABLED
 		updateHnswSearchResults();
@@ -269,7 +300,7 @@ void ESTagsFilter::updateHnswSearchResults()
 QStringList ESTagsFilter::getTagsFound() const
 {
 #ifdef IMAGETAGGER_ENABLE
-	return mEngine ? mSearchTags : QStringList();
+	return mTextEncoder ? mSearchTags : QStringList();
 #else
 	return mTagsInclusiveFilters;
 #endif // IMAGETAGGER_ENABLE
@@ -295,7 +326,7 @@ void ESTagsFilter::onDatabaseTagsHaveChanged()
 		{
 			for (int i = lThreadIdx; i < lAllTags.size(); i += cNumThreads)
 			{
-				mDatabaseTagsEmbeddingCache[i] = mEngine->encode(lAllTags[i]);
+				mDatabaseTagsEmbeddingCache[i] = mTextEncoder->encode(lAllTags[i]);
 			}
 		});
 	}

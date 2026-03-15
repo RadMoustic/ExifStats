@@ -67,7 +67,7 @@ private:
 #ifdef IMAGETAGGER_ENABLE
 	QString mTokenizerDirectoryPath;
 	bool mTokenizerEnabled;
-	std::unique_ptr<ESTextEncoder> mEngine;
+	std::unique_ptr<ESTextEncoder> mTextEncoder;
 
 	std::vector<ESTextEncoder::TextEncodedResult> mDatabaseTagsEmbeddingCache;
 	std::vector<std::unordered_set<uint16_t>> mSearchTagIndices;
@@ -78,6 +78,7 @@ private:
 	std::unique_ptr<hnswlib::InnerProductSpace> mHnswSpace;
 	std::unique_ptr<hnswlib::HierarchicalNSW<float>> mHnswIndex;
 	std::unordered_set<ESStringId> mHnswSearchResults;
+	std::atomic_bool mHnswIndexUpdating;
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 
@@ -86,7 +87,7 @@ private:
 #ifdef IMAGETAGGER_ENABLE
 	void onDatabaseTagsHaveChanged();
 #ifdef HNSWLIB_ENABLED
-	void onDatabaseFoldersHaveChanged();
+	void onDatabaseDataChanged();
 	void updateHnswSearchResults();
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE

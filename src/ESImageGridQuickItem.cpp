@@ -1,14 +1,13 @@
 #include "ESImageGridQuickItem.h"
 
 // ES
-#include "ESListFilesStat.h"
 #include "ESDatabase.h"
-#include "ESImageTagger.h"
 #include "ESImageTaggerManager.h"
-#include "ESImageTagsSearchEngine.h"
 
 // Qt
 #include <QPainter>
+
+/********************************************************************************/
 
 constexpr float cMarkerTextSpacing = 5.f;
 constexpr int cNbYMarker = 5;

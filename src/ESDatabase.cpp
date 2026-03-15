@@ -51,16 +51,22 @@ void ESDatabase::refresh(bool pFullRefresh)
 
 void ESDatabase::clear()
 {
-	mFiles.clear();
-	mFolders.clear();
-	mAllLensModels.clear();
-	mAllCameraModels.clear();
-	mAllTags.clear();
-	mProcessedFilesCounter = 0;
-	mEmbeddingsDimension = 0;
-	ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
+	{
+		mUnlockDatabaseRequested = true;
+		std::scoped_lock lLock(mFilesMutex);
+		mUnlockDatabaseRequested = false;
 
-	emit foldersChanged();
+		mFiles.clear();
+		mFolders.clear();
+		mAllLensModels.clear();
+		mAllCameraModels.clear();
+		mAllTags.clear();
+		mProcessedFilesCounter = 0;
+		mEmbeddingsDimension = 0;
+		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
+	}
+
+	emit dataChanged();
 }
 
 /********************************************************************************/
@@ -79,7 +85,9 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 	
 	QtConcurrent::run([this, pFolders, pClearDB, pNewFilesOnly]()
 		{
+			mUnlockDatabaseRequested = true;
 			mFilesMutex.lock();
+			mUnlockDatabaseRequested = false;
 
 			if (pClearDB)
 			{
@@ -184,7 +192,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			}
 
 			setProcessing(false);
-			emit foldersChanged();
+			emit dataChanged();
 		});
 }
 
@@ -370,6 +378,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 void ESDatabase::saveDatabase()
 {
+	std::shared_lock lock(mFilesMutex);
+
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 	QString lDataBasePath = lDataBaseDir + QDir::separator() + "database.esdb";
 	QString lDataBasePathTmp = lDataBasePath + ".tmp";
@@ -434,7 +444,7 @@ void ESDatabase::loadDatabase()
 
 	setProperty("Processing", false);
 	emit tagsChanged();
-	emit foldersChanged();
+	emit dataChanged();
 }
 
 /********************************************************************************/
@@ -460,6 +470,13 @@ const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 std::shared_mutex& ESDatabase::getFilesMutex() const
 {
 	return mFilesMutex;
+}
+
+/********************************************************************************/
+
+bool ESDatabase::isUnlockDatabaseRequested() const
+{
+	return mUnlockDatabaseRequested;
 }
 
 /********************************************************************************/

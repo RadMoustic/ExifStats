@@ -30,11 +30,12 @@ public:
 	{
 		if(mPathInclusiveFilters.isEmpty())
 			return false;
+
+		const QString& lFilePath = pFile.mFilePath.getString();
 		for(const QString& lPathPart : mPathInclusiveFilters)
-		{
-			if(pFile.mFilePath.getString().contains(lPathPart, Qt::CaseInsensitive))
+			if(lFilePath.contains(lPathPart, Qt::CaseInsensitive))
 				return false;
-		}
+
 		return true;
 	}
 

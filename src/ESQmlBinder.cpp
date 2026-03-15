@@ -30,7 +30,7 @@ ESQmlBinder::ESQmlBinder()
 	, mPauseCaching(false)
 	, mPauseTagging(false)
 {
-	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, 
+	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
 	{
 		updateStats(true);

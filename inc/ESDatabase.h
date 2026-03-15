@@ -68,6 +68,7 @@ public:
 
 	const ESFileInfo* getFileInfo(ESStringId pFile) const;
 	std::shared_mutex& getFilesMutex() const;
+	bool isUnlockDatabaseRequested() const;
 	const std::map<ESStringId, ESFileInfo>& getFiles() const;
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
@@ -83,7 +84,7 @@ public:
 signals:
 	/********************************** SIGNALS ***********************************/
 
-	void foldersChanged();
+	void dataChanged();
 	void tagsChanged();
 
 private:
@@ -100,6 +101,7 @@ private:
 	QVector<QString> mAllCameraModels;
 	std::vector<QString> mAllTags;
 	int mEmbeddingsDimension;
+	std::atomic_bool mUnlockDatabaseRequested;
 
 	/********************************* METHODS ***********************************/
 

@@ -369,7 +369,7 @@ Item
 			
 			RowLayout
 			{
-				id: tagsSearchStringFilter
+				id: searchTextFilter
 				
 				SplitView.fillWidth: true
 				SplitView.preferredHeight: parent.height / parent.children.length
@@ -410,6 +410,7 @@ Item
 						text: MainQmlBinder.TagsSearchString
 						verticalAlignment: TextInput.AlignVCenter
 						anchors.margins: 5
+						clip: true
 
 						onEditingFinished:
 						{
@@ -490,6 +491,7 @@ Item
 						text: MainQmlBinder.PathInclusiveFilters.length > 0 ? MainQmlBinder.PathInclusiveFilters.join(" ") : ""
 						verticalAlignment: TextInput.AlignVCenter
 						anchors.margins: 5
+						clip: true
 						
 						onEditingFinished:
 						{

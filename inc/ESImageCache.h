@@ -64,7 +64,7 @@ protected:
 	QByteArray getImageHash(const QString& pImagePath);
 	QString getCacheFilePath(const QString& pImagePath);
 	void unloadUnusedImages();
-	void onDatabaseFoldersChanged();
+	void onDatabaseDataChanged();
 	void queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pImages);
 	virtual void queueImageLoading(const std::shared_ptr<ESImage>& pImage, bool pUseCacheDriveQueueIfAvailable) override;
 	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) override;

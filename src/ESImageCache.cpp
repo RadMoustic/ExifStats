@@ -76,12 +76,12 @@ void ESImageCache::initializeFromDatabase()
 		
 	queueImageCaching(lImagesToInitializeCacheFileCheck);
 
-	(void)connect(&ESDatabase::getInstance(), &ESDatabase::foldersChanged, this, &ESImageCache::onDatabaseFoldersChanged, Qt::QueuedConnection);
+	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, &ESImageCache::onDatabaseDataChanged, Qt::QueuedConnection);
 }
 
 /********************************************************************************/
 
-void ESImageCache::onDatabaseFoldersChanged()
+void ESImageCache::onDatabaseDataChanged()
 {
 	assert(!mIsUpdating);
 	mIsUpdating = true;
