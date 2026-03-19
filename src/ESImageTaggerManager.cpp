@@ -371,7 +371,7 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 			if(!lDB.getProcessing())
 			{
 				std::scoped_lock lLock(lDB.mFilesMutex);
-				ESFileInfo& lFileInfo = lDB.mFiles[pImage->getImagePath()];
+				ESFileInfo& lFileInfo = *lDB.getFileInfo(pImage->getImagePath());
 				lFileInfo.mTagIndexes = std::move(lTags);
 				lFileInfo.mEmbeddings = std::move(lEmbeddings);
 				if(lDB.getEmbeddingsDimension() == 0 && !lFileInfo.mEmbeddings.empty())
@@ -399,7 +399,7 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 	std::shared_lock lLock(lDB.mFilesMutex);
 	for(auto&& lFileInfo : lDB.mFiles)
 		if(!lFileInfo.second.mTagsGenerated)
-			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.first))
+			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.second.mFilePath))
 				queueImageLoading(lImage, false);
 }
 

@@ -4,6 +4,7 @@
 #include "ESDatabase.h"
 #include "ESImageCache.h"
 #include "ESPerfLog.h"
+#include "ESImageTaggerManager.h"
 
 // Hnswlib
 #ifdef HNSWLIB_ENABLED
@@ -31,17 +32,23 @@ ESTagsFilter::ESTagsFilter()
 		QtConcurrent::run([this]()
 		{
 			mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
+
 #ifdef HNSWLIB_ENABLED
-			onDatabaseDataChanged();
-			(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this,
-				[this]()
+			const ESDatabase& lDB = ESDatabase::getInstance();
+			if (lDB.getEmbeddingsDimension() > 0)
+			{
+				std::shared_lock lock(lDB.getFilesMutex());
+				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
+				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+
+				if (!loadHnswIndex())
 				{
-					QtConcurrent::run([this]()
-					{
-						onDatabaseDataChanged();
-					});
-				}, Qt::DirectConnection);
+					onImageTaggerManagerLoadingProgress(0,0);
+				}
+			}
+			(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESTagsFilter::onImageTaggerManagerLoadingProgress, Qt::QueuedConnection);
 #endif // HNSWLIB_ENABLED
+
 			onDatabaseTagsHaveChanged();
 			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
 				[this]()
@@ -89,31 +96,60 @@ void ESTagsFilter::setMinSimilarityScore(float pMinSimilarityScore)
 /********************************************************************************/
 
 #ifdef HNSWLIB_ENABLED
-void ESTagsFilter::onDatabaseDataChanged()
+void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLoadingCount)
 {
-	const ESDatabase& lDB = ESDatabase::getInstance();
-	if (lDB.getEmbeddingsDimension() > 0)
+	if (pLoadedCount != pLoadingCount)
 	{
-		std::shared_lock lock(lDB.getFilesMutex());
-		mHnswIndexUpdating = true;
-		ESPerfLog lPerfLog("Updating HNSW index");
-		qInfo() << "Updating HNSW index with " << lDB.getFiles().size() << " files...";
-		mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
-		mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
-		for (auto&& lFileInfo : lDB.getFiles())
+		if(mHnswIndexUpdateFuture.isRunning())
 		{
-			if (lFileInfo.second.mEmbeddings.size() > 0)
-				mHnswIndex->addPoint(lFileInfo.second.mEmbeddings.data(), lFileInfo.first.getId());
-			if(lDB.isUnlockDatabaseRequested())
-			{
-				mHnswSpace.reset();
-				mHnswIndex.reset();
-				qInfo() << "HNSW index update cancelled.";
-				break;
-			}
+			mHnswIndexUpdatingAbortRequested = true;
 		}
-		qInfo() << "HNSW index updated.";
-		mHnswIndexUpdating = false;
+		else
+		{
+			mHnswSpace.reset();
+			mHnswIndex.reset();
+		}
+
+		QSettings lSettings;
+		QString lIndexPath = lSettings.value("HnswIndex").toString();
+		if (lIndexPath.isEmpty())
+			QFile::remove(lIndexPath);
+	}
+	else
+	{
+		if(mHnswIndexUpdateFuture.isRunning())
+		{
+			mHnswIndexUpdatingAbortRequested = true;
+			mHnswIndexUpdateFuture.waitForFinished();
+		}
+		mHnswIndexUpdateFuture = QtConcurrent::run([this]()
+		{
+			const ESDatabase& lDB = ESDatabase::getInstance();
+			if (lDB.getEmbeddingsDimension() > 0)
+			{
+				std::shared_lock lock(lDB.getFilesMutex());
+				mHnswIndexUpdating = true;
+				ESPerfLog lPerfLog("HNSW Index Update");
+				qInfo() << "Updating HNSW index with " << lDB.getFiles().size() << " files...";
+				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
+				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+				for (auto&& lFileInfo : lDB.getFiles())
+				{
+					if (lFileInfo.second.mEmbeddings.size() > 0)
+						mHnswIndex->addPoint(lFileInfo.second.mEmbeddings.data(), lFileInfo.first);
+					if (mHnswIndexUpdatingAbortRequested || lDB.isUnlockDatabaseRequested())
+					{
+						mHnswSpace.reset();
+						mHnswIndex.reset();
+						mHnswIndexUpdatingAbortRequested = false;
+						qInfo() << "HNSW index update cancelled.";
+						break;
+					}
+				}
+				qInfo() << "HNSW index updated.";
+				mHnswIndexUpdating = false;
+			}
+		});
 	}
 }
 #endif // HNSWLIB_ENABLED
@@ -133,7 +169,7 @@ void ESTagsFilter::onDatabaseDataChanged()
 #ifdef HNSWLIB_ENABLED
 			if (!mHnswIndexUpdating && mHnswIndex)
 			{
-				return mHnswSearchResults.find(pFile.mFilePath) == mHnswSearchResults.end();
+				return mHnswSearchResults.find(pFile.mId) == mHnswSearchResults.end();
 			}
 			else
 #endif // HNSWLIB_ENABLED
@@ -273,8 +309,9 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 #ifdef HNSWLIB_ENABLED
 void ESTagsFilter::updateHnswSearchResults()
 {
-	if (mHnswIndex)
+	if (mHnswIndex && !mHnswIndexUpdating)
 	{
+		ESPerfLog lPerfLog("HNSW Search");
 		constexpr size_t cMaxResults = 10000;
 		mHnswSearchResults.clear();
 		mHnswSearchResults.reserve(cMaxResults);
@@ -285,8 +322,9 @@ void ESTagsFilter::updateHnswSearchResults()
 			const float lSimilarityScore = 1.f - lResult.first;
 			if (lSimilarityScore >= mMinSimilarityScore) // HNSWLIB InnerProductSpace: d = 1.0 - sum(Ai*Bi)
 			{
-				ESStringId lImagePath(mHnswIndex->getExternalLabel(hnswlib::tableint(lResult.second)));
-				mHnswSearchResults.insert(lImagePath);
+				ESFileInfoId lFileInfoId = ESFileInfoId(mHnswIndex->getExternalLabel(hnswlib::tableint(lResult.second)));
+				mHnswSearchResults.insert(lFileInfoId);
+				ESStringId lImagePath = ESDatabase::getInstance().getFileInfo(lFileInfoId)->mFilePath;
 				ESImageCache::getInstance().getImage(lImagePath)->mCurrentSearchSimilarity = lSimilarityScore;
 			}
 		}
@@ -347,3 +385,43 @@ bool ESTagsFilter::isTokenizerEnabled() const
 	return false;
 #endif // IMAGETAGGER_ENABLE
 }
+
+/********************************************************************************/
+
+#ifdef HNSWLIB_ENABLED
+
+bool ESTagsFilter::loadHnswIndex()
+{
+	if (mHnswIndex)
+	{
+		QSettings lSettings;
+		QString lIndexPath = lSettings.value("HnswIndex").toString();
+		if (!lIndexPath.isEmpty() && QFile::exists(lIndexPath))
+		{
+			mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/********************************************************************************/
+
+void ESTagsFilter::saveHnswIndex()
+{
+	if(mHnswIndex)
+	{
+		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+		QString lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
+	
+		mHnswIndex->saveIndex(lIndexPath.toStdString());
+
+		QSettings lSettings;
+		lSettings.setValue("HnswIndex", lIndexPath);
+	}
+}
+
+#endif // HNSWLIB_ENABLED
+

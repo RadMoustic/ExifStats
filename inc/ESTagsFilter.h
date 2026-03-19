@@ -7,6 +7,7 @@
 // Qt
 #include <QGeoShape>
 #include <QGeoRectangle>
+#include <QtConcurrent>
 
 // ES
 #include "ESFilter.h"
@@ -56,6 +57,9 @@ public:
 
 #ifdef IMAGETAGGER_ENABLE
 	bool isTokenizerEnabled() const;
+#ifdef HNSWLIB_ENABLED
+	void saveHnswIndex();
+#endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 
 private:
@@ -77,8 +81,10 @@ private:
 #ifdef HNSWLIB_ENABLED
 	std::unique_ptr<hnswlib::InnerProductSpace> mHnswSpace;
 	std::unique_ptr<hnswlib::HierarchicalNSW<float>> mHnswIndex;
-	std::unordered_set<ESStringId> mHnswSearchResults;
+	std::unordered_set<ESFileInfoId> mHnswSearchResults;
+	QFuture<void> mHnswIndexUpdateFuture;
 	std::atomic_bool mHnswIndexUpdating;
+	std::atomic_bool mHnswIndexUpdatingAbortRequested;
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 
@@ -87,7 +93,8 @@ private:
 #ifdef IMAGETAGGER_ENABLE
 	void onDatabaseTagsHaveChanged();
 #ifdef HNSWLIB_ENABLED
-	void onDatabaseDataChanged();
+	bool loadHnswIndex();
+	void onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLoadingCount);
 	void updateHnswSearchResults();
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE

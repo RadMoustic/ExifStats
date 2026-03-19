@@ -65,8 +65,8 @@ void ESImageCache::initializeFromDatabase()
 		
 		for(auto&& lFileInfo: lDatabase.getFiles())
 		{
-			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.first, getCacheFilePath(lFileInfo.first), &lFileInfo.second.mExif));
-			mImages.emplace(std::make_pair(lFileInfo.first, lImage));
+			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.second.mFilePath, getCacheFilePath(lFileInfo.second.mFilePath), &lFileInfo.second.mExif));
+			mImages.emplace(std::make_pair(lFileInfo.second.mFilePath, lImage));
 			lImagesToInitializeCacheFileCheck.push_back(lImage);
 		}
 	}
@@ -97,10 +97,10 @@ void ESImageCache::onDatabaseDataChanged()
 
 				for (auto&& lFileInfo : lDatabase.getFiles())
 				{
-					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.first];
+					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.second.mFilePath];
 					if (!lImage)
 					{
-						lImage.reset(new ESImage(lFileInfo.first, getCacheFilePath(lFileInfo.first), &lFileInfo.second.mExif));
+						lImage.reset(new ESImage(lFileInfo.second.mFilePath, getCacheFilePath(lFileInfo.second.mFilePath), &lFileInfo.second.mExif));
 						lImagesToInitializeCacheFileCheck.push_back(lImage);
 					}
 				}

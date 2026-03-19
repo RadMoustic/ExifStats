@@ -208,6 +208,8 @@ public:
 	Q_INVOKABLE bool isImageTaggerEnabled() const;
 	Q_INVOKABLE bool isTokenizerEnabled() const;
 
+	void save();
+
 signals:
 	/********************************** SIGNALS ***********************************/
 

@@ -46,7 +46,7 @@ public:
 	/********************************* METHODS ***********************************/
 
 	ESStringId();
-	ESStringId(ESStringPool::InternalId pId);
+	explicit ESStringId(ESStringPool::InternalId pId);
 	ESStringId(const ESStringId& pString);
 	ESStringId(const QString& pString);
 	ESStringId(const std::string& pString);

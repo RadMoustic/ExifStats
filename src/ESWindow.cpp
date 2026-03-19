@@ -64,6 +64,7 @@ ESWindow::ESWindow()
 	QSettings lSettings;
 	lSettings.setValue("ProcessedFolders", mBinder->getProcessedFolders());
 	ESDatabase::getInstance().saveDatabase();
+	mBinder->save();
 	setSource(QUrl());
 }
 

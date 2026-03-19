@@ -723,3 +723,14 @@ bool ESQmlBinder::isTokenizerEnabled() const
 	return false;
 #endif // IMAGETAGGER_ENABLE
 }
+
+/********************************************************************************/
+
+void ESQmlBinder::save()
+{
+#ifdef IMAGETAGGER_ENABLE
+#ifdef HNSWLIB_ENABLED
+	mTagsFilter.saveHnswIndex();
+#endif // HNSWLIB_ENABLED
+#endif // IMAGETAGGER_ENABLE
+}

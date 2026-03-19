@@ -45,7 +45,7 @@ class ESDatabase : public QObject
 	friend class ESImageTaggerManager;
 #endif // IMAGETAGGER_ENABLE
 
-public:
+public:	
 	/******************************** ATTRIBUTES **********************************/
 
 	ES_QML_PROPERTY(Processing, bool)
@@ -66,10 +66,13 @@ public:
 
 	const QVector<QString>& getFolders() const;
 
+	ESFileInfo* getFileInfo(ESStringId pFile);
 	const ESFileInfo* getFileInfo(ESStringId pFile) const;
+	ESFileInfo* getFileInfo(ESFileInfoId pFile);
+	const ESFileInfo* getFileInfo(ESFileInfoId pFile) const;
 	std::shared_mutex& getFilesMutex() const;
 	bool isUnlockDatabaseRequested() const;
-	const std::map<ESStringId, ESFileInfo>& getFiles() const;
+	const std::map<ESFileInfoId, ESFileInfo>& getFiles() const;
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
 
@@ -92,7 +95,8 @@ private:
 
 	QVector<QString> mFolders;
 
-	std::map<ESStringId, ESFileInfo> mFiles;
+	std::map<ESFileInfoId, ESFileInfo> mFiles;
+	std::map<ESStringId, ESFileInfoId> mFilesPathToId;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
 	mutable std::shared_mutex mFilesMutex;
@@ -102,6 +106,8 @@ private:
 	std::vector<QString> mAllTags;
 	int mEmbeddingsDimension;
 	std::atomic_bool mUnlockDatabaseRequested;
+
+	ESFileInfoId mLastAssignedId;
 
 	/********************************* METHODS ***********************************/
 

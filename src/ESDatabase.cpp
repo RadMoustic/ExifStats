@@ -21,7 +21,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 8;
+constexpr uint DATABASE_VERSION = 9;
 
 /********************************************************************************/
 
@@ -37,6 +37,7 @@ ESDatabase::ESDatabase()
 	: mProcessing(false)
 	, mProcessingProgress(0.f)
 	, mEmbeddingsDimension(0)
+	, mLastAssignedId(0)
 {
 }
 
@@ -63,6 +64,7 @@ void ESDatabase::clear()
 		mAllTags.clear();
 		mProcessedFilesCounter = 0;
 		mEmbeddingsDimension = 0;
+		mLastAssignedId = 0;
 		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
 	}
 
@@ -95,7 +97,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				mFolders.clear();
 			}
 
-			QVector<ESStringId> lAllImageFiles;
+			QVector<ESFileInfoId> lAllImageFileIds;
 
 			std::set<const QString*> lUniqueFolders;
 			for (const QString& lFolderPath : pFolders)
@@ -110,9 +112,18 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				while (lDirIt.hasNext())
 				{
 					ESStringId lFilePath = lDirIt.next();
-					ESFileInfo& lFileInfo = mFiles[lFilePath];
-					if(!pNewFilesOnly || !lFileInfo.mFilePath.isValid() || lFileInfo.mReadResult != eSuccess)
-						lAllImageFiles << lFilePath;
+					const auto&& lItFound = mFilesPathToId.find(lFilePath);
+					bool lIsNewFile = lItFound == mFilesPathToId.end();
+
+					ESFileInfoId lFileInfoId = lIsNewFile ? ++mLastAssignedId : lItFound->second;
+					ESFileInfo& lFileInfo = mFiles[lFileInfoId];
+					if(lIsNewFile)
+					{
+						lFileInfo.mId = lFileInfoId;
+						lFileInfo.mFilePath = lFilePath;
+					}
+					if (!pNewFilesOnly || lIsNewFile || lFileInfo.mReadResult != eSuccess)
+						lAllImageFileIds << lFileInfoId;
 				}
 
 				if (!mFolders.contains(*lFolderPath))
@@ -125,14 +136,13 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 
 			constexpr uint cNbFilesPerThread = 256;
 
-			QFuture<void> res = QtConcurrent::map(lAllImageFiles,
-				[&](const ESStringId& pFilePath)
+			QFuture<void> res = QtConcurrent::map(lAllImageFileIds,
+				[&](const ESFileInfoId& pFileInfoId)
 				{
-					ESFileInfo& lFileInfo = mFiles[pFilePath];
-					lFileInfo.mFilePath = pFilePath;
+					ESFileInfo& lFileInfo = mFiles[pFileInfoId];
 
 					easyexif::EXIFInfo lExifData;
-					lFileInfo.mReadResult = readFileExif(pFilePath, lExifData);
+					lFileInfo.mReadResult = readFileExif(lFileInfo.mFilePath, lExifData);
 					if (lFileInfo.mReadResult != eSuccess)
 						return;
 
@@ -142,7 +152,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 
 					if (mProgressMutex.tryLock())
 					{
-						float lNewProgress = float(lProcessedFiles) / float(lAllImageFiles.size());
+						float lNewProgress = float(lProcessedFiles) / float(lAllImageFileIds.size());
 						if (lNewProgress - mProcessingProgress > 0.001)
 							setProcessingProgress(lNewProgress);
 						mProgressMutex.unlock();
@@ -154,7 +164,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			// Extract all camera models and counter
 			std::unordered_set<ESStringId> lCameraModels;
 			std::unordered_set<ESStringId> lLensModels;
-			for (std::pair<const ESStringId, ESFileInfo>& lProcessedFile : mFiles)
+			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
 			{
 				if (lProcessedFile.second.mReadResult == eSuccess)
 				{
@@ -322,10 +332,14 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 	pSerializer.Serialize(mAllLensModels);
 	if (lDatabaseVersion >= 6)
 		pSerializer.Serialize(mAllTags);
+	if(lDatabaseVersion >= 9)
+		pSerializer.Serialize(mLastAssignedId);
 
 	pSerializer.SerializeCustom(mFiles,
-		[&](ESStringId& pStringId, ESFileInfo& pFileInfo)
+		[&](ESFileInfoId& pFileInfoId, ESFileInfo& pFileInfo)
 		{
+			if (lDatabaseVersion >= 9)
+				pSerializer.Serialize(pFileInfo.mId);
 			pSerializer.Serialize(pFileInfo.mFilePath);
 			pSerializer.Serialize(pFileInfo.mCameraModelIdx);
 			pSerializer.Serialize(pFileInfo.mLensModelIdx);
@@ -350,7 +364,12 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 			if constexpr (pSerializer.msIsReading)
 			{
-				pStringId = pFileInfo.mFilePath;
+				if (lDatabaseVersion < 9)
+				{
+					pFileInfo.mId = ++mLastAssignedId;
+				}
+
+				pFileInfoId = pFileInfo.mId;
 
 				if(pFileInfo.mCameraModelIdx != std::numeric_limits<decltype(pFileInfo.mCameraModelIdx)>::max())
 					pFileInfo.mExif.mCameraModel = mAllCameraModels[pFileInfo.mCameraModelIdx];
@@ -363,13 +382,14 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 						mEmbeddingsDimension = int(pFileInfo.mEmbeddings.size());
 					assert(mEmbeddingsDimension == pFileInfo.mEmbeddings.size());
 				}
+
+				mFilesPathToId[pFileInfo.mFilePath] = pFileInfo.mId;
 			}
 			else
 			{
-				(void)pStringId;
+				(void)pFileInfoId;
 			}
-		}
-	);
+		});
 
 	return true;
 }
@@ -420,6 +440,7 @@ void ESDatabase::loadDatabase()
 	mAllCameraModels.clear();
 	mAllLensModels.clear();
 	mFiles.clear();
+	mFilesPathToId.clear();
 
 	// Settings
 	QSettings lSettings;
@@ -456,13 +477,42 @@ const QVector<QString>& ESDatabase::getFolders() const
 
 /********************************************************************************/
 
+ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile)
+{
+	ESFileInfo* lResult = nullptr;
+	auto&& lIdItFound = mFilesPathToId.find(pFile);
+	if (lIdItFound != mFilesPathToId.end())
+	{
+		auto itFound = mFiles.find(lIdItFound->second);
+		if (itFound != mFiles.end())
+			lResult = &itFound->second;
+	}
+	return lResult;
+}
+
+/********************************************************************************/
+
 const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 {
-	const ESFileInfo* lResult = nullptr;
+	return const_cast<ESDatabase*>(this)->getFileInfo(pFile);
+}
+
+/********************************************************************************/
+
+ESFileInfo* ESDatabase::getFileInfo(ESFileInfoId pFile)
+{
+	ESFileInfo* lResult = nullptr;
 	auto itFound = mFiles.find(pFile);
 	if (itFound != mFiles.end())
 		lResult = &itFound->second;
 	return lResult;
+}
+
+/********************************************************************************/
+
+const ESFileInfo* ESDatabase::getFileInfo(ESFileInfoId pFile) const
+{
+	return const_cast<ESDatabase*>(this)->getFileInfo(pFile);
 }
 
 /********************************************************************************/
@@ -481,7 +531,7 @@ bool ESDatabase::isUnlockDatabaseRequested() const
 
 /********************************************************************************/
 
-const std::map<ESStringId, ESFileInfo>& ESDatabase::getFiles() const
+const std::map<ESFileInfoId, ESFileInfo>& ESDatabase::getFiles() const
 {
 	return mFiles;
 }

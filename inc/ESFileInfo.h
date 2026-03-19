@@ -73,9 +73,11 @@ struct ESUsefullExif
 };
 
 typedef std::vector<float, ESAlignedAllocator<float, 64>> ESEmbeddings;
+typedef uint32_t ESFileInfoId;
 
 struct ESFileInfo
 {
+	ESFileInfoId mId;
 	ESStringId mFilePath;
 	ESUsefullExif mExif;
 	uint8_t mCameraModelIdx = std::numeric_limits<uint8_t>::max();
