@@ -4,8 +4,11 @@ Exif statistics of your JPEG and HEIF library
 ![](ExifStats.png)
 
 ## Usage
-* **Open** or **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data.
+* **Open** or **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data. Then it will create thumbnails for all images. Then it will analyse all images with a machine learning model and then it will index all the images to speed up the search.
 * You can use the **Refresh** button to find new files without reparsing all the files already there or the **Full Refresh** to reparse all files.
+* You can use the **ReTag** button to reanalyse all images (if you changed the model for instance)
+* <ins>The creation of thumbnails and the machine learning processing of the images can take hours</ins> and are heavy tasks so you can use the **Pause Caching** (thumbnails) and **Pause Tagging** (machine learning analysis) to pause them.
+* You can sort the images by date and time or by similarity score (when searching)
 * You can right click on a camera in the list on the left penel to set a 35mm equivalent focal factor if the camera does not add it automatically to the EXIF
 * You can zoom with the mouse wheel in all charts, use Ctrl + Wheel to zoom vertically, or Double Click to reset the view
 * You can click on a bar in a chart to get the value
@@ -17,6 +20,7 @@ Exif statistics of your JPEG and HEIF library
 * You can click on the map to see the images around the clicked position (if you want to reset the click in an empty space)
 * All files (database, presets, logs and image cache are stored in **%localappdata%/ExifStats/ExifStats**
 * All settings are stored in **HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats**
+* You can search though
 
 ## Customize UI / QML
 
