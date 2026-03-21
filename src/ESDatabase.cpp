@@ -112,8 +112,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				while (lDirIt.hasNext())
 				{
 					ESStringId lFilePath = lDirIt.next();
-					const auto&& lItFound = mFilesPathToId.find(lFilePath);
-					bool lIsNewFile = lItFound == mFilesPathToId.end();
+					auto&& [lItFound, lIsNewFile] = mFilesPathToId.try_emplace(lFilePath, 0);
 
 					ESFileInfoId lFileInfoId = lIsNewFile ? ++mLastAssignedId : lItFound->second;
 					ESFileInfo& lFileInfo = mFiles[lFileInfoId];
@@ -121,6 +120,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 					{
 						lFileInfo.mId = lFileInfoId;
 						lFileInfo.mFilePath = lFilePath;
+						lItFound->second = lFileInfoId;
 					}
 					if (!pNewFilesOnly || lIsNewFile || lFileInfo.mReadResult != eSuccess)
 						lAllImageFileIds << lFileInfoId;

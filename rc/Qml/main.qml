@@ -1102,6 +1102,17 @@ Item
 					
 					Material.accent: Material.Green
 				}
+				ProgressBar
+				{
+					id: updatingHNSWIndexProgressBar
+					Layout.preferredWidth: parent.width
+					Layout.preferredHeight: 10
+					value: MainQmlBinder.UpdatingHNSWIndexProgress
+					opacity: MainQmlBinder.UpdatingHNSWIndex ? 1.0 : 0.0
+					height: 10
+					
+					Material.accent: Material.Blue
+				}
 			}
 			
 			SplitView

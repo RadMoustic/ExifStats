@@ -26,7 +26,7 @@ static const char* cPresetExtension = "espreset";
 
 ESQmlBinder::ESQmlBinder()
 	: mTagging(false)
-	, mTaggingProgress(100.f)
+	, mTaggingProgress(1.f)
 	, mPauseCaching(false)
 	, mPauseTagging(false)
 {
@@ -40,6 +40,10 @@ ESQmlBinder::ESQmlBinder()
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingProgressChanged, this, &ESQmlBinder::processingProgressChanged);
 #ifdef IMAGETAGGER_ENABLE
+#ifdef HNSWLIB_ENABLED
+	(void)connect(&mTagsFilter, &ESTagsFilter::propertyUpdatingHNSWIndexChanged, this, &ESQmlBinder::updatingHNSWIndexChanged);
+	(void)connect(&mTagsFilter, &ESTagsFilter::propertyUpdatingHNSWIndexProgressChanged, this, &ESQmlBinder::updatingHNSWIndexProgressChanged);
+#endif // HNSWLIB_ENABLED
 	(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESQmlBinder::onTaggingProgress, Qt::QueuedConnection);
 #endif // IMAGETAGGER_ENABLE
 
@@ -106,6 +110,9 @@ void ESQmlBinder::clear()
 {
 	if (QMessageBox::question(nullptr, tr("Clear Database"), tr("Are you sure you want to clear the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 	{
+		ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
+		ESImageCache::getInstance().stopAndCancelAllLoadings();
+
 		ESDatabase::getInstance().clear();
 		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.clear();
 
@@ -140,11 +147,33 @@ float ESQmlBinder::getProcessingProgress()
 
 /********************************************************************************/
 
+bool ESQmlBinder::getUpdatingHNSWIndex()
+{
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	return mTagsFilter.getUpdatingHNSWIndex();
+#else
+	return	false;
+#endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+}
+
+/********************************************************************************/
+
+float ESQmlBinder::getUpdatingHNSWIndexProgress()
+{
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	return mTagsFilter.getUpdatingHNSWIndexProgress();
+#else
+	return 1.f;
+#endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+}
+
+/********************************************************************************/
+
 void ESQmlBinder::onTaggingProgress(int pLoadedCount, int pLoadingCount)
 {
 	if (pLoadedCount == pLoadingCount)
 	{
-		setTaggingProgress(100.f);
+		setTaggingProgress(1.f);
 		setTagging(false);
 	}
 	else
@@ -715,6 +744,17 @@ bool ESQmlBinder::isImageTaggerEnabled() const
 
 /********************************************************************************/
 
+bool ESQmlBinder::isHNSWIndexEnabled() const
+{
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	return ESImageTaggerManager::getInstance().isEnabled();
+#else
+	return false;
+#endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+}
+
+/********************************************************************************/
+
 bool ESQmlBinder::isTokenizerEnabled() const
 {
 #ifdef IMAGETAGGER_ENABLE
@@ -728,9 +768,7 @@ bool ESQmlBinder::isTokenizerEnabled() const
 
 void ESQmlBinder::save()
 {
-#ifdef IMAGETAGGER_ENABLE
-#ifdef HNSWLIB_ENABLED
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
 	mTagsFilter.saveHnswIndex();
-#endif // HNSWLIB_ENABLED
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
 }

@@ -210,24 +210,24 @@ void ESImageCache::unloadUnusedImages()
 		return;
 	mUnloadingUnusedThread = QtConcurrent::run([this]()
 		{
-			std::vector<std::shared_ptr<ESImage>> lLoadedImages;
+			std::vector<std::pair<qint64, std::shared_ptr<ESImage>>> lLoadedImages;
 			lLoadedImages.reserve(MAX_NUM_IMAGE_LOADED);
 			{
-				std::lock_guard<std::shared_mutex> lock(mImagesMutex);
+				std::shared_lock<std::shared_mutex> lock(mImagesMutex);
 				for (auto&& lImage : mImages)
 					if (lImage.second->isLoaded() || (lImage.second->isLoading() && lImage.second->hasCacheFile())) // Don't cancel files queued for caching
-						lLoadedImages.push_back(lImage.second);
+						lLoadedImages.emplace_back(lImage.second->mLastUsed, lImage.second); // Store mLastUsed because if it is changed during the sort later by another thread it will crash
 			}
 			if (lLoadedImages.size() <= MAX_NUM_IMAGE_LOADED)
 				return;
 			std::sort(lLoadedImages.begin(), lLoadedImages.end(),
-				[](const std::shared_ptr<ESImage>& a, const std::shared_ptr<ESImage>& b)
+				[](const std::pair<qint64, std::shared_ptr<ESImage>>& a, const std::pair<qint64, std::shared_ptr<ESImage>>& b)
 				{
-					return a->mLastUsed > b->mLastUsed;
+					return a.first > b.first;
 				});
 			for (size_t i = MAX_NUM_IMAGE_LOADED; i < lLoadedImages.size(); ++i)
 			{
-				lLoadedImages[i]->unloadImage();
+				lLoadedImages[i].second->unloadImage();
 			}
 		});
 }
@@ -261,7 +261,7 @@ void ESImageCache::unloadUnusedImages()
 void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage)
 {
 	// Lock Everything
-	std::unique_lock<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
+	std::lock_guard<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
 	std::shared_lock<std::shared_mutex> lImagesLock(mImagesMutex);
 	for (auto lDriveLoadingTask : mDriveLoadingTasks)
 		lDriveLoadingTask.second->mQueueMutex.lock();

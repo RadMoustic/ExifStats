@@ -101,6 +101,9 @@ public:
 	Q_PROPERTY(bool Processing READ getProcessing NOTIFY processingChanged)
 	Q_PROPERTY(float ProcessingProgress READ getProcessingProgress NOTIFY processingProgressChanged)
 
+	Q_PROPERTY(bool UpdatingHNSWIndex READ getUpdatingHNSWIndex NOTIFY updatingHNSWIndexChanged)
+	Q_PROPERTY(float UpdatingHNSWIndexProgress READ getUpdatingHNSWIndexProgress NOTIFY updatingHNSWIndexProgressChanged)
+
 	Q_PROPERTY(QString TimeFrom READ getTimeFrom WRITE setTimeFrom NOTIFY timeFromChanged)
 	Q_PROPERTY(QString TimeTo READ getTimeTo WRITE setTimeTo NOTIFY timeToChanged)
 
@@ -140,6 +143,10 @@ public:
 	QVector<QString> getProcessedFolders();
 	bool getProcessing();
 	float getProcessingProgress();
+
+	// HNSW Index
+	bool getUpdatingHNSWIndex();
+	float getUpdatingHNSWIndexProgress();
 
 	// General
 	Q_INVOKABLE void refresh(bool pFullRefresh);
@@ -206,6 +213,7 @@ public:
 	// Search tags
 	Q_INVOKABLE QStringList getTagsFound() const;
 	Q_INVOKABLE bool isImageTaggerEnabled() const;
+	Q_INVOKABLE bool isHNSWIndexEnabled() const;
 	Q_INVOKABLE bool isTokenizerEnabled() const;
 
 	void save();
@@ -218,6 +226,8 @@ signals:
 	void processedFoldersChanged();
 	void processingChanged();
 	void processingProgressChanged();
+	void updatingHNSWIndexChanged();
+	void updatingHNSWIndexProgressChanged();
 
 	void timeFromChanged();
 	void timeToChanged();

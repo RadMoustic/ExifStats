@@ -22,6 +22,10 @@
 ESTagsFilter::ESTagsFilter()
 	: mTokenizerEnabled(false)
 	, mMinSimilarityScore(0.25f)
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	, mUpdatingHNSWIndex(false)
+	, mUpdatingHNSWIndexProgress(1.f)
+#endif //defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
 {
 	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
 
@@ -128,11 +132,18 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 			if (lDB.getEmbeddingsDimension() > 0)
 			{
 				std::shared_lock lock(lDB.getFilesMutex());
+
+				setUpdatingHNSWIndex(true);
+				setUpdatingHNSWIndexProgress(0.f);
+
+				const int lNbFiles = int(lDB.getFiles().size());
+
 				mHnswIndexUpdating = true;
 				ESPerfLog lPerfLog("HNSW Index Update");
 				qInfo() << "Updating HNSW index with " << lDB.getFiles().size() << " files...";
 				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
 				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+				int lFileIdx = 0;
 				for (auto&& lFileInfo : lDB.getFiles())
 				{
 					if (lFileInfo.second.mEmbeddings.size() > 0)
@@ -145,9 +156,17 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 						qInfo() << "HNSW index update cancelled.";
 						break;
 					}
+					++lFileIdx;
+
+					float lProgress = float(lFileIdx) / lNbFiles;
+					if (abs(lProgress - getUpdatingHNSWIndexProgress()) >= 0.001)
+						setUpdatingHNSWIndexProgress(lProgress);
 				}
 				qInfo() << "HNSW index updated.";
 				mHnswIndexUpdating = false;
+
+				setUpdatingHNSWIndex(false);
+				setUpdatingHNSWIndexProgress(1.f);
 			}
 		});
 	}

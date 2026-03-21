@@ -38,6 +38,13 @@ class ESTagsFilter : public QObject, public ESFilter
 	Q_OBJECT;
 
 public:
+	/******************************** ATTRIBUTES **********************************/
+
+#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	ES_QML_PROPERTY(UpdatingHNSWIndex, bool)
+	ES_QML_PROPERTY(UpdatingHNSWIndexProgress, float)
+#endif //defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+
 	/********************************* METHODS ***********************************/
 
 	ESTagsFilter();

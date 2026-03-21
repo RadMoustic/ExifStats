@@ -152,12 +152,12 @@ void ESImageLoader::LoadingThreadTask::setPaused(bool pPaused)
 /*virtual*/ void ESImageLoader::imageLoadingFinished()
 {
 	++mImagesLoadedCount;
-	int currentCachingCount = mImagesLoadingCount.load();
-	int currentCachedCount = mImagesLoadedCount.load();
-	if(currentCachingCount == currentCachedCount)
+	int currentLoadingCount = mImagesLoadingCount.load();
+	int currentLoadedCount = mImagesLoadedCount.load();
+	if(currentLoadingCount == currentLoadedCount || currentLoadingCount == 0)
 	{
-		mImagesLoadingCount -= currentCachingCount;
-		mImagesLoadedCount -= currentCachedCount;
+		mImagesLoadingCount -= currentLoadingCount;
+		mImagesLoadedCount -= currentLoadedCount;
 	}
 
 	emit imageLoadingProgress(mImagesLoadedCount, mImagesLoadingCount);
@@ -170,6 +170,15 @@ void ESImageLoader::stopAndCancelAllLoadings()
 	std::unique_lock<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
 	for(auto lDriveLoadingTask: mDriveLoadingTasks)
 		lDriveLoadingTask.second->stop();
+
+	int currentLoadingCount = mImagesLoadingCount.load();
+	if (currentLoadingCount > 0)
+	{
+		mImagesLoadingCount = 0;
+		mImagesLoadedCount = 0;
+
+		emit imageLoadingProgress(mImagesLoadedCount, mImagesLoadingCount);
+	}
 }
 
 /********************************************************************************/
