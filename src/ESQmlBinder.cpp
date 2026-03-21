@@ -110,7 +110,9 @@ void ESQmlBinder::clear()
 {
 	if (QMessageBox::question(nullptr, tr("Clear Database"), tr("Are you sure you want to clear the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 	{
+#ifdef IMAGETAGGER_ENABLE
 		ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
+#endif // IMAGETAGGER_ENABLE
 		ESImageCache::getInstance().stopAndCancelAllLoadings();
 
 		ESDatabase::getInstance().clear();

@@ -20,16 +20,18 @@
 /********************************************************************************/
 
 ESTagsFilter::ESTagsFilter()
-	: mTokenizerEnabled(false)
-	, mMinSimilarityScore(0.25f)
-#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+	: mMinSimilarityScore(0.25f)
+#ifdef IMAGETAGGER_ENABLE
+	, mTokenizerEnabled(false)
+#ifdef HNSWLIB_ENABLED
 	, mUpdatingHNSWIndex(false)
 	, mUpdatingHNSWIndexProgress(1.f)
-#endif //defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
+#endif // HNSWLIB_ENABLED
+#endif // IMAGETAGGER_ENABLE
 {
+#ifdef IMAGETAGGER_ENABLE
 	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
 
-#ifdef IMAGETAGGER_ENABLE
 	if(QDir(mTokenizerDirectoryPath).exists())
 	{
 		mTokenizerEnabled = true;
@@ -359,7 +361,7 @@ QStringList ESTagsFilter::getTagsFound() const
 #ifdef IMAGETAGGER_ENABLE
 	return mTextEncoder ? mSearchTags : QStringList();
 #else
-	return mTagsInclusiveFilters;
+	return QStringList();
 #endif // IMAGETAGGER_ENABLE
 }
 
@@ -396,14 +398,12 @@ void ESTagsFilter::onDatabaseTagsHaveChanged()
 
 /********************************************************************************/
 
+#ifdef IMAGETAGGER_ENABLE
 bool ESTagsFilter::isTokenizerEnabled() const
 {
-#ifdef IMAGETAGGER_ENABLE
 	return mTokenizerEnabled;
-#else
-	return false;
-#endif // IMAGETAGGER_ENABLE
 }
+#endif // IMAGETAGGER_ENABLE
 
 /********************************************************************************/
 
