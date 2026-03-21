@@ -371,6 +371,7 @@ Item
 			{
 				id: searchTextFilter
 				
+				enabled: MainQmlBinder.isImageTaggerEnabled()
 				SplitView.fillWidth: true
 				SplitView.preferredHeight: parent.height / parent.children.length
 				
