@@ -47,10 +47,10 @@ public:
 		mCounterLabels.resize(mValueCounters.size());
 
 		int i = 0;
-		for (const auto& valueCount : mValueCounters)
+		for (const auto& lValueCount : mValueCounters)
 		{
-			mCounters[i] = valueCount.second;
-			mCounterLabels[i] = Derived::getValueLabel(valueCount.first);
+			mCounters[i] = lValueCount.second;
+			mCounterLabels[i] = Derived::getValueLabel(lValueCount.first);
 			++i;
 		}
 

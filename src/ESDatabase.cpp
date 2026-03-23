@@ -136,7 +136,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 
 			constexpr uint cNbFilesPerThread = 256;
 
-			QFuture<void> res = QtConcurrent::map(lAllImageFileIds,
+			QFuture<void> lRes = QtConcurrent::map(lAllImageFileIds,
 				[&](const ESFileInfoId& pFileInfoId)
 				{
 					ESFileInfo& lFileInfo = mFiles[pFileInfoId];
@@ -158,7 +158,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 						mProgressMutex.unlock();
 					}
 				});
-			res.waitForFinished();
+			lRes.waitForFinished();
 			mFilesMutex.unlock();
 
 			// Extract all camera models and counter
@@ -178,10 +178,10 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			// Set the camera model idx
 			{
 				int lCameraModelIdx = 0;
-				for (auto&& itCamera : lCameraModels)
+				for (auto&& lItCamera : lCameraModels)
 				{
 					for (auto&& lProcessedFile : mFiles)
-						if (lProcessedFile.second.mExif.mCameraModel == itCamera)
+						if (lProcessedFile.second.mExif.mCameraModel == lItCamera)
 							lProcessedFile.second.mCameraModelIdx = lCameraModelIdx;
 
 					++lCameraModelIdx;
@@ -191,10 +191,10 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			// Set the lens model idx
 			{
 				int lLensModelIdx = 0;
-				for (auto&& itLens : lLensModels)
+				for (auto&& lItLens : lLensModels)
 				{
 					for (auto&& lProcessedFile : mFiles)
-						if (lProcessedFile.second.mExif.mLensModel == itLens)
+						if (lProcessedFile.second.mExif.mLensModel == lItLens)
 							lProcessedFile.second.mLensModelIdx = lLensModelIdx;
 
 					++lLensModelIdx;
@@ -219,14 +219,14 @@ ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif
 
 	int lFileSize = lFile.size();
 
-	thread_local int tHeaderSize = 0;
-	thread_local std::unique_ptr<char[]> tHeaderBuffer;
+	thread_local int lTHeaderSize = 0;
+	thread_local std::unique_ptr<char[]> lTHeaderBuffer;
 	auto lAllocateHeaderBuffer = [&](int pSize)
 	{
-		if(pSize > tHeaderSize)
+		if(pSize > lTHeaderSize)
 		{
-			tHeaderSize = pSize;
-			tHeaderBuffer = std::make_unique<char[]>(tHeaderSize);
+			lTHeaderSize = pSize;
+			lTHeaderBuffer = std::make_unique<char[]>(lTHeaderSize);
 		}
 	};
 
@@ -235,18 +235,18 @@ ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif
 		// We don't really read the HEIC struct but just try to find the 'Exif\0\0' header, so read a big chunk
 		lAllocateHeaderBuffer(64000);
 		
-		int lReadSize = std::min(tHeaderSize, lFileSize);
-		if (lFile.read(tHeaderBuffer.get(), lReadSize) != lReadSize)
+		int lReadSize = std::min(lTHeaderSize, lFileSize);
+		if (lFile.read(lTHeaderBuffer.get(), lReadSize) != lReadSize)
 			return eFailedToRead;
 
 		// Find Exif Header
-		std::string_view lFullHeaderBufferView(tHeaderBuffer.get(), tHeaderSize);
+		std::string_view lFullHeaderBufferView(lTHeaderBuffer.get(), lTHeaderSize);
 		size_t lOffset = lFullHeaderBufferView.find("Exif\0\0MM", 0, 8);
 		if(lOffset == std::string_view::npos)
 			return eParseExifErrorNoExif;
 
 		// Parse EXIF
-		return static_cast<ESReadExifFileResult>(pOutExif.parseFromEXIFSegment(reinterpret_cast<unsigned char*>(&tHeaderBuffer[lOffset]), static_cast<unsigned int>(tHeaderSize - lOffset)));
+		return static_cast<ESReadExifFileResult>(pOutExif.parseFromEXIFSegment(reinterpret_cast<unsigned char*>(&lTHeaderBuffer[lOffset]), static_cast<unsigned int>(lTHeaderSize - lOffset)));
 	}
 	else
 	{
@@ -254,13 +254,13 @@ ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif
 		lAllocateHeaderBuffer(cFirstReadSize);
 
 		int lReadSize = std::min(cFirstReadSize, lFileSize);
-		if (lFile.read(tHeaderBuffer.get(), lReadSize) != lReadSize)
+		if (lFile.read(lTHeaderBuffer.get(), lReadSize) != lReadSize)
 			return eFailedToRead;
 	
 		// Find Exif Header
 		int lOffset = 0;  // current offset into buffer
 		for (lOffset = 0; lOffset < lReadSize - 1; lOffset++)
-			if (uchar(tHeaderBuffer[lOffset]) == 0xFF && uchar(tHeaderBuffer[lOffset + 1]) == 0xE1)
+			if (uchar(lTHeaderBuffer[lOffset]) == 0xFF && uchar(lTHeaderBuffer[lOffset + 1]) == 0xE1)
 				break;
 
 		if (lOffset + 4 > lReadSize)
@@ -268,7 +268,7 @@ ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif
 
 		// Read Exif Size
 		lOffset += 2;
-		unsigned short lExifSize = static_cast<uint16_t>(*(tHeaderBuffer.get() + lOffset) << 8) | *(tHeaderBuffer.get() + lOffset + 1);
+		unsigned short lExifSize = static_cast<uint16_t>(*(lTHeaderBuffer.get() + lOffset) << 8) | *(lTHeaderBuffer.get() + lOffset + 1);
 
 		if (lExifSize < 16)
 			return eExifSizeTooSmall;
@@ -278,34 +278,34 @@ ESReadExifFileResult ESDatabase::readFileExif(const QString& pFilePath, easyexif
 		// Read the header including the full exif data
 		lAllocateHeaderBuffer(lHeaderIncludingExifSize);
 		lFile.seek(0);
-		if (lFile.read(tHeaderBuffer.get(), lHeaderIncludingExifSize) != lHeaderIncludingExifSize)
+		if (lFile.read(lTHeaderBuffer.get(), lHeaderIncludingExifSize) != lHeaderIncludingExifSize)
 			return eFailedToRead;
 
 		// Parse EXIF
-		return static_cast<ESReadExifFileResult>(pOutExif.parseFrom(reinterpret_cast<unsigned char *>(tHeaderBuffer.get()), lHeaderIncludingExifSize));
+		return static_cast<ESReadExifFileResult>(pOutExif.parseFrom(reinterpret_cast<unsigned char *>(lTHeaderBuffer.get()), lHeaderIncludingExifSize));
 	}
 }
 
 /********************************************************************************/
 
-ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& aFullExif)
+ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& pFullExif)
 {
-	ESUsefullExif result;
+	ESUsefullExif lResult;
 
-	result.mCameraModel = QString(aFullExif.Model.c_str());
-	result.mLensModel = QString(aFullExif.LensInfo.Model.c_str());
-	result.mFNumber = aFullExif.FNumber;
-	QDateTime exifDateTime = QDateTime::fromString(QString(aFullExif.DateTimeOriginal.c_str()), "yyyy:MM:dd hh:mm:ss");
-	if(!exifDateTime.isValid())
-		exifDateTime = QDateTime::fromString(QString(aFullExif.DateTime.c_str()), "yyyy:MM:dd hh:mm:ss");
-	result.mDateTime = exifDateTime.toSecsSinceEpoch();
-	result.mGeoLococation.mLatitude = static_cast<float>(aFullExif.GeoLocation.Latitude);
-	result.mGeoLococation.mLongitude = static_cast<float>(aFullExif.GeoLocation.Longitude);
-	result.mFocalLength = aFullExif.FocalLength;
-	result.mFocalLengthIn35mm = aFullExif.FocalLengthIn35mm;
-	result.mOrientation = ESExifOrientation(aFullExif.Orientation);
+	lResult.mCameraModel = QString(pFullExif.Model.c_str());
+	lResult.mLensModel = QString(pFullExif.LensInfo.Model.c_str());
+	lResult.mFNumber = pFullExif.FNumber;
+	QDateTime lExifDateTime = QDateTime::fromString(QString(pFullExif.DateTimeOriginal.c_str()), "yyyy:MM:dd hh:mm:ss");
+	if(!lExifDateTime.isValid())
+		lExifDateTime = QDateTime::fromString(QString(pFullExif.DateTime.c_str()), "yyyy:MM:dd hh:mm:ss");
+	lResult.mDateTime = lExifDateTime.toSecsSinceEpoch();
+	lResult.mGeoLococation.mLatitude = static_cast<float>(pFullExif.GeoLocation.Latitude);
+	lResult.mGeoLococation.mLongitude = static_cast<float>(pFullExif.GeoLocation.Longitude);
+	lResult.mFocalLength = pFullExif.FocalLength;
+	lResult.mFocalLengthIn35mm = pFullExif.FocalLengthIn35mm;
+	lResult.mOrientation = ESExifOrientation(pFullExif.Orientation);
 
-	return result;
+	return lResult;
 }
 
 /********************************************************************************/
@@ -398,7 +398,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 void ESDatabase::saveDatabase()
 {
-	std::shared_lock lock(mFilesMutex);
+	std::shared_lock lLock(mFilesMutex);
 
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 	QString lDataBasePath = lDataBaseDir + QDir::separator() + "database.esdb";
@@ -460,8 +460,8 @@ void ESDatabase::loadDatabase()
 	Serialize(lSerializer, lDataBasePath);
 
 	std::sort(mFolders.begin(), mFolders.end());
-	QStringList::iterator last = std::unique(mFolders.begin(), mFolders.end());
-	mFolders.erase(last, mFolders.end());
+	QStringList::iterator lLast = std::unique(mFolders.begin(), mFolders.end());
+	mFolders.erase(lLast, mFolders.end());
 
 	setProperty("Processing", false);
 	emit tagsChanged();
@@ -483,9 +483,9 @@ ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile)
 	auto&& lIdItFound = mFilesPathToId.find(pFile);
 	if (lIdItFound != mFilesPathToId.end())
 	{
-		auto itFound = mFiles.find(lIdItFound->second);
-		if (itFound != mFiles.end())
-			lResult = &itFound->second;
+		auto lItFound = mFiles.find(lIdItFound->second);
+		if (lItFound != mFiles.end())
+			lResult = &lItFound->second;
 	}
 	return lResult;
 }
@@ -502,9 +502,9 @@ const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 ESFileInfo* ESDatabase::getFileInfo(ESFileInfoId pFile)
 {
 	ESFileInfo* lResult = nullptr;
-	auto itFound = mFiles.find(pFile);
-	if (itFound != mFiles.end())
-		lResult = &itFound->second;
+	auto lItFound = mFiles.find(pFile);
+	if (lItFound != mFiles.end())
+		lResult = &lItFound->second;
 	return lResult;
 }
 
@@ -554,7 +554,7 @@ const QVector<QString>& ESDatabase::getAllCameraModels() const
 
 void ESDatabase::getAllTags(std::vector<QString>& pOutput)
 {
-	std::shared_lock lock(mFilesMutex);
+	std::shared_lock lLock(mFilesMutex);
 	pOutput = mAllTags;
 }
 
@@ -570,14 +570,14 @@ void ESDatabase::setAllTags(const std::vector<QString>& pAllTags)
 
 QStringList ESDatabase::getTagsLabels(const std::vector<uint16_t>& pTags)
 {
-	std::shared_lock lock(mFilesMutex);
+	std::shared_lock lLock(mFilesMutex);
 	QStringList lResult;
-	for (uint16_t tag : pTags)
+	for (uint16_t lTag : pTags)
 	{
-		if (tag < mAllTags.size())
-			lResult.push_back(mAllTags[tag]);
+		if (lTag < mAllTags.size())
+			lResult.push_back(mAllTags[lTag]);
 		else
-			lResult.push_back(QString("UnknownTag%1").arg(tag));
+			lResult.push_back(QString("UnknownTag%1").arg(lTag));
 	}
 	return lResult;
 }
@@ -586,7 +586,7 @@ QStringList ESDatabase::getTagsLabels(const std::vector<uint16_t>& pTags)
 
 QString ESDatabase::getTagLabel(uint16_t pTagIndex) const
 {
-	std::shared_lock lock(mFilesMutex);
+	std::shared_lock lLock(mFilesMutex);
 	return mAllTags[pTagIndex];
 }
 

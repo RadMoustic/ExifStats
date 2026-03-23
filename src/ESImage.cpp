@@ -182,7 +182,7 @@ QChar ESImage::getDriveLetter() const
 
 /********************************************************************************/
 
-void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted)
+void ESImage::loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted)
 {
 	assert(!aMaxSize.isEmpty());
 
@@ -197,10 +197,10 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 		return;
 	}
 
-	bool isLoading = mIsLoading;
-	if(isLoading)
+	bool lIsLoading = mIsLoading;
+	if(lIsLoading)
 		return;
-	if(!mIsLoading.compare_exchange_strong(isLoading, true))
+	if(!mIsLoading.compare_exchange_strong(lIsLoading, true))
 		return;
 
 	std::shared_ptr<void> lRAIIResetIsLoading(nullptr, [this](void*) { mIsLoading = false; });
@@ -237,11 +237,11 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 			return;
 		}
 
-		QtConcurrent::run([this, aMaxSize, lRAIIResetIsLoading, lReadCache, lRAIIDecNumAsyncTaskStarted]()
+		QtConcurrent::run([this, pMaxSize, lRAIIResetIsLoading, lReadCache, lRAIIDecNumAsyncTaskStarted]()
 		{
 			if (!mCancelLoading)
 			{
-				readImage(mImageFileData, aMaxSize);
+				readImage(mImageFileData, pMaxSize);
 				mImageFileData.clear();
 				mImageFileData.squeeze();
 				if(mCancelLoading)
@@ -261,7 +261,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 	}
 	else
 	{
-		readImage(lImagePath, aMaxSize);
+		readImage(lImagePath, pMaxSize);
 		mIsLoaded = true;
 		ESImageCache::getInstance().unloadUnusedImages();
 		assert(!mCancelLoading); // In synchronous mode, 1calling cancelLoading() in another thread is not supported
@@ -273,7 +273,7 @@ void ESImage::loadImageInternal(const QSize aMaxSize, bool pAsync, std::atomic_i
 
 /********************************************************************************/
 
-void ESImage::readImage(const QString& pImagePath, QSize aMaxSize)
+void ESImage::readImage(const QString& pImagePath, QSize pMaxSize)
 {
 #ifdef TURBOJPEG_PLUGIN_ENABLED
 	if (hasCacheFile())
@@ -285,12 +285,12 @@ void ESImage::readImage(const QString& pImagePath, QSize aMaxSize)
 	}
 #endif // TURBOJPEG_PLUGIN_ENABLED
 	QImageReader lImageReader(pImagePath);
-	readImage(lImageReader, aMaxSize);
+	readImage(lImageReader, pMaxSize);
 }
 
 /********************************************************************************/
 
-void ESImage::readImage(QByteArray& pImageData, QSize aMaxSize)
+void ESImage::readImage(QByteArray& pImageData, QSize pMaxSize)
 {
 #ifdef TURBOJPEG_PLUGIN_ENABLED
 	if (hasCacheFile())
@@ -301,12 +301,12 @@ void ESImage::readImage(QByteArray& pImageData, QSize aMaxSize)
 #endif // TURBOJPEG_PLUGIN_ENABLED
 	QBuffer lImageDataBuffer(&pImageData);
 	QImageReader lImageReader(&lImageDataBuffer);
-	readImage(lImageReader, aMaxSize);
+	readImage(lImageReader, pMaxSize);
 }
 
 /********************************************************************************/
 
-void ESImage::readImage(QImageReader& pImageReader, QSize aMaxSize)
+void ESImage::readImage(QImageReader& pImageReader, QSize pMaxSize)
 {
 	QImage lFullImage = pImageReader.read();
 	if (mCancelLoading)
@@ -317,7 +317,7 @@ void ESImage::readImage(QImageReader& pImageReader, QSize aMaxSize)
 	}
 	else
 	{
-		mImage = lFullImage.scaled(aMaxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		mImage = lFullImage.scaled(pMaxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
 		// Manually rotate the image because the custom turbojpeg loader does not support auto rotate
 		// TODO: Extend the turbojpeg loader to support auto rotate and add back the "pImageReader.setAutoTransform(!mHasCacheFile);"

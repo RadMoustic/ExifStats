@@ -17,11 +17,11 @@
 /********************************************************************************/
 /********************************************************************************/
 
-/*static*/ int ESFocalLengthIn35mmStat::get35mmFocalLength(const ESFileInfo& aFile)
+/*static*/ int ESFocalLengthIn35mmStat::get35mmFocalLength(const ESFileInfo& pFile)
 {
-	if (aFile.mExif.mFocalLengthIn35mm > 0)
-		return aFile.mExif.mFocalLengthIn35mm;
-	auto&& itFound = msCameraModelsTo35mmFocalFactors.find(aFile.mCameraModelIdx);
-	float lTo35mmFactor = itFound != msCameraModelsTo35mmFocalFactors.end() ? itFound->second : 1.f;
-	return aFile.mExif.mFocalLengthIn35mm > 0 ? aFile.mExif.mFocalLengthIn35mm : int(round(aFile.mExif.mFocalLength * lTo35mmFactor));
+	if (pFile.mExif.mFocalLengthIn35mm > 0)
+		return pFile.mExif.mFocalLengthIn35mm;
+	auto&& lItFound = msCameraModelsTo35mmFocalFactors.find(pFile.mCameraModelIdx);
+	float lTo35mmFactor = lItFound != msCameraModelsTo35mmFocalFactors.end() ? lItFound->second : 1.f;
+	return pFile.mExif.mFocalLengthIn35mm > 0 ? pFile.mExif.mFocalLengthIn35mm : int(round(pFile.mExif.mFocalLength * lTo35mmFactor));
 }

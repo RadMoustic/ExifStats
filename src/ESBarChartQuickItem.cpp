@@ -182,8 +182,8 @@ void ESBarChartQuickItem::updateInternal()
 			QPainter lPainter(&lPixmap);
 			setupPainterText(lPainter);
 			mRealXAxisHeight = 0;
-			for (const QString& cat : mCategories)
-				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), cat).width());
+			for (const QString& lCat : mCategories)
+				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), lCat).width());
 
 			mRealXAxisHeight += mXAxisHeight + mMargin + cMarkerTextSpacing;
 		}

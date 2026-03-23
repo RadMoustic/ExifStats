@@ -219,13 +219,13 @@ void ESImageTaggerManager::processImage(const QImage& pImage, std::vector<uint16
 		for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 		{
 			ESEmbeddings lTaggerResult = lTagger->processImage(lMaxInputResizedImage);
-			if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
+			if (std::shared_ptr<ESImageTagger::FormatClassification> lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
 			{
 				std::vector<uint16_t> lTaggerTags = lTaggerClassificationFormat->getTagsFromScores(lTaggerResult);
 				convertTagsToAllTagIndexes(lTaggerTags, lTagger.get());
 				lAllTags.insert(lTaggerTags.begin(), lTaggerTags.end());
 			}
-			else if (auto lTaggerEmbeddingFormat = std::dynamic_pointer_cast<ESImageTagger::FormatEmbedding>(lTagger->getFormat()))
+			else if (std::shared_ptr<ESImageTagger::FormatEmbedding> lTaggerEmbeddingFormat = std::dynamic_pointer_cast<ESImageTagger::FormatEmbedding>(lTagger->getFormat()))
 			{
 				assert(pEmbeddingsOut.empty() && "Multiple embedding taggers are not supported");
 				pEmbeddingsOut = std::move(lTaggerResult);
@@ -248,7 +248,7 @@ void ESImageTaggerManager::updateAllTagLabels()
 	std::set<QString> lUniqueLabels;
 	for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 	{
-		if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
+		if (std::shared_ptr<ESImageTagger::FormatClassification> lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
 		{
 			for (const QString& lLabel : lTaggerClassificationFormat->mLabels)
 				lUniqueLabels.insert(lLabel);
@@ -263,7 +263,7 @@ void ESImageTaggerManager::updateAllTagLabels()
 
 	for (const std::shared_ptr<ESImageTagger>& lTagger : mTaggers)
 	{
-		if (auto lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
+		if (std::shared_ptr<ESImageTagger::FormatClassification> lTaggerClassificationFormat = std::dynamic_pointer_cast<ESImageTagger::FormatClassification>(lTagger->getFormat()))
 		{
 			std::vector<uint16_t>& lTagIndexesInAllLabels = mTaggerTagIndexesInAllLabels[lTagger.get()];
 			for (const QString& lLabel : lTaggerClassificationFormat->mLabels)

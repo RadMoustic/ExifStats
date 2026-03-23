@@ -57,9 +57,9 @@ public:
 	QJsonArray toJsonArray(QList<T> pValues) const
 	{
 		QJsonArray lResult;
-		for (const T& value : pValues)
+		for (const T& lValue : pValues)
 		{
-			lResult.append(toJsonValue(value));
+			lResult.append(toJsonValue(lValue));
 		}
 		return lResult;
 	}

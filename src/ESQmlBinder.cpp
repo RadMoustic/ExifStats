@@ -18,7 +18,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-static const char* cPresetExtension = "espreset";
+static const char* scPresetExtension = "espreset";
 
 /********************************************************************************/
 /********************************************************************************/
@@ -181,9 +181,9 @@ void ESQmlBinder::onTaggingProgress(int pLoadedCount, int pLoadingCount)
 	else
 	{
 		setTagging(true);
-		float loadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
-		if (abs(loadingProgress - getTaggingProgress()) >= 0.001)
-			setTaggingProgress(loadingProgress);
+		float lLoadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
+		if (abs(lLoadingProgress - getTaggingProgress()) >= 0.001)
+			setTaggingProgress(lLoadingProgress);
 	}
 }
 
@@ -228,14 +228,17 @@ void ESQmlBinder::updateFiltersFromData()
 void ESQmlBinder::updateStats(bool pIgnoreFilters)
 {
 	ESPerfLog lPerfLog(__FUNCTION__);
+
+	const ESDatabase& lDB = ESDatabase::getInstance();
+	std::shared_lock lLock(lDB.getFilesMutex());
 	
 	for (ESStat* lStat : mStats)
 		lStat->reset();
 	for (ESStat* lStat : mStats)
 	{
-		for (auto&& lProcessedFile : ESDatabase::getInstance().getFiles())
+		for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
 		{
-			if(lProcessedFile.second.mReadResult != eSuccess)
+			if(lFileInfo.mReadResult != eSuccess)
 				continue;
 			
 			bool lAddFile = true;
@@ -244,7 +247,7 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 			{
 				for (const ESFilter* lFilter : mFilters)
 				{
-					if (lFilter->isFileFilteredOut(lProcessedFile.second))
+					if (lFilter->isFileFilteredOut(lFileInfo))
 					{
 						lAddFile = false;
 						lKeepCategory = lFilter->mKeepCategory;
@@ -254,12 +257,12 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 				}
 			}
 			if(lAddFile)
-				lStat->addFile(lProcessedFile.second);
+				lStat->addFile(lFileInfo);
 			else if (lKeepCategory)
-				lStat->addFileCategory(lProcessedFile.second);
+				lStat->addFileCategory(lFileInfo);
 		}
 	}
-	for (auto lStat : mStats)
+	for (ESStat * lStat : mStats)
 		lStat->onAllFilesAdded();
 
 	emit dataHasChanged();
@@ -310,9 +313,9 @@ void ESQmlBinder::setLensModelsFilter(const QVariantMap& pSelectedLens)
 
 /********************************************************************************/
 
-void ESQmlBinder::setGeoShapeFilter(QGeoShape aGeoShape)
+void ESQmlBinder::setGeoShapeFilter(QGeoShape pGeoShape)
 {
-	mGeoLocationFilter.mGeoShapeFilter = aGeoShape;
+	mGeoLocationFilter.mGeoShapeFilter = pGeoShape;
 	updateStats(false);
 }
 
@@ -472,14 +475,14 @@ void ESQmlBinder::setTimeFrom(QString pFrom)
 
 void ESQmlBinder::setTimeTo(QString pTo)
 {
-	static uint64_t sMaxTo = QDateTime::currentDateTime().toSecsSinceEpoch();
+	static uint64_t lsMaxTo = QDateTime::currentDateTime().toSecsSinceEpoch();
 	uint64_t lOldTimeEnd = mDateTimeFilter.mFilterTo;
 	QDateTime lToDate = QDateTime::fromString(pTo, "yyyy/MM/dd");
 	if (lToDate.isValid())
 	{
 		qint64 lSecs = lToDate.toSecsSinceEpoch();
 		mDateTimeFilter.mFilterTo = lSecs > 0 ? lSecs : 0;
-		if (mDateTimeFilter.mFilterTo > sMaxTo)
+		if (mDateTimeFilter.mFilterTo > lsMaxTo)
 			mDateTimeFilter.mFilterTo = std::numeric_limits<uint64_t>::max();
 	}
 	else
@@ -594,8 +597,8 @@ bool ESQmlBinder::saveFilters(QString pPresetName)
 		return false;
 	}
 
-	static const QRegularExpression lsInvalidChars(R"([\\\/:\*\?"<>\|])");
-	if (pPresetName.contains(lsInvalidChars) || pPresetName.endsWith(' ') || pPresetName.endsWith('.'))
+	static const QRegularExpression scInvalidChars(R"([\\\/:\*\?"<>\|])");
+	if (pPresetName.contains(scInvalidChars) || pPresetName.endsWith(' ') || pPresetName.endsWith('.'))
 	{
 		qWarning("Preset name contains invalid characters: %s", qUtf8Printable(pPresetName));
 		return false;
@@ -704,10 +707,10 @@ QStringList ESQmlBinder::getFiltersPresets() const
 	QDir lDir(getPresetsFolderPath());
 	if (!lDir.exists())
 		return lResult;
-	QStringList lPresetFiles = lDir.entryList(QStringList() << QString("*.%1").arg(cPresetExtension), QDir::Files);
+	QStringList lPresetFiles = lDir.entryList(QStringList() << QString("*.%1").arg(scPresetExtension), QDir::Files);
 	for (const QString& lPresetFile : lPresetFiles)
 	{
-		lResult.push_back(lPresetFile.left(lPresetFile.length() - constExprStringLength(cPresetExtension) - 1));
+		lResult.push_back(lPresetFile.left(lPresetFile.length() - constExprStringLength(scPresetExtension) - 1));
 	}
 	return lResult;
 }
@@ -723,7 +726,7 @@ QString ESQmlBinder::getPresetsFolderPath() const
 
 QString ESQmlBinder::getPresetFilePathPath(const QString& pPresetName) const
 {
-	return getPresetsFolderPath() + QDir::separator() + pPresetName + "." + cPresetExtension;
+	return getPresetsFolderPath() + QDir::separator() + pPresetName + "." + scPresetExtension;
 }
 
 /********************************************************************************/

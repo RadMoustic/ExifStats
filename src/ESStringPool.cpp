@@ -31,8 +31,8 @@ ESStringPool::InternalId ESStringPool::getStringId(const QString& pString)
 	std::unique_ptr<QString>* lStringData = nullptr;
 
 	mStringsMutex.lockForRead();
-	auto itFound = mStrings.find(pString);
-	if (itFound == mStrings.end())
+	auto lItFound = mStrings.find(pString);
+	if (lItFound == mStrings.end())
 	{
 		mStringsMutex.unlock();
 		mStringsMutex.lockForWrite();
@@ -43,7 +43,7 @@ ESStringPool::InternalId ESStringPool::getStringId(const QString& pString)
 	}
 	else
 	{
-		lStringData = &itFound->second;
+		lStringData = &lItFound->second;
 		mStringsMutex.unlock();
 	}
 

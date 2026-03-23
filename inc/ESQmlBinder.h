@@ -170,7 +170,7 @@ public:
 	// Geo Location
 	Q_INVOKABLE QVector<QPointF> getAllGeoLocations() const;
 	Q_INVOKABLE QVector<QString> getFilesAtLocation(const QPointF& pGeoLoc, float pMaxDist) const;
-	Q_INVOKABLE void setGeoShapeFilter(QGeoShape aGeoShape);
+	Q_INVOKABLE void setGeoShapeFilter(QGeoShape pGeoShape);
 
 	// Timeline
 	Q_INVOKABLE QString getTimeFrom() const;
@@ -277,25 +277,25 @@ private:
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<typename K, typename V>& pMap)
 	{
-		QVariantMap result;
+		QVariantMap lResult;
 		for (auto it = pMap.begin(); it != pMap.end(); ++it)
 		{
-			result[it.key()] = it.value();
+			lResult[it.key()] = it.value();
 		}
 
-		return result;
+		return lResult;
 	}
 
 	template<typename K, typename V>
 	static QMap<K, V> toQMap(const QVariantMap& pMap)
 	{
-		QMap<K, V> result;
+		QMap<K, V> lResult;
 		for (auto it = pMap.begin(); it != pMap.end(); ++it)
 		{
-			result[it.key()] = qvariant_cast<V>(it.value());
+			lResult[it.key()] = qvariant_cast<V>(it.value());
 		}
 
-		return result;
+		return lResult;
 	}
 };
 

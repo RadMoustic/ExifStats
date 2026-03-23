@@ -44,34 +44,34 @@ void ESImageLoader::setPaused(bool pPaused)
 	
 	QChar lDriveLetter = pUseCacheDriveQueueIfAvailable ? pImage->getDriveLetter() : pImage->getImagePath().getString()[0];
 
-	std::shared_ptr<LoadingThreadTask> driveLoadingTask;
+	std::shared_ptr<LoadingThreadTask> lDriveLoadingTask;
 	mDriveLoadingTasksMutex.lock_shared();
-	auto itFound = mDriveLoadingTasks.find(lDriveLetter);
-	if(itFound == mDriveLoadingTasks.end())
+	auto lItFound = mDriveLoadingTasks.find(lDriveLetter);
+	if(lItFound == mDriveLoadingTasks.end())
 	{
 		mDriveLoadingTasksMutex.unlock_shared();
-		std::unique_lock<std::shared_mutex> uniqueLock(mDriveLoadingTasksMutex);
+		std::unique_lock<std::shared_mutex> lUniqueLock(mDriveLoadingTasksMutex);
 		// Double check
-		itFound = mDriveLoadingTasks.find(lDriveLetter);
-		if(itFound == mDriveLoadingTasks.end())
+		lItFound = mDriveLoadingTasks.find(lDriveLetter);
+		if(lItFound == mDriveLoadingTasks.end())
 		{
-			driveLoadingTask = std::make_shared<LoadingThreadTask>();
-			driveLoadingTask->mMaxAsyncTask = mMaxAsyncTask;
-			driveLoadingTask->init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
+			lDriveLoadingTask = std::make_shared<LoadingThreadTask>();
+			lDriveLoadingTask->mMaxAsyncTask = mMaxAsyncTask;
+			lDriveLoadingTask->init([this](const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted)
 				{
 					internalLoadImage(pImage, pNumAsyncTaskStarted);
 				});
-			mDriveLoadingTasks[lDriveLetter] = driveLoadingTask;
+			mDriveLoadingTasks[lDriveLetter] = lDriveLoadingTask;
 		}
-		uniqueLock.unlock();
+		lUniqueLock.unlock();
 	}
 	else
 	{
-		driveLoadingTask = itFound->second;
+		lDriveLoadingTask = lItFound->second;
 		mDriveLoadingTasksMutex.unlock_shared();
 	}
 
-	driveLoadingTask->processImage(pImage);
+	lDriveLoadingTask->processImage(pImage);
 }
 
 /********************************************************************************/
@@ -80,7 +80,7 @@ void ESImageLoader::LoadingThreadTask::processImage(const std::shared_ptr<ESImag
 {
 	mStop = false;
 	{
-		std::lock_guard<std::mutex> lock(mQueueMutex);
+		std::lock_guard<std::mutex> lLock(mQueueMutex);
 		mLoadingQueue.push_back(pImage);
 	}
 	if (mPaused || mLoadingThread.isRunning())
@@ -99,21 +99,21 @@ void ESImageLoader::LoadingThreadTask::start()
 				assert(mMaxAsyncTask > 0 && "mMaxAsyncTask not set");
 				if(mNumAsyncTaskStarted < mMaxAsyncTask)
 				{
-					std::shared_ptr<ESImage> currentImage;
+					std::shared_ptr<ESImage> lCurrentImage;
 					{
-						std::lock_guard<std::mutex> lock(mQueueMutex);
+						std::lock_guard<std::mutex> lLock(mQueueMutex);
 						if (mLoadingQueue.empty())
 						{
 							break;
 						}
 						else
 						{
-							currentImage = mLoadingQueue.front();
+							lCurrentImage = mLoadingQueue.front();
 							mLoadingQueue.pop_front();
 						}
 					}
 
-					mProcessFct(currentImage, mNumAsyncTaskStarted);
+					mProcessFct(lCurrentImage, mNumAsyncTaskStarted);
 				}
 				else
 				{
@@ -129,7 +129,7 @@ void ESImageLoader::LoadingThreadTask::stop()
 {
 	mStop = true;
 	mLoadingThread.cancel();
-	std::lock_guard<std::mutex> lock(mQueueMutex);
+	std::lock_guard<std::mutex> lLock(mQueueMutex);
 	mLoadingQueue.clear();
 }
 
@@ -152,12 +152,12 @@ void ESImageLoader::LoadingThreadTask::setPaused(bool pPaused)
 /*virtual*/ void ESImageLoader::imageLoadingFinished()
 {
 	++mImagesLoadedCount;
-	int currentLoadingCount = mImagesLoadingCount.load();
-	int currentLoadedCount = mImagesLoadedCount.load();
-	if(currentLoadingCount == currentLoadedCount || currentLoadingCount == 0)
+	int lCurrentLoadingCount = mImagesLoadingCount.load();
+	int lCurrentLoadedCount = mImagesLoadedCount.load();
+	if(lCurrentLoadingCount == lCurrentLoadedCount || lCurrentLoadingCount == 0)
 	{
-		mImagesLoadingCount -= currentLoadingCount;
-		mImagesLoadedCount -= currentLoadedCount;
+		mImagesLoadingCount -= lCurrentLoadingCount;
+		mImagesLoadedCount -= lCurrentLoadedCount;
 	}
 
 	emit imageLoadingProgress(mImagesLoadedCount, mImagesLoadingCount);
@@ -171,8 +171,8 @@ void ESImageLoader::stopAndCancelAllLoadings()
 	for(auto lDriveLoadingTask: mDriveLoadingTasks)
 		lDriveLoadingTask.second->stop();
 
-	int currentLoadingCount = mImagesLoadingCount.load();
-	if (currentLoadingCount > 0)
+	int lCurrentLoadingCount = mImagesLoadingCount.load();
+	if (lCurrentLoadingCount > 0)
 	{
 		mImagesLoadingCount = 0;
 		mImagesLoadedCount = 0;

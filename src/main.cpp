@@ -35,14 +35,14 @@ int main(int argc, char* argv[])
 	qInstallMessageHandler(ESLogger::qtMessageHandler);
 
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
-	QApplication app(__argc, __argv);
+	QApplication lApp(__argc, __argv);
 #else
 	QApplication app(argc, argv);
 #endif
 
-	app.setOrganizationName("ExifStats");
-	app.setOrganizationDomain("exifstats.com");
-	app.setApplicationName("ExifStats");
+	lApp.setOrganizationName("ExifStats");
+	lApp.setOrganizationDomain("exifstats.com");
+	lApp.setApplicationName("ExifStats");
 
 	QImageReader::setAllocationLimit(512);
 
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	lMainWindow.initialize();
 	lMainWindow.show();
 
-	int lAppResult = app.exec();
+	int lAppResult = lApp.exec();
 
 	ESImageCache::getInstance().stopAndCancelAllLoadings();
 #ifdef IMAGETAGGER_ENABLE

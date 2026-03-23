@@ -77,9 +77,9 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
-	int col = static_cast<int>(pX / mImageWidth);
-	int row = static_cast<int>((pY + mYOffset) / mImageHeight);
-	int lIndex = row * mNbColumns + col;
+	int lCol = static_cast<int>(pX / mImageWidth);
+	int lRow = static_cast<int>((pY + mYOffset) / mImageHeight);
+	int lIndex = lRow * mNbColumns + lCol;
 	if(lIndex >= 0 && lIndex < mImages.size())
 	{
 		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
@@ -117,17 +117,17 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 		if(mImageWidth > CACHE_IMAGE_SIZE || mImageHeight > CACHE_IMAGE_SIZE)
 			pPainter->setRenderHint(QPainter::SmoothPixmapTransform);
 			
-		for(int row = 0 ; row < mNbRows ; ++row)
+		for(int lRow = 0 ; lRow < mNbRows ; ++lRow)
 		{
-			for(int col = 0 ; col < mNbColumns ; ++col)
+			for(int lCol = 0 ; lCol < mNbColumns ; ++lCol)
 			{
-				int lIndex = row * mNbColumns + col;
+				int lIndex = lRow * mNbColumns + lCol;
 
 				if(lIndex >= mImages.size())
 					break;
 
-				float lX = col * mImageWidth;
-				float lY = row * mImageHeight - mYOffset;
+				float lX = lCol * mImageWidth;
+				float lY = lRow * mImageHeight - mYOffset;
 				QRectF lImageRect(lX, lY, mImageWidth, mImageHeight);
 				if(!boundingRect().intersects(lImageRect))
 					continue;
@@ -142,19 +142,19 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 					const QImage& lImage = lImageWrapper->getImage();
 
 					QRectF lSourceRect(0, 0, lImage.width(), lImage.height());
-					float imgAspectRatio = static_cast<float>(lImage.width()) / static_cast<float>(lImage.height());
-					float cellAspectRatio = static_cast<float>(mImageWidth) / static_cast<float>(mImageHeight);
-					if(imgAspectRatio > cellAspectRatio)
+					float lImgAspectRatio = static_cast<float>(lImage.width()) / static_cast<float>(lImage.height());
+					float lCellAspectRatio = static_cast<float>(mImageWidth) / static_cast<float>(mImageHeight);
+					if(lImgAspectRatio > lCellAspectRatio)
 					{
 						// Image is wider than cell
-						float lNewHeight = mImageWidth / imgAspectRatio;
+						float lNewHeight = mImageWidth / lImgAspectRatio;
 						lImageRect.setY(lY + (mImageHeight - lNewHeight) * 0.5f);
 						lImageRect.setHeight(lNewHeight);
 					}
 					else
 					{
 						// Image is taller than cell
-						float lNewWidth = mImageHeight * imgAspectRatio;
+						float lNewWidth = mImageHeight * lImgAspectRatio;
 						lImageRect.setX(lX + (mImageWidth - lNewWidth) * 0.5f);
 						lImageRect.setWidth(lNewWidth);
 					}
@@ -191,19 +191,19 @@ void ESImageGridQuickItem::updateInternal()
 
 	if (mGeometryHasChanged || mDataHasChanged)
 	{
-		int nbImages = int(mImageFiles.size() > 0 ? mImageFiles.size() : (mFilteredFilesList ? mFilteredFilesList->mListFilesComp.mFiles.size() : 0));
+		int lNbImages = int(mImageFiles.size() > 0 ? mImageFiles.size() : (mFilteredFilesList ? mFilteredFilesList->mListFilesComp.mFiles.size() : 0));
 
 		mNbColumns = std::max<int>(1, width() / mImageWidth);
-		mNbRows = CeilIntDiv(nbImages, mNbColumns);
+		mNbRows = CeilIntDiv(lNbImages, mNbColumns);
 		setContentHeight(std::max(1, mNbRows * mImageHeight));
 		mGeometryHasChanged = false;
 	}
 
 	if(mDataHasChanged)
 	{
-		for(std::shared_ptr<ESImage>& image: mImages)
+		for(std::shared_ptr<ESImage>& lImage: mImages)
 		{
-			disconnect(image.get(), nullptr, this, nullptr);
+			disconnect(lImage.get(), nullptr, this, nullptr);
 		}
 		mImages.clear();
 
@@ -220,14 +220,14 @@ void ESImageGridQuickItem::updateInternal()
 		if(mImageFiles.size() > 0)
 		{
 			mImages.reserve(mImageFiles.size());
-			for(const QString& imageFilePath: mImageFiles)
-				lGetImage(imageFilePath);
+			for(const QString& lImageFilePath: mImageFiles)
+				lGetImage(lImageFilePath);
 		}
 		else if (mFilteredFilesList)
 		{
 			mImages.reserve(mFilteredFilesList->mListFilesComp.mFiles.size());
-			for (const ESStringId& imageFilePath : mFilteredFilesList->mListFilesComp.mFiles)
-				lGetImage(imageFilePath);
+			for (const ESStringId& lImageFilePath : mFilteredFilesList->mListFilesComp.mFiles)
+				lGetImage(lImageFilePath);
 		}
 
 		sort();
@@ -248,9 +248,9 @@ void ESImageGridQuickItem::onImageCachingProgress(int pLoadedCount, int pLoading
 	else
 	{
 		setLoading(true);
-		float loadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
-		if (abs(loadingProgress - getLoadingProgress()) >= 0.001)
-			setLoadingProgress(loadingProgress);
+		float lLoadingProgress = static_cast<float>(pLoadedCount) / pLoadingCount;
+		if (abs(lLoadingProgress - getLoadingProgress()) >= 0.001)
+			setLoadingProgress(lLoadingProgress);
 	}
 }
 

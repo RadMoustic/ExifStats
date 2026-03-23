@@ -59,14 +59,14 @@ void ESImageCache::initializeFromDatabase()
 
 	std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
 	{
-		std::lock_guard<std::shared_mutex> lock(mImagesMutex);
+		std::lock_guard<std::shared_mutex> lLock(mImagesMutex);
 		const ESDatabase& lDatabase = ESDatabase::getInstance();
 		mImages.reserve(lDatabase.getFiles().size());
 		
-		for(auto&& lFileInfo: lDatabase.getFiles())
+		for(const auto& [lFileInfoId, lFileInfo] : lDatabase.getFiles())
 		{
-			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.second.mFilePath, getCacheFilePath(lFileInfo.second.mFilePath), &lFileInfo.second.mExif));
-			mImages.emplace(std::make_pair(lFileInfo.second.mFilePath, lImage));
+			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.mFilePath, getCacheFilePath(lFileInfo.mFilePath), &lFileInfo.mExif));
+			mImages.emplace(std::make_pair(lFileInfo.mFilePath, lImage));
 			lImagesToInitializeCacheFileCheck.push_back(lImage);
 		}
 	}
@@ -90,17 +90,17 @@ void ESImageCache::onDatabaseDataChanged()
 		{	
 			std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
 			{
-				std::lock_guard<std::shared_mutex> lock(mImagesMutex);
+				std::lock_guard<std::shared_mutex> lLock(mImagesMutex);
 
 				const ESDatabase& lDatabase = ESDatabase::getInstance();
 				mImages.reserve(lDatabase.getFiles().size());
 
-				for (auto&& lFileInfo : lDatabase.getFiles())
+				for (const auto& [lFileInfoId, lFileInfo] : lDatabase.getFiles())
 				{
-					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.second.mFilePath];
+					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.mFilePath];
 					if (!lImage)
 					{
-						lImage.reset(new ESImage(lFileInfo.second.mFilePath, getCacheFilePath(lFileInfo.second.mFilePath), &lFileInfo.second.mExif));
+						lImage.reset(new ESImage(lFileInfo.mFilePath, getCacheFilePath(lFileInfo.mFilePath), &lFileInfo.mExif));
 						lImagesToInitializeCacheFileCheck.push_back(lImage);
 					}
 				}
@@ -142,20 +142,20 @@ bool ESImageCache::isUpdating() const
 
 void ESImageCache::resetSearchSimilarityScores()
 {
-	std::shared_lock lock(mImagesMutex);
-	for(auto&& lImage: mImages)
-		lImage.second->mCurrentSearchSimilarity = 0.f;
+	std::shared_lock lLock(mImagesMutex);
+	for(const auto& [lImagePath, lImage]: mImages)
+		lImage->mCurrentSearchSimilarity = 0.f;
 }
 
 /********************************************************************************/
 
 std::shared_ptr<ESImage> ESImageCache::getImage(ESStringId pImagePath)
 {
-	std::shared_lock lock(mImagesMutex);
-	auto itFound = mImages.find(pImagePath);
+	std::shared_lock lLock(mImagesMutex);
+	auto lItFound = mImages.find(pImagePath);
 	std::shared_ptr<ESImage> lResult;
-	if(itFound != mImages.end())
-		lResult = itFound->second;
+	if(lItFound != mImages.end())
+		lResult = lItFound->second;
 	return lResult;
 }
 
@@ -213,10 +213,10 @@ void ESImageCache::unloadUnusedImages()
 			std::vector<std::pair<qint64, std::shared_ptr<ESImage>>> lLoadedImages;
 			lLoadedImages.reserve(MAX_NUM_IMAGE_LOADED);
 			{
-				std::shared_lock<std::shared_mutex> lock(mImagesMutex);
-				for (auto&& lImage : mImages)
-					if (lImage.second->isLoaded() || (lImage.second->isLoading() && lImage.second->hasCacheFile())) // Don't cancel files queued for caching
-						lLoadedImages.emplace_back(lImage.second->mLastUsed, lImage.second); // Store mLastUsed because if it is changed during the sort later by another thread it will crash
+				std::shared_lock<std::shared_mutex> lLock(mImagesMutex);
+				for (const auto& [lImagePath, lImage] : mImages)
+					if (lImage->isLoaded() || (lImage->isLoading() && lImage->hasCacheFile())) // Don't cancel files queued for caching
+						lLoadedImages.emplace_back(lImage->mLastUsed, lImage); // Store mLastUsed because if it is changed during the sort later by another thread it will crash
 			}
 			if (lLoadedImages.size() <= MAX_NUM_IMAGE_LOADED)
 				return;
@@ -241,8 +241,8 @@ void ESImageCache::unloadUnusedImages()
 	ESImageLoader::stopAndCancelAllLoadings();
 
 	std::shared_lock<std::shared_mutex> lImagesLock(mImagesMutex);
-	for (auto&& lImage : mImages)
-		lImage.second->cancelLoading();
+	for (const auto& [lImagePath, lImage] : mImages)
+		lImage->cancelLoading();
 }
 
 /********************************************************************************/
@@ -263,8 +263,8 @@ void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage)
 	// Lock Everything
 	std::lock_guard<std::shared_mutex> lDriveLock(mDriveLoadingTasksMutex);
 	std::shared_lock<std::shared_mutex> lImagesLock(mImagesMutex);
-	for (auto lDriveLoadingTask : mDriveLoadingTasks)
-		lDriveLoadingTask.second->mQueueMutex.lock();
+	for (const auto& [lDriveLetter, lDriveLoadingTask] : mDriveLoadingTasks)
+		lDriveLoadingTask->mQueueMutex.lock();
 
 	qDebug() << "Image path:" << pImage->getImagePath();
 	if (pImage->isLoaded())
@@ -282,12 +282,12 @@ void ESImageCache::printImageDebugInfo(const std::shared_ptr<ESImage>& pImage)
 
 	qDebug() << " - Found in loading queues:";
 	mCacheLoadingTask.printImageDebugInfo("Cache", pImage);
-	for (auto lDriveLoadingTask : mDriveLoadingTasks)
-		lDriveLoadingTask.second->printImageDebugInfo(QString("Drive %1").arg(lDriveLoadingTask.first), pImage);
+	for (const auto& [lDriveLetter, lDriveLoadingTask] : mDriveLoadingTasks)
+		lDriveLoadingTask->printImageDebugInfo(QString("Drive %1").arg(lDriveLetter), pImage);
 
 	// Unlock Everything
-	for (auto lDriveLoadingTask : mDriveLoadingTasks)
-		lDriveLoadingTask.second->mQueueMutex.unlock();
+	for (const auto& [lDriveLetter, lDriveLoadingTask] : mDriveLoadingTasks)
+		lDriveLoadingTask->mQueueMutex.unlock();
 
 }
 #endif

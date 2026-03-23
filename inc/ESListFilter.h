@@ -38,8 +38,8 @@ public:
 		}
 		for(int i = 0 ; i < pAllValues.size() ; ++i)
 		{
-			auto itFound = mFilters.find(pAllValues[i]);
-			mVectorFilters[i] = itFound != mFilters.end() ? *itFound : lAllTrue;
+			auto lItFound = mFilters.find(pAllValues[i]);
+			mVectorFilters[i] = lItFound != mFilters.end() ? *lItFound : lAllTrue;
 		}
 	}
 

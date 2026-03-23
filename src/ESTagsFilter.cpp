@@ -43,7 +43,7 @@ ESTagsFilter::ESTagsFilter()
 			const ESDatabase& lDB = ESDatabase::getInstance();
 			if (lDB.getEmbeddingsDimension() > 0)
 			{
-				std::shared_lock lock(lDB.getFilesMutex());
+				std::shared_lock lLock(lDB.getFilesMutex());
 				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
 				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
 
@@ -133,7 +133,7 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 			const ESDatabase& lDB = ESDatabase::getInstance();
 			if (lDB.getEmbeddingsDimension() > 0)
 			{
-				std::shared_lock lock(lDB.getFilesMutex());
+				std::shared_lock lLock(lDB.getFilesMutex());
 
 				setUpdatingHNSWIndex(true);
 				setUpdatingHNSWIndexProgress(0.f);
@@ -146,10 +146,10 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
 				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
 				int lFileIdx = 0;
-				for (auto&& lFileInfo : lDB.getFiles())
+				for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
 				{
-					if (lFileInfo.second.mEmbeddings.size() > 0)
-						mHnswIndex->addPoint(lFileInfo.second.mEmbeddings.data(), lFileInfo.first);
+					if (lFileInfo.mEmbeddings.size() > 0)
+						mHnswIndex->addPoint(lFileInfo.mEmbeddings.data(), lFileInfoId);
 					if (mHnswIndexUpdatingAbortRequested || lDB.isUnlockDatabaseRequested())
 					{
 						mHnswSpace.reset();
@@ -370,7 +370,7 @@ QStringList ESTagsFilter::getTagsFound() const
 #ifdef IMAGETAGGER_ENABLE
 void ESTagsFilter::onDatabaseTagsHaveChanged()
 {
-	std::scoped_lock lock(mDatabaseTagsEmbeddingCacheMutex);
+	std::scoped_lock lLock(mDatabaseTagsEmbeddingCacheMutex);
 	ESDatabase& lDB = ESDatabase::getInstance();
 
 	mDatabaseTagsEmbeddingCache.clear();

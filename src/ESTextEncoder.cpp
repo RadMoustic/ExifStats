@@ -17,18 +17,18 @@
 
 ESTextEncoder::ESTextEncoder(const QString& pModelFilePath, const QString& pTokenizerJSONFilePath, const QString& pConfigFile)
 {
-    mEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ESImageTagsSearchEngine");
-    Ort::SessionOptions lSessionOptions;
-    //OrtCUDAProviderOptions lCudaOptions;
-    //lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
-    //OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
-    mSession = Ort::Session(mEnv, pModelFilePath.toStdWString().c_str(), lSessionOptions);
+	mEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ESImageTagsSearchEngine");
+	Ort::SessionOptions lSessionOptions;
+	//OrtCUDAProviderOptions lCudaOptions;
+	//lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
+	//OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
+	mSession = Ort::Session(mEnv, pModelFilePath.toStdWString().c_str(), lSessionOptions);
 
 	QFile lTokenizerFile(pTokenizerJSONFilePath);
-    if (lTokenizerFile.open(QIODevice::ReadOnly))
-    {
-        mTokenizer = tokenizers::Tokenizer::FromBlobJSON(lTokenizerFile.readAll().toStdString());
-    }
+	if (lTokenizerFile.open(QIODevice::ReadOnly))
+	{
+		mTokenizer = tokenizers::Tokenizer::FromBlobJSON(lTokenizerFile.readAll().toStdString());
+	}
 
 	loadConfigFile(pConfigFile);
 }
@@ -92,14 +92,14 @@ float ESTextEncoder::TextEncodedResult::computeSimilarityScore(const TextEncoded
 
 float ESTextEncoder::TextEncodedResult::computeSimilarityScore(const ESEmbeddings& pEmbeddings) const
 {
-    assert(mEmbeddings.size() == pEmbeddings.size());
+	assert(mEmbeddings.size() == pEmbeddings.size());
 
-    float lDot = 0;
+	float lDot = 0;
 
-    for (int i = 0; i < mEmbeddings.size(); ++i)
-        lDot += mEmbeddings[i] * pEmbeddings[i];
+	for (int i = 0; i < mEmbeddings.size(); ++i)
+		lDot += mEmbeddings[i] * pEmbeddings[i];
 
-    return lDot;
+	return lDot;
 }
 
 #endif // IMAGETAGGER_ENABLE

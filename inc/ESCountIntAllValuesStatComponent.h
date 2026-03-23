@@ -40,8 +40,8 @@ public:
 		for (int i = 0; i <= lMaxValue; ++i)
 			Super::mCounterLabels[i] = QString::number(i);
 
-		for (const auto& valueCount : Super::mValueCounters)
-			if(valueCount.second > 0)
-				Super::mCounters[valueCount.first] = valueCount.second;
+		for (const auto& lValueCount : Super::mValueCounters)
+			if(lValueCount.second > 0)
+				Super::mCounters[lValueCount.first] = lValueCount.second;
 	}
 };

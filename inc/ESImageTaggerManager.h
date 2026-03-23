@@ -47,7 +47,7 @@ public:
 	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
 
 	void updateDatabaseMissingTags();
-    
+	
 private:
 	/******************************** ATTRIBUTES **********************************/
 
