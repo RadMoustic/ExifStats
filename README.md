@@ -124,7 +124,7 @@ set TURBOJPEG_PLUGIN_ENABLE=true
 ## Setup Image Tagger / Tokenizers / Onnxruntime
 ExifStats uses two libraries to be able to search through the images:
 * [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
-* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp) to  is a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
+* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
 * The onnxruntime models used by ExifStats come from [Immich](https://github.com/immich-app/immich) [Immich HuggingFace](https://huggingface.co/immich-app).
 
 You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
