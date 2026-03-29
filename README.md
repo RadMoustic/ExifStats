@@ -122,9 +122,15 @@ set HEIF_PLUGIN_ENABLE=true
 set TURBOJPEG_PLUGIN_ENABLE=true
 ```
 ## Setup Image Tagger / Tokenizers / Onnxruntime
-ExifStats uses two libraries to be able to search through the images:
+ExifStats uses three libraries to be able to search through the images:
 * [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
 * [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
 * ExifStats uses the [Immich](https://github.com/immich-app/immich) onnxruntime models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
+* [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
 
 You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
+Then you can enable ImageTagger and HNSWL in the User.Setup.bat:
+```
+set IMAGETAGGER_ENABLE=true
+set HNSWLIB_ENABLE=true
+```
