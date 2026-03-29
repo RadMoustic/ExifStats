@@ -93,7 +93,7 @@ rustflags = ["-C", "target-feature=+crt-static"]
 ```
 
 ### Setup ExifStats
-Then you need to set the following env var in User.Setup.bat or Project.Setup.bat:
+Then you need to set the following env var in **User.Setup.bat**:
 ```
 set QT_STATIC_DIR=Src\BuildStatic
 set QT_STATIC=true
@@ -112,7 +112,7 @@ vcpkg install libjpeg-turbo:x64-windows
 vcpkg install libjpeg-turbo:x64-windows-static
 ```
 ### Setup ExifStats to use the plugins
-Then set the some vcpkg var in the User.Setup.bat:
+Then set the some vcpkg var in the **User.Setup.bat**:
 ```
 set VCPKG_ROOT_DIR=C:/Dev/vcpkg
 set VCPKG_TARGET_TRIPLET=x64-windows
@@ -129,7 +129,7 @@ ExifStats uses three libraries to be able to search through the images:
 * [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
 
 You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
-Then you can enable ImageTagger and HNSWL in the User.Setup.bat:
+Then you can enable ImageTagger and HNSWL in the **User.Setup.bat**:
 ```
 set IMAGETAGGER_ENABLE=true
 set HNSWLIB_ENABLE=true
