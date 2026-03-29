@@ -42,6 +42,16 @@
 
 /********************************************************************************/
 
+#if defined(_MSC_VER)
+	#define ES_BREAKPOINT() __debugbreak();
+#elif defined(Q_OS_ANDROID)
+	#define ES_BREAKPOINT() raise(SIGTRAP);
+#else
+	#define ES_BREAKPOINT()
+#endif
+
+/********************************************************************************/
+
 #define ES_QML_PROPERTY_IMPL(pName, pType, pWriteCode, pCustomCode) \
 	Q_PROPERTY(pType m##pName READ get##pName pWriteCode NOTIFY property##pName##Changed) \
 	Q_SIGNAL void property##pName##Changed(); \
@@ -147,7 +157,7 @@ public:
 			throw std::bad_array_new_length();
 		}
 
-		const unsigned long long lBytesToAllocate = pElementsToAllocate * sizeof(ElementType);
+		const std::size_t lBytesToAllocate = pElementsToAllocate * sizeof(ElementType);
 		return reinterpret_cast<ElementType*>(
 			::operator new[](lBytesToAllocate, ALIGNMENT));
 	}
@@ -162,4 +172,6 @@ public:
 		 * the one used in new. */
 		::operator delete[](pAllocatedPointer, ALIGNMENT);
 	}
+
+	struct propagate_on_container_move_assignment : std::true_type {};
 };

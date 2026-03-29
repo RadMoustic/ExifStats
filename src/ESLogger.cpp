@@ -1,5 +1,8 @@
 #include <ESLogger.h>
 
+// ES
+#include "ESUtils.h"
+
 // Qt
 #include <qdatetime.h>
 #include <qstandardpaths.h>
@@ -118,20 +121,20 @@ void ESLogger::logMsg(const QString& pMsg, PpcLogLevel pLevel)
 	if (pLevel == eFatal)
 	{
 		std::flush(std::cout);
-		__debugbreak();
+		ES_BREAKPOINT();
 		exit(-1);
 	}
 	else if (pLevel == eError)
 	{
 		std::flush(std::cout);
 		// Errors should be fixed.
-		__debugbreak();
+		ES_BREAKPOINT();
 	}
 	/*
 	else if (pLevel == eWarning)
 	{
 		std::flush(std::cout);
-		__debugbreak();
+		ES_BREAKPOINT();
 	}
 	*/
 

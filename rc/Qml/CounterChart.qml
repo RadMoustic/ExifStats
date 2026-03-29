@@ -61,27 +61,7 @@ Rectangle
 				color: "black"
 			}
 		}
-		
-		MouseArea
-		{
-			anchors.fill: parent
-			onDoubleClicked:
-			{
-				rootItem.resetView();
-			}
 			
-			onClicked: (cursorPos)=>
-			{
-				var p = barChartItem.mapToValue(cursorPos.x)
-				valueToltip.text = rootItem.categories[p.x] + " => " + p.y
-				valueToltip.x = cursorPos.x - valueToltip.width/2
-				valueToltip.y = cursorPos.y - valueToltip.height
-				
-				//valueToltip.timeout = 1000
-				valueToltip.visible = true
-			}
-		}
-		
 		WheelHandler
 		{
 			onWheel: (event)=>
@@ -102,15 +82,90 @@ Rectangle
 				}
 			}
 		}
-		
-		DragHandler
+
+		PinchArea 
 		{
-			id: drag
-			target: null
-			onTranslationChanged: (delta) =>
+			anchors.fill: parent
+			
+			property real startDistX: 0
+			property real startDistY: 0
+			property real startScaleX: 1.0
+			property real startScaleY: 1.0
+			property real startOffsetX: 0
+			property real pinchStartX: 0
+			property real oldFullWidth: 0
+
+			onPinchStarted: (pinch) =>
 			{
 				valueToltip.visible = false;
-				barChartItem.mXOffset += delta.x;
+				startDistX = Math.max(1, Math.abs(pinch.point1.x - pinch.point2.x));
+				startDistY = Math.max(1, Math.abs(pinch.point1.y - pinch.point2.y));
+				
+				startScaleX = barChartItem.mXScale;
+				startScaleY = barChartItem.mYScale;
+				startOffsetX = barChartItem.mXOffset;
+				oldFullWidth = barChartItem.getChartFullWidth();
+				
+				pinchStartX = barChartItem.mapToPlotArea(pinch.center.x, 0).x;
+			}
+
+			onPinchUpdated: (pinch) =>
+			{
+				var currentDistX = Math.abs(pinch.point1.x - pinch.point2.x);
+				var currentDistY = Math.abs(pinch.point1.y - pinch.point2.y);
+				
+				if (startDistX > 20 && currentDistX > 20) 
+				{
+					barChartItem.mXScale = startScaleX * (currentDistX / startDistX);
+					var newFullWidth = barChartItem.getChartFullWidth();
+					barChartItem.mXOffset = (startOffsetX - pinchStartX) * newFullWidth / oldFullWidth + pinchStartX;
+				}
+				
+				if (startDistY > 50 && currentDistY > 50) 
+				{
+					barChartItem.mYScale = startScaleY * (currentDistY / startDistY);
+				}
+			}
+
+			MouseArea
+			{
+				anchors.fill: parent
+				property real lastX: 0
+				property real pressX: 0
+				property real pressY: 0
+				
+				onPressed: (mouse) =>
+				{
+					lastX = mouse.x;
+					pressX = mouse.x;
+					pressY = mouse.y;
+				}
+				
+				onPositionChanged: (mouse) =>
+				{
+					if (pressed) 
+					{
+						valueToltip.visible = false;
+						barChartItem.mXOffset += (mouse.x - lastX);
+						lastX = mouse.x;
+					}
+				}
+				
+				onDoubleClicked: (mouse) =>
+				{
+					rootItem.resetView();
+				}
+				
+				onClicked: (mouse) =>
+				{
+					if (Math.abs(mouse.x - pressX) > 5 || Math.abs(mouse.y - pressY) > 5) return;
+
+					var p = barChartItem.mapToValue(mouse.x);
+					valueToltip.text = rootItem.categories[p.x] + " => " + p.y;
+					valueToltip.x = mouse.x - valueToltip.width/2;
+					valueToltip.y = mouse.y - valueToltip.height;
+					valueToltip.visible = true;
+				}
 			}
 		}
 	}

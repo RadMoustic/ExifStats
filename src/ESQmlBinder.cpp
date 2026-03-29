@@ -196,6 +196,33 @@ void ESQmlBinder::parseFolder(const QUrl& pFolderPath, bool pClearDB)
 
 /********************************************************************************/
 
+void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
+{
+#ifdef ES_READONLY
+	QSettings lSettings;
+#ifdef Q_OS_ANDROID
+	QString lFolderPathStr = pFolderPath.toString();
+#else
+	QString lFolderPathStr = pFolderPath.toLocalFile();
+	if (!lFolderPathStr.endsWith('/'))
+		lFolderPathStr += '/';
+#endif //Q_OS_ANDROID
+
+	lSettings.setValue(ESDatabase::msReadOnlyDatabaseFolderSettingsKey, lFolderPathStr);
+
+	ESDatabase::getInstance().loadDatabase();
+	(void)QtConcurrent::run([]()
+		{
+			ESImageCache::getInstance().initializeFromDatabase();
+#ifdef IMAGETAGGER_ENABLE
+			ESImageTaggerManager::getInstance().initialize();
+#endif // IMAGETAGGER_ENABLE
+		});
+#endif // ES_READONLY
+}
+
+/********************************************************************************/
+
 void ESQmlBinder::updateFiltersFromData()
 {
 	m35mmFilter.mFilterFrom = m35mmStat.mMinMaxComp.getMinValue();
@@ -361,7 +388,7 @@ void ESQmlBinder::setCameraModelTo35mmFocalLengthFactor(QString pCameraModel, fl
 	}
 	else
 	{
-		qWarning() << __FUNCTION__"() camera model not found.";
+		qWarning() << __FUNCTION__ << "() camera model not found.";
 	}
 }
 
@@ -376,7 +403,7 @@ float ESQmlBinder::getCameraModelTo35mmFocalLengthFactor(QString pCameraModel) c
 	}
 	else
 	{
-		qWarning() << __FUNCTION__"() camera model not found.";
+		qWarning() << __FUNCTION__ << "() camera model not found.";
 	}
 
 	return 1.0f;
@@ -543,6 +570,17 @@ QString ESQmlBinder::getMaxTime() const
 bool ESQmlBinder::isCtrlPressed() const
 {
 	return qApp->keyboardModifiers().testFlag(Qt::ControlModifier);
+}
+
+/********************************************************************************/
+
+bool ESQmlBinder::isMobile() const
+{
+#ifdef Q_OS_ANDROID
+	return true;
+#else
+	return false;
+#endif
 }
 
 /********************************************************************************/

@@ -58,8 +58,8 @@ enum ESExifOrientation : unsigned short
 struct ESUsefullExif
 {
 	ESStringId mCameraModel;
-	ESStringId mLensModel;		
-	uint64_t mDateTime;
+	ESStringId mLensModel;
+	quint64 mDateTime;
 	float mShutterSpeedValue;
 	float mFNumber;
 	struct
@@ -67,8 +67,8 @@ struct ESUsefullExif
 		float mLatitude;
 		float mLongitude;
 	} mGeoLococation;
-	unsigned short mFocalLengthIn35mm;
-	unsigned short mFocalLength;
+	quint16 mFocalLengthIn35mm;
+	quint16 mFocalLength;
 	ESExifOrientation mOrientation;
 };
 

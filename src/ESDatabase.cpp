@@ -15,6 +15,12 @@
 #include <QMessageBox>
 #include <QGeoCoordinate>
 
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
+#endif // Q_OS_ANDROID
+
 // Stl
 #include <set>
 
@@ -22,6 +28,7 @@
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
 constexpr uint DATABASE_VERSION = 9;
+/*static*/ const char* ESDatabase::msReadOnlyDatabaseFolderSettingsKey = "ReadOnlyDataBaseFolderPath";
 
 /********************************************************************************/
 
@@ -52,6 +59,7 @@ void ESDatabase::refresh(bool pFullRefresh)
 
 void ESDatabase::clear()
 {
+#ifndef ES_READONLY
 	{
 		mUnlockDatabaseRequested = true;
 		std::scoped_lock lLock(mFilesMutex);
@@ -69,6 +77,7 @@ void ESDatabase::clear()
 	}
 
 	emit dataChanged();
+#endif // #ifdef ES_READONLY
 }
 
 /********************************************************************************/
@@ -82,10 +91,15 @@ void ESDatabase::addFolder(const QUrl& pFolderPath, bool pClearDB)
 
 void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly)
 {
+#ifdef ES_READONLY
+	(void)pFolders;
+	(void)pClearDB;
+	(void)pNewFilesOnly;
+#else
 	setProcessing(true);
 	setProcessingProgress(0.f);
-	
-	QtConcurrent::run([this, pFolders, pClearDB, pNewFilesOnly]()
+
+	(void)QtConcurrent::run([this, pFolders, pClearDB, pNewFilesOnly]()
 		{
 			mUnlockDatabaseRequested = true;
 			mFilesMutex.lock();
@@ -204,6 +218,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			setProcessing(false);
 			emit dataChanged();
 		});
+#endif // ES_READONLY
 }
 
 /********************************************************************************/
@@ -362,7 +377,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					pSerializer.Serialize(pFileInfo.mEmbeddings);
 			}
 
-			if constexpr (pSerializer.msIsReading)
+			if constexpr (SERIALIZER::msIsReading)
 			{
 				if (lDatabaseVersion < 9)
 				{
@@ -398,6 +413,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 void ESDatabase::saveDatabase()
 {
+#ifndef ES_READONLY
 	std::shared_lock lLock(mFilesMutex);
 
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
@@ -430,6 +446,7 @@ void ESDatabase::saveDatabase()
 
 	QSettings lSettings;
 	lSettings.setValue("DataBasePath", lDataBasePath);
+#endif // ES_READONLY
 }
 
 /********************************************************************************/
@@ -444,12 +461,36 @@ void ESDatabase::loadDatabase()
 
 	// Settings
 	QSettings lSettings;
+#ifdef ES_READONLY
+	#ifdef Q_OS_ANDROID
+        QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString();
+	#else
+		QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString() + "database.esdb";
+	#endif
+#else
 	QString lDataBasePath = lSettings.value("DataBasePath").toString();
+#endif
 	if(lDataBasePath.isEmpty())
 		return;
 
 	// Open database
+#if defined(ES_READONLY) && defined(Q_OS_ANDROID)
+	QuaZip lZip(lDataBasePath);
+	if (!lZip.open(QuaZip::mdUnzip))
+	{
+		qWarning() << "Cannot open ExifStats archive file";
+		return;
+	}
+	if (!lZip.setCurrentFile("database.esdb"))
+	{
+		qWarning() << "File 'database.esdb' not found in ExifStats archive file";
+		return;
+	}
+	QuaZipFile lDataBaseFile(&lZip);
+#else
 	QFile lDataBaseFile(lDataBasePath);
+#endif
+
 	if (!lDataBaseFile.open(QIODevice::ReadOnly))
 	{
 		qWarning() << "Cannot load database: failed to open database file: " << lDataBasePath;

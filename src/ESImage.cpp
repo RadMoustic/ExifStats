@@ -2,16 +2,42 @@
 
 // ES
 #include "ESImageCache.h"
+#include "ESDatabase.h"
 
 // Qt
 #include <QFile>
 #include <QImageReader>
 #include <QtConcurrent>
 
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
+#endif // Q_OS_ANDROID
+
 // TurboJPEG
 #ifdef TURBOJPEG_PLUGIN_ENABLED
 #include <turbojpeg.h>
 #endif
+
+/********************************************************************************/
+
+#ifdef Q_OS_ANDROID
+QuaZip* getExifStatsArchive()
+{
+	static thread_local QuaZip* lsZip = nullptr;
+	if(lsZip == nullptr)
+	{
+		QSettings lSettings;
+        lsZip = new QuaZip(lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString());
+		if (!lsZip->open(QuaZip::mdUnzip))
+		{
+			qWarning() << "Cannot open ExifStats archive file";
+		}
+	}
+	return lsZip;
+}
+#endif // Q_OS_ANDROID
 
 /********************************************************************************/
 
@@ -164,7 +190,12 @@ bool ESImage::hasCacheFile() const
 {
 	if(!mCacheFileChecked)
 	{
+#ifdef Q_OS_ANDROID
+		if(QuaZip* lZip = getExifStatsArchive())
+			mHasCacheFile = lZip->setCurrentFile(mImageCachePath);
+#else
 		mHasCacheFile = QFile::exists(mImageCachePath);
+#endif // Q_OS_ANDROID
 		mCacheFileChecked = true;
 	}
 	
@@ -184,7 +215,7 @@ QChar ESImage::getDriveLetter() const
 
 void ESImage::loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted)
 {
-	assert(!aMaxSize.isEmpty());
+	assert(!pMaxSize.isEmpty());
 
 	std::shared_ptr<void> lRAIIDecNumAsyncTaskStarted(nullptr, [pNumAsyncTaskStarted](void*) { if (pNumAsyncTaskStarted) { --(*pNumAsyncTaskStarted); } });
 
@@ -218,7 +249,19 @@ void ESImage::loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_i
 
 	if(pAsync)
 	{
+#ifdef Q_OS_ANDROID
+		QuaZip* lZip = getExifStatsArchive();
+		if(!lZip)
+			return;
+		if (!lZip->setCurrentFile(lImagePath))
+		{
+			qWarning() << "File '" << lImagePath << "' not found in ExifStats archive file";
+			return;
+		}
+		QuaZipFile lImageFile(lZip);
+#else
 		QFile lImageFile(lImagePath);
+#endif //Q_OS_ANDROID
 		if(!lImageFile.open(QIODevice::ReadOnly))
 		{
 			mIsLoaded = true;
@@ -237,7 +280,7 @@ void ESImage::loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_i
 			return;
 		}
 
-		QtConcurrent::run([this, pMaxSize, lRAIIResetIsLoading, lReadCache, lRAIIDecNumAsyncTaskStarted]()
+		(void)QtConcurrent::run([this, pMaxSize, lRAIIResetIsLoading, lReadCache, lRAIIDecNumAsyncTaskStarted]()
 		{
 			if (!mCancelLoading)
 			{
@@ -284,8 +327,23 @@ void ESImage::readImage(const QString& pImagePath, QSize pMaxSize)
 		return;
 	}
 #endif // TURBOJPEG_PLUGIN_ENABLED
+
+#ifdef Q_OS_ANDROID
+	QuaZip* lZip = getExifStatsArchive();
+	if(!lZip)
+		return;
+	if (!lZip->setCurrentFile(pImagePath))
+	{
+		qWarning() << "File '" << pImagePath << "' not found in ExifStats archive file";
+		return;
+	}
+	QuaZipFile lImageFile(lZip);
+	QByteArray lImageData = lImageFile.readAll();
+	readImage(lImageData, pMaxSize);
+#else
 	QImageReader lImageReader(pImagePath);
 	readImage(lImageReader, pMaxSize);
+#endif
 }
 
 /********************************************************************************/

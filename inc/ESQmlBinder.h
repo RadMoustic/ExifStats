@@ -153,7 +153,9 @@ public:
 	Q_INVOKABLE void retag();
 	Q_INVOKABLE void clear();
 	Q_INVOKABLE bool isCtrlPressed() const;
+	Q_INVOKABLE bool isMobile() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
+	Q_INVOKABLE void setDatabaseFolder(const QUrl& pFolderPath);
 
 	// Lens Model
 	Q_INVOKABLE QVector<QString> getLensModels() const;
@@ -275,7 +277,7 @@ private:
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
 
 	template<typename K, typename V>
-	static QVariantMap toQVariantMap(const QMap<typename K, typename V>& pMap)
+	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)
 	{
 		QVariantMap lResult;
 		for (auto it = pMap.begin(); it != pMap.end(); ++it)

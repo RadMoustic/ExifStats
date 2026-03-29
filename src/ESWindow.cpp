@@ -32,9 +32,9 @@ static const char* scMainQmlDirPath = "../../../rc/Qml";
 static const char* scMainQmlDirPath = "ESQml";
 #endif
 
-static const char* scMainQmlLocalPath = "main.qml";
+static const char* scMainQmlLocalPath = "MainMobile.qml";
 static const char* scFallbackQmlQRC = "qrc:/Qml/FallbackQmlErrors.qml";
-static const char* scMainQmlPathQRC = "qrc:/Qml/main.qml";
+static const char* scMainQmlPathQRC = "qrc:/Qml/MainMobile.qml";
 
 /********************************************************************************/
 /********************************************************************************/
@@ -76,7 +76,7 @@ void ESWindow::initialize()
 	loadMainQml();
 
 	ESDatabase::getInstance().loadDatabase();
-	QtConcurrent::run([]()
+	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
 #ifdef IMAGETAGGER_ENABLE

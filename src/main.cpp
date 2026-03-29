@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
 	QApplication lApp(__argc, __argv);
 #else
-	QApplication app(argc, argv);
+	QApplication lApp(argc, argv);
 #endif
 
 	lApp.setOrganizationName("ExifStats");

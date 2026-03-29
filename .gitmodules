@@ -4,3 +4,6 @@
 [submodule "Externals/hnswlib"]
 	path = Externals/hnswlib
 	url = https://github.com/nmslib/hnswlib.git
+[submodule "Externals/quazip"]
+	path = Externals/quazip
+	url = https://github.com/stachenov/quazip.git

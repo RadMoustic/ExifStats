@@ -51,6 +51,8 @@ public:
 	ES_QML_PROPERTY(Processing, bool)
 	ES_QML_PROPERTY(ProcessingProgress, float)
 
+	static const char* msReadOnlyDatabaseFolderSettingsKey;
+
 	/********************************* METHODS ***********************************/
 
 	static ESDatabase& getInstance();
@@ -114,7 +116,7 @@ private:
 	ESDatabase();
 
 	ESReadExifFileResult readFileExif(const QString& pFilePath, easyexif::EXIFInfo& pOutExif);
-	ESUsefullExif convertToUsefullExif(const easyexif::EXIFInfo& aFullExif);
+	ESUsefullExif convertToUsefullExif(const easyexif::EXIFInfo& pFullExif);
 
 	template<class SERIALIZER>
 	bool Serialize(SERIALIZER& pSerializer, const QString& pFilePath);

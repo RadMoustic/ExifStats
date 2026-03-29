@@ -10,6 +10,12 @@
 #include <QCryptographicHash>
 #include <QtConcurrent>
 
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
+#endif // Q_OS_ANDROID
+
 // Stl
 #include <set>
 
@@ -34,8 +40,17 @@ ESImageCache::ESImageCache()
 {
 	mMaxAsyncTask = QThreadPool::globalInstance()->maxThreadCount();
 
-	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-	mCacheFolderPath = lDataBaseDir + QDir::separator() + "ImageCache";
+#ifdef ES_READONLY
+	#ifdef Q_OS_ANDROID
+		QString lDataBaseDir = "";
+	#else
+		QSettings lSettings;
+		QString lDataBaseDir = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString() + QDir::separator();
+	#endif
+#else
+	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QDir::separator();
+#endif
+	mCacheFolderPath = lDataBaseDir + "ImageCache";
 	QDir lDir;
 	lDir.mkpath(mCacheFolderPath);
 
@@ -86,7 +101,7 @@ void ESImageCache::onDatabaseDataChanged()
 	assert(!mIsUpdating);
 	mIsUpdating = true;
 
-	QtConcurrent::run([this]()
+	(void)QtConcurrent::run([this]()
 		{	
 			std::vector<std::shared_ptr<ESImage>> lImagesToInitializeCacheFileCheck;
 			{
@@ -123,12 +138,14 @@ void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pIma
 			return a->getExif().mDateTime < b->getExif().mDateTime;
 		});
 
+#ifndef ES_READONLY
 	// Initialize cache file after emitting the signal to avoid delaying UI startup
 	for (std::shared_ptr<ESImage>& lImage : pImages)
 	{
 		if (!lImage->hasCacheFile()) // Slow so initialize that too
 			queueImageLoading(lImage, true);
 	}
+#endif // ES_READONLY
 }
 
 /********************************************************************************/
@@ -196,10 +213,14 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 		mCacheLoadingTask.processImage(pImage);
 		return;
 	}
+#ifndef ES_READONLY
 	else
 	{
 		ESImageLoader::queueImageLoading(pImage, pUseCacheDriveQueueIfAvailable);
 	}
+#else
+	(void)pUseCacheDriveQueueIfAvailable;
+#endif // ES_READONLY
 }
 
 /********************************************************************************/

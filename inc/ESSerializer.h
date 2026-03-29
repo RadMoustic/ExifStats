@@ -53,7 +53,7 @@ public:
 	{
 		if constexpr (READ)
 		{
-			qsizetype lNbItem = 0;
+			quint64 lNbItem = 0;
 			mDataStream >> lNbItem;
 			pList.clear();
 			pList.resize(lNbItem);
@@ -62,7 +62,7 @@ public:
 		}
 		else
 		{
-			mDataStream << pList.size();
+			mDataStream << quint64(pList.size());
 			for (const T& lItem : pList)
 				mDataStream << lItem;
 		}
@@ -73,7 +73,7 @@ public:
 	{
 		if constexpr (READ)
 		{
-			qsizetype lNbItem = 0;
+			quint64 lNbItem = 0;
 			mDataStream >> lNbItem;
 			pList.clear();
 			pList.resize(lNbItem);
@@ -82,7 +82,7 @@ public:
 		}
 		else
 		{
-			mDataStream << pList.size();
+			mDataStream << quint64(pList.size());
 			for (const T& lItem : pList)
 				mDataStream << lItem;
 		}
@@ -99,7 +99,7 @@ public:
 	{
 		if constexpr (READ)
 		{
-			size_t lNbItem = 0;
+			quint64 lNbItem = 0;
 			mDataStream >> lNbItem;
 			pList.clear();
 			pList.resize(lNbItem);
@@ -107,7 +107,7 @@ public:
 		}
 		else
 		{
-			size_t lNbItem = pList.size();
+			quint64 lNbItem = pList.size();
 			mDataStream << lNbItem;
 			mDataStream.writeRawData(reinterpret_cast<const char*>(pList.data()), int(lNbItem * sizeof(T)));
 		}
@@ -118,9 +118,9 @@ public:
 	{
 		if constexpr (READ)
 		{
-			size_t lNbPair = 0;
+			quint64 lNbPair = 0;
 			mDataStream >> lNbPair;
-			for (size_t i = 0; i < lNbPair; ++i)
+			for (quint64 i = 0; i < lNbPair; ++i)
 			{
 				KEY lKey;
 				mDataStream >> lKey;
@@ -131,7 +131,7 @@ public:
 		}
 		else
 		{
-			mDataStream << pMap.size();
+			mDataStream << quint64(pMap.size());
 			for (const auto& lPair : pMap)
 			{
 				mDataStream << lPair.first;
@@ -151,9 +151,9 @@ public:
 	{
 		if constexpr (READ)
 		{
-			size_t lNbPair = 0;
+			quint64 lNbPair = 0;
 			mDataStream >> lNbPair;
-			for (size_t i = 0; i < lNbPair; ++i)
+			for (quint64 i = 0; i < lNbPair; ++i)
 			{
 				KEY lKey;
 				VALUE lValue;
@@ -163,7 +163,7 @@ public:
 		}
 		else
 		{
-			mDataStream << pMap.size();
+			mDataStream << quint64(pMap.size());
 			for (auto& lPair : pMap)
 			{
 				KEY lKey = lPair.first;
