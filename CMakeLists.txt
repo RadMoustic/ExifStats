@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
- set(CMAKE_CXX_COMPILER_WORKS TRUE)
-project(ExifStats LANGUAGES CXX)
 
-if(MSVC)
+if(NOT "$ENV{VS_VERSION}" STREQUAL "")
 	if(DEFINED ENV{VCPKG_ROOT_DIR})
 		if(NOT DEFINED ENV{VCPKG_TARGET_TRIPLET})
 			message(FATAL_ERROR "Environment variable VCPKG_TARGET_TRIPLET missing")
@@ -11,6 +9,9 @@ if(MSVC)
 		set(VCPKG_TARGET_TRIPLET $ENV{VCPKG_TARGET_TRIPLET})
 	endif()
 endif()
+
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
+project(ExifStats LANGUAGES CXX)
 
 if("$ENV{HEIF_PLUGIN_ENABLE}" STREQUAL "true" AND NOT DEFINED ENV{VCPKG_ROOT_DIR})
 	message(FATAL_ERROR "You must set the environment variables VCPKG_ROOT_DIR and VCPKG_TARGET_TRIPLET to enable the HEIF plugin")
@@ -163,9 +164,9 @@ if(ANDROID)
 endif()
 
 # ReadOnly Mode
-#if(ANDROID)
-list(APPEND CPP_DEFINES ES_READONLY)
-#endif()
+if(ANDROID)
+	list(APPEND CPP_DEFINES ES_READONLY)
+endif()
 
 # Include Directories
 include_directories(${PROJECT_SRC_DIR}/inc ${IMAGETAGGER_INCLUDE_DIRS} ${HNSWLIB_INCLUDE_DIR})
@@ -202,4 +203,11 @@ if(MSVC)
 	if(IMAGETAGGER_ENABLE)
 		target_compile_options(sentencepiece-static PRIVATE /w)
 	endif()
+endif()
+
+if(ANDROID)
+	message(STATUS "WARNING: In Projects/CMake/Current Configuration, set ANDROID_PLATFORM to android-24 (old ANDROID_NATIVE_API_LEVEL to 24)")
+	message(STATUS "WARNING: In Projects/Build/Build Android APK, set the 'Android build platform SDK' to at least android-29")
+	message(STATUS "WARNING: In Projects/Build/Build Android APK, sign the packet if you get a 	INSTALL_PARSE_FAILED_NO_CERTIFICATES error")
+	message(STATUS "WARNING: Make sure you use at least the NDK version 25 or later if you get a GLESv3 link error")
 endif()

@@ -218,6 +218,8 @@ void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
 			ESImageTaggerManager::getInstance().initialize();
 #endif // IMAGETAGGER_ENABLE
 		});
+#else // ES_READONLY
+	(void)pFolderPath;
 #endif // ES_READONLY
 }
 
