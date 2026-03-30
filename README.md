@@ -45,8 +45,6 @@ Download and extract the CustomizeQML.zip into the same directory as ExifStats.e
 set QT_ROOT_DIR=c:\Dev\Qt
 REM (optional) set QT_VERSION=6.6.2 => Project.Setup.bat already set a default value
 REM (optional) set QT_MSVC_DIR=msvc2019_64 => Project.Setup.bat already set a default value
-REM (optional) set HEIF_PLUGIN_ENABLE=true => See Heif / Turbojpeg plugins section
-REM (optional) set TURBOJPEG_PLUGIN_ENABLE=true => See Heif / Turbojpeg plugins section
 ```
 * Use a bat in the Scripts folder:
 
