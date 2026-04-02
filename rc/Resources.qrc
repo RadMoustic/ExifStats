@@ -15,5 +15,6 @@
 	<file>Qml/TimelineCounterChart.qml</file>
 
 	<file>Images/DotQuantityLUT.png</file>
+	<file>Images/ExifStats.ico</file>
 </qresource>
 </RCC>

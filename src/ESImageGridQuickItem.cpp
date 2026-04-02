@@ -34,6 +34,8 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
 
+	setRenderTarget(QQuickPaintedItem::FramebufferObject);
+
 	connect(&ESImageCache::getInstance(), &ESImageCache::imageLoadingProgress, this, &ESImageGridQuickItem::onImageCachingProgress, Qt::DirectConnection);
 
 	connect(this, &ESImageGridQuickItem::propertyFilteredFilesListChanged, this, 
@@ -114,10 +116,22 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	{
 		pPainter->setPen(Qt::NoPen);
 		pPainter->setBrush(Qt::lightGray);
+#ifdef Q_OS_ANDROID
+		pPainter->setRenderHint(QPainter::Antialiasing, false);
+		pPainter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+#else
 		if(mImageWidth > CACHE_IMAGE_SIZE || mImageHeight > CACHE_IMAGE_SIZE)
 			pPainter->setRenderHint(QPainter::SmoothPixmapTransform);
-			
-		for(int lRow = 0 ; lRow < mNbRows ; ++lRow)
+#endif
+		QRectF lBoudingRect = boundingRect();
+		QRectF lPreloadRect = lBoudingRect;
+		lPreloadRect.setY(lPreloadRect.y() - 3.f * mImageHeight);
+		lPreloadRect.setHeight(lPreloadRect.height() + 2.f * 3.f * mImageHeight);
+
+		const int lStartRow = mYOffset / mImageHeight;
+		const int lEndRow = lStartRow + lPreloadRect.height() / mImageHeight + 1;
+
+		for(int lRow = lStartRow; lRow < lEndRow; ++lRow)
 		{
 			for(int lCol = 0 ; lCol < mNbColumns ; ++lCol)
 			{
@@ -129,13 +143,18 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 				float lX = lCol * mImageWidth;
 				float lY = lRow * mImageHeight - mYOffset;
 				QRectF lImageRect(lX, lY, mImageWidth, mImageHeight);
-				if(!boundingRect().intersects(lImageRect))
+
+				if(!lPreloadRect.intersects(lImageRect))
 					continue;
+
 				std::shared_ptr<ESImage>& lImageWrapper = mImages[lIndex];
 				lImageWrapper->updateLastUsed();
 
 				if(!lImageWrapper->isLoaded() && !lImageWrapper->isLoading())
 					lImageWrapper->loadImage();
+
+				if (!lBoudingRect.intersects(lImageRect))
+					continue;
 				
 				if (lImageWrapper->isLoaded() && !lImageWrapper->isNull())
 				{

@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 	lApp.setOrganizationName("ExifStats");
 	lApp.setOrganizationDomain("exifstats.com");
 	lApp.setApplicationName("ExifStats");
+	lApp.setWindowIcon(QIcon(":/Images/ExifStats.ico"));
 
 	QImageReader::setAllocationLimit(512);
 

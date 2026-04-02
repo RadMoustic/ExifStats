@@ -1,6 +1,7 @@
 #include "version.h"
 #include "winres.h"
 
+MAINICON ICON "Images/ExifStats.ico"
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 		VER_FILE_VERSION
  PRODUCTVERSION 	VER_PRODUCT_VERSION
