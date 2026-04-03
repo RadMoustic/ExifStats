@@ -63,9 +63,42 @@ The binaries and all generated files are located in the **generated** folder
 | Scripts/CleanBuildDebugDeployOpenSln.bat | Delete Generated, CMake, Build, Deploy, Open Sln (Debug) |  |
 | Scripts/CleanBuildRun.bat | Delete Generated, CMake, Build, Run (Release) |  |
 
-### Other
+### Other Platforms
 Not supported. With a bit of work it should compile on all platforms supported by Qt.
-  
+
+### Heif / Turbojpeg plugins
+If you want to use the Heif and Turbojpeg plugins, you will need to setup vcpkg and install the libheif and turbojpeg libs:
+```
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+bootstrap-vcpkg.bat
+vcpkg install libheif:x64-windows
+vcpkg install libheif:x64-windows-static
+vcpkg install libjpeg-turbo:x64-windows
+vcpkg install libjpeg-turbo:x64-windows-static
+```
+Then set the some vcpkg var in the **User.Setup.bat**:
+```
+set VCPKG_ROOT_DIR=C:/Dev/vcpkg
+set VCPKG_TARGET_TRIPLET=x64-windows
+	or
+set VCPKG_TARGET_TRIPLET=x64-windows-static
+set HEIF_PLUGIN_ENABLE=true
+set TURBOJPEG_PLUGIN_ENABLE=true
+```
+### Image Tagger / Tokenizers / Onnxruntime
+ExifStats uses three libraries to be able to search through the images:
+* [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
+* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
+* ExifStats uses the [Immich](https://github.com/immich-app/immich) onnxruntime models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
+* [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
+
+You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
+Then you can enable ImageTagger and HNSWL in the **User.Setup.bat**:
+```
+set IMAGETAGGER_ENABLE=true
+set HNSWLIB_ENABLE=true
+```
 ## Static Compilation
 ### Compile Qt6
 First you need to download and compile Qt in Static, if you don't want to use the turbo jpeg lib remove "-no-libjpeg"
@@ -79,6 +112,13 @@ cmake --install .
 ```
 This will build Qt in release only and install it in "C:\Dev\Qt\6.6.1\Src\BuildStatic"
 
+### Setup ExifStats
+Then you need to set the following env var in **User.Setup.bat**:
+```
+set QT_STATIC_DIR=Src\BuildStatic
+set QT_STATIC=true
+```
+
 ### Static Compilation Troubleshot
 * tokenizers_c.lib LNK2001 __imp_strcat_s 
 Open/create the file "%USERPROFILE%\.cargo\config.toml" and add:
@@ -88,47 +128,4 @@ rustflags = ["-C", "target-feature=+crt-static"]
 
 [target.i686-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
-```
-
-### Setup ExifStats
-Then you need to set the following env var in **User.Setup.bat**:
-```
-set QT_STATIC_DIR=Src\BuildStatic
-set QT_STATIC=true
-```
-
-## Heif / Turbojpeg plugins
-### VCPKG / libheif / libjpeg-turbo
-If you want to use the Heif and Turbojpeg plugins, you will need to setup vcpkg and install the libheif and turbojpeg libs:
-```
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-bootstrap-vcpkg.bat
-vcpkg install libheif:x64-windows
-vcpkg install libheif:x64-windows-static
-vcpkg install libjpeg-turbo:x64-windows
-vcpkg install libjpeg-turbo:x64-windows-static
-```
-### Setup ExifStats to use the plugins
-Then set the some vcpkg var in the **User.Setup.bat**:
-```
-set VCPKG_ROOT_DIR=C:/Dev/vcpkg
-set VCPKG_TARGET_TRIPLET=x64-windows
-	or
-set VCPKG_TARGET_TRIPLET=x64-windows-static
-set HEIF_PLUGIN_ENABLE=true
-set TURBOJPEG_PLUGIN_ENABLE=true
-```
-## Setup Image Tagger / Tokenizers / Onnxruntime
-ExifStats uses three libraries to be able to search through the images:
-* [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
-* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
-* ExifStats uses the [Immich](https://github.com/immich-app/immich) onnxruntime models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
-* [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
-
-You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
-Then you can enable ImageTagger and HNSWL in the **User.Setup.bat**:
-```
-set IMAGETAGGER_ENABLE=true
-set HNSWLIB_ENABLE=true
 ```
