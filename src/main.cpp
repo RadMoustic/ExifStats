@@ -36,15 +36,15 @@ int main(int argc, char* argv[])
 
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
-    QSurfaceFormat lFormat;
+	QSurfaceFormat lFormat;
 #ifdef Q_OS_ANDROID
-    lFormat.setVersion(3, 2);
-    lFormat.setRenderableType(QSurfaceFormat::OpenGLES);
+	lFormat.setVersion(3, 2);
+	lFormat.setRenderableType(QSurfaceFormat::OpenGLES);
 #endif // Q_OS_ANDROID
 #ifdef QT_DEBUG
-    lFormat.setOption(QSurfaceFormat::DebugContext);
+	lFormat.setOption(QSurfaceFormat::DebugContext);
 #endif // QT_DEBUG
-    QSurfaceFormat::setDefaultFormat(lFormat);
+	QSurfaceFormat::setDefaultFormat(lFormat);
 
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
 	QApplication lApp(__argc, __argv);

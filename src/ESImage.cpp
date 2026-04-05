@@ -29,7 +29,7 @@ QuaZip* getExifStatsArchive()
 	if(lsZip == nullptr)
 	{
 		QSettings lSettings;
-        lsZip = new QuaZip(lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString());
+		lsZip = new QuaZip(lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString());
 		if (!lsZip->open(QuaZip::mdUnzip))
 		{
 			qWarning() << "Cannot open ExifStats archive file";

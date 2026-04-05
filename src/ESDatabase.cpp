@@ -463,7 +463,7 @@ void ESDatabase::loadDatabase()
 	QSettings lSettings;
 #ifdef ES_READONLY
 	#ifdef Q_OS_ANDROID
-        QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString();
+		QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString();
 	#else
 		QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString() + "database.esdb";
 	#endif
