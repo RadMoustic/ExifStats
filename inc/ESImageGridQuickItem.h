@@ -10,17 +10,74 @@
 #include "ESListFilesStat.h"
 
 // Qt
-#include <QQuickPaintedItem>
+#include <QQuickFramebufferObject>
+#include <QOpenGLExtraFunctions>
 #include <QImage>
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-class ESImageGridQuickItem : public QQuickPaintedItem
+class QOpenGLShaderProgram;
+class QOpenGLVertexArrayObject;
+class QOpenGLBuffer;
+class QOpenGLTexture;
+
+/********************************************************************************/
+/********************************************************************************/
+/********************************************************************************/
+
+class ESImageGridQuickItemRenderer : public QQuickFramebufferObject::Renderer, protected QOpenGLExtraFunctions
+{
+public:
+	/********************************* METHODS ***********************************/
+
+	ESImageGridQuickItemRenderer();
+
+	QOpenGLFramebufferObject* createFramebufferObject(const QSize& pSize) override;
+	virtual void synchronize(QQuickFramebufferObject* pIem) override;
+	virtual void render() override;
+private:
+	/********************************** TYPES *************************************/
+
+	struct ImageInstanceData
+	{
+		float mX;
+		float mY;
+		float mWidthAndHeight;
+		float mTextureIndex;
+	};
+
+	struct ImageTextureSlot
+	{
+		int mTextureSlot;
+		int mRow;
+	};
+
+	/******************************** ATTRIBUTES **********************************/
+
+	std::unique_ptr<QOpenGLShaderProgram> mShaderProgram;
+	std::unique_ptr<QOpenGLVertexArrayObject> mVAO;
+	std::unique_ptr<QOpenGLBuffer> mVBOGeometry;
+	std::unique_ptr<QOpenGLBuffer> mVBOInstances;
+	std::unique_ptr<QOpenGLTexture> mImageTextures;
+	std::vector<int> mFreeImageTextureSlots;
+	std::unordered_map<ESImage*, ImageTextureSlot> mImageToTextureSlot;
+	std::vector<ImageInstanceData> mInstanceData;
+	QSizeF mSize;
+
+	/********************************* METHODS ***********************************/
+
+	void initializeGL();
+	void checkOpengGLErrors();
+};
+
+class ESImageGridQuickItem : public QQuickFramebufferObject
 {
 	Q_OBJECT
 	QML_ELEMENT
+
+	friend class ESImageGridQuickItemRenderer;
 public:
 	/********************************** TYPES *************************************/
 
@@ -29,6 +86,8 @@ public:
 		eSortByDatetime = 0,
 		eSortBySimilarityScore,
 	};
+
+	
 
 	/******************************** ATTRIBUTES **********************************/
 
@@ -40,9 +99,8 @@ public:
 
 	ES_QML_PROPERTY(FilteredFilesList, const ESListFilesStat*)
 	ES_QML_PROPERTY(ImageFiles, QVector<QString>, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(ImageWidth, int, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(ImageHeight, int, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(YOffset, float, mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(ImageSize, int, mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(YOffset, float, update();)
 	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(Loading, bool)
 	ES_QML_PROPERTY(LoadingProgress, float)
@@ -51,15 +109,12 @@ public:
 
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
 
-	virtual void paint(QPainter* pPainter) override;
+	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
 signals:
 	/********************************** SIGNALS ***********************************/
 
 private:
-	
-
-	
 	/******************************** ATTRIBUTES **********************************/
 
 	QSizeF mPreviousSize;

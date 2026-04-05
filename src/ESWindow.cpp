@@ -53,12 +53,6 @@ ESWindow::ESWindow()
 	setSurfaceType(QSurface::OpenGLSurface);
 	QQuickStyle::setStyle("Material");
 
-#ifdef Q_OS_ANDROID
-	QSurfaceFormat lFormat;
-	lFormat.setRenderableType(QSurfaceFormat::OpenGLES);
-	setFormat(lFormat);
-#endif
-
 	ESDatabase::getInstance();
 	ESImageCache::getInstance();
 #ifdef IMAGETAGGER_ENABLE

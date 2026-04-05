@@ -34,6 +34,18 @@ int main(int argc, char* argv[])
 {
 	qInstallMessageHandler(ESLogger::qtMessageHandler);
 
+	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+
+    QSurfaceFormat lFormat;
+#ifdef Q_OS_ANDROID
+    lFormat.setVersion(3, 2);
+    lFormat.setRenderableType(QSurfaceFormat::OpenGLES);
+#endif // Q_OS_ANDROID
+#ifdef QT_DEBUG
+    lFormat.setOption(QSurfaceFormat::DebugContext);
+#endif // QT_DEBUG
+    QSurfaceFormat::setDefaultFormat(lFormat);
+
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
 	QApplication lApp(__argc, __argv);
 #else
@@ -41,7 +53,7 @@ int main(int argc, char* argv[])
 #endif
 
 	lApp.setOrganizationName("ExifStats");
-	lApp.setOrganizationDomain("exifstats.com");
+	lApp.setOrganizationDomain("github.com/RadMoustic/ExifStats");
 	lApp.setApplicationName("ExifStats");
 	lApp.setWindowIcon(QIcon(":/Images/ExifStats.ico"));
 

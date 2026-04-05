@@ -9,8 +9,7 @@ ESImageGridQuickItem
 	
 	property real imageScale: 1.0
 	
-	mImageWidth: 250 * imageScale
-	mImageHeight: 250 * imageScale
+	mImageSize: 250 * imageScale
 
 	onMImageFilesChanged:
 	{
