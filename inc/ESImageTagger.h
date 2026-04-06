@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 
 /********************************************************************************/
 /********************************************************************************/
@@ -111,4 +111,4 @@ private:
 	QMutex mSessionRunMutex;
 };
 
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)

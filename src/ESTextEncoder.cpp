@@ -3,7 +3,11 @@
 #include <ESTextEncoder.h>
 
 // Onnxruntime
+#ifdef Q_OS_ANDROID
+#include <nnapi_provider_factory.h>
+#else
 #include <dml_provider_factory.h>
+#endif // Q_OS_ANDROID
 
 // Qt
 #include <QFile>
@@ -22,7 +26,13 @@ ESTextEncoder::ESTextEncoder(const QString& pModelFilePath, const QString& pToke
 	//OrtCUDAProviderOptions lCudaOptions;
 	//lSessionOptions.AppendExecutionProvider_CUDA(lCudaOptions);
 	//OrtSessionOptionsAppendExecutionProvider_DML(lSessionOptions, 0);
-	mSession = Ort::Session(mEnv, pModelFilePath.toStdWString().c_str(), lSessionOptions);
+    mSession = Ort::Session(mEnv,
+#ifdef Q_OS_ANDROID
+                            pModelFilePath.toStdString().c_str(),
+#else
+                            pModelFilePath.toStdWString().c_str(),
+#endif // Q_OS_ANDROID
+                            lSessionOptions);
 
 	QFile lTokenizerFile(pTokenizerJSONFilePath);
 	if (lTokenizerFile.open(QIODevice::ReadOnly))

@@ -45,11 +45,16 @@ public:
 	ES_QML_PROPERTY(UpdatingHNSWIndexProgress, float)
 #endif //defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
 
+	static const char* msTokenizerFolderSettingsKey;
+
 	/********************************* METHODS ***********************************/
 
 	ESTagsFilter();
 	virtual ~ESTagsFilter();
 
+#ifdef IMAGETAGGER_ENABLE
+	void loadTokenizerAndHNSW();
+#endif // IMAGETAGGER_ENABLE
 	virtual void reset() override;
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override;
 	virtual QJsonObject serialize() const override;

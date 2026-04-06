@@ -26,8 +26,8 @@ public:
 	T mStep;
 	bool mAddFileCategories = false;
 	bool mFillEmptySteps = false;
-	T mMinFillValue;
-	T mMaxFillValue;
+    T mMinFillValue = T();
+    T mMaxFillValue = T();
 
 	virtual void addFileCategory(const ESFileInfo& pFile) override
 	{

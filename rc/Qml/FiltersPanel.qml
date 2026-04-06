@@ -207,7 +207,7 @@ ColumnLayout
 	{
 		id: searchTextFilter
 		
-		enabled: MainQmlBinder.isImageTaggerEnabled()
+		enabled: MainQmlBinder.isTokenizerEnabled()
 		SplitView.fillWidth: true
 		SplitView.preferredHeight: parent.height / parent.children.length
 		

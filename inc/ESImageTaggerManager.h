@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 
 /********************************************************************************/
 /********************************************************************************/
@@ -71,4 +71,4 @@ private:
 	virtual void internalLoadImage(const std::shared_ptr<ESImage>& pImage, std::atomic_int32_t& pNumAsyncTaskStarted) override;
 };
 
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)

@@ -1,4 +1,4 @@
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 
 #include <ESImageTagger.h>
 
@@ -429,4 +429,4 @@ void ESImageTagger::cleanupSession()
 	mSession.release();
 }
 
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)

@@ -14,9 +14,23 @@
 #pragma warning( pop )
 #endif // HNSWLIB_ENABLED
 
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
+#endif // Q_OS_ANDROID
+
 // Qt
 #include <QtConcurrent>
 
+/********************************************************************************/
+/********************************************************************************/
+/********************************************************************************/
+
+/*static*/ const char* ESTagsFilter::msTokenizerFolderSettingsKey = "TokenizerFolderPath";
+
+/********************************************************************************/
+/********************************************************************************/
 /********************************************************************************/
 
 ESTagsFilter::ESTagsFilter()
@@ -29,49 +43,63 @@ ESTagsFilter::ESTagsFilter()
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 {
-#ifdef IMAGETAGGER_ENABLE
-	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
-
-	if(QDir(mTokenizerDirectoryPath).exists())
-	{
-		mTokenizerEnabled = true;
-		QtConcurrent::run([this]()
-		{
-			mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
-
-#ifdef HNSWLIB_ENABLED
-			const ESDatabase& lDB = ESDatabase::getInstance();
-			if (lDB.getEmbeddingsDimension() > 0)
-			{
-				std::shared_lock lLock(lDB.getFilesMutex());
-				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
-				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
-
-				if (!loadHnswIndex())
-				{
-					onImageTaggerManagerLoadingProgress(0,0);
-				}
-			}
-			(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESTagsFilter::onImageTaggerManagerLoadingProgress, Qt::QueuedConnection);
-#endif // HNSWLIB_ENABLED
-
-			onDatabaseTagsHaveChanged();
-			(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
-				[this]()
-				{
-					QtConcurrent::run([this]()
-						{
-							onDatabaseTagsHaveChanged();
-						});
-				}, Qt::DirectConnection);
-		});			
-	}
-#endif // IMAGETAGGER_ENABLE
+    loadTokenizerAndHNSW();
 }
 
 /********************************************************************************/
 
 ESTagsFilter::~ESTagsFilter() = default;
+
+/********************************************************************************/
+
+#ifdef IMAGETAGGER_ENABLE
+void ESTagsFilter::loadTokenizerAndHNSW()
+{
+#ifdef Q_OS_ANDROID
+	mTokenizerDirectoryPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer";
+#else
+	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
+#endif // Q_OS_ANDROID
+
+	if (QDir(mTokenizerDirectoryPath).exists())
+	{
+		mTokenizerEnabled = true;
+
+        (void)QtConcurrent::run([this]()
+			{
+				mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
+
+	#ifdef HNSWLIB_ENABLED
+				const ESDatabase& lDB = ESDatabase::getInstance();
+				if (lDB.getEmbeddingsDimension() > 0)
+				{
+					std::shared_lock lLock(lDB.getFilesMutex());
+					mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
+					mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+
+					if (!loadHnswIndex())
+					{
+						onImageTaggerManagerLoadingProgress(0, 0);
+					}
+				}
+#ifndef ES_READONLY
+				(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESTagsFilter::onImageTaggerManagerLoadingProgress, Qt::QueuedConnection);
+#endif //ES_READONLY
+	#endif // HNSWLIB_ENABLED
+
+				onDatabaseTagsHaveChanged();
+				(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
+					[this]()
+					{
+                        (void)QtConcurrent::run([this]()
+							{
+								onDatabaseTagsHaveChanged();
+							});
+					}, Qt::DirectConnection);
+			});
+	}
+}
+#endif // IMAGETAGGER_ENABLE
 
 /********************************************************************************/
 
@@ -421,6 +449,47 @@ bool ESTagsFilter::loadHnswIndex()
 
 			return true;
 		}
+
+#ifdef Q_OS_ANDROID
+        QString lDataBasePath = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString();
+
+		if (lDataBasePath.isEmpty())
+            return false;
+
+		QuaZip lZip(lDataBasePath);
+		if (!lZip.open(QuaZip::mdUnzip))
+		{
+			qWarning() << "Cannot open ExifStats archive file";
+            return false;
+		}
+		if (!lZip.setCurrentFile("hnswIndex.esti"))
+		{
+			qWarning() << "File 'hnswIndex.esti' not found in ExifStats archive file";
+            return false;
+		}
+		QuaZipFile lHNSWIndexFile(&lZip);
+        if(!lHNSWIndexFile.open(QIODevice::ReadOnly))
+        {
+            qWarning() << "Cannot open ExifStats archive HNSW Index file";
+            return false;
+        }
+		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
+		QFile lLocalIndexFile(lIndexPath);
+        if (!lLocalIndexFile.open(QIODevice::WriteOnly))
+		{
+			qWarning() << "Cannot create local 'hnswIndex.esti'";
+            return false;
+		}
+		lLocalIndexFile.write(lHNSWIndexFile.readAll());
+		lLocalIndexFile.close();
+		lHNSWIndexFile.close();
+
+		lSettings.setValue("HnswIndex", lIndexPath);
+		mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
+
+		return true;
+#endif
 	}
 
 	return false;

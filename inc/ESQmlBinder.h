@@ -120,11 +120,11 @@ public:
 	ES_QML_PROPERTY(TaggingProgress, float)
 
 	ES_QML_PROPERTY(PauseCaching, bool, ESImageCache::getInstance().setPaused(mPauseCaching))
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 	ES_QML_PROPERTY(PauseTagging, bool, ESImageTaggerManager::getInstance().setPaused(mPauseTagging))
 #else
 	ES_QML_PROPERTY(PauseTagging, bool)
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 
 	B_QML_PROPERTY(TimelineStep, mDateTimeStat.mCountComp.mStep, double)
 	B_QML_PROPERTY(TimelineStatic, mDateTimeStat.mCountComp.mAddFileCategories, bool)
@@ -157,6 +157,7 @@ public:
 	Q_INVOKABLE bool isMobile() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
 	Q_INVOKABLE void setDatabaseFolder(const QUrl& pFolderPath);
+    Q_INVOKABLE void setTokenizerFolder(const QUrl& pFolderPath);
 
 	// Lens Model
 	Q_INVOKABLE QVector<QString> getLensModels() const;

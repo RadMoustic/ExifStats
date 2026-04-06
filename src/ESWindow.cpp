@@ -55,9 +55,9 @@ ESWindow::ESWindow()
 
 	ESDatabase::getInstance();
 	ESImageCache::getInstance();
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 	ESImageTaggerManager::getInstance();
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 
 	mBinder = std::make_shared<ESQmlBinder>();
 	mDebugBinder = std::make_shared<ESDebugQmlBinder>();
@@ -85,9 +85,9 @@ void ESWindow::initialize()
 	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
-#ifdef IMAGETAGGER_ENABLE
+#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 			ESImageTaggerManager::getInstance().initialize();
-#endif // IMAGETAGGER_ENABLE
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
 		});
 }
 

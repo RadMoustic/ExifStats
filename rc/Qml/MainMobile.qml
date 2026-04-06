@@ -118,6 +118,17 @@ Item
 		}
 	}
 	
+	FolderDialog 
+	{
+		id: tokenizerFolderDialog
+		title: "Select a folder with tokenizer models"
+		
+		onAccepted:
+		{
+			MainQmlBinder.setTokenizerFolder(selectedFolder);
+		}
+	}
+	
 	Dialog
 	{
 		id: to35mmFocalFactorDialog
@@ -175,14 +186,27 @@ Item
 			{
 				id: settingsPanel
 				
-				RegularButton
+				RowLayout
 				{
-					text:"Select Database"
-					
-					onReleased:
+					RegularButton
 					{
-						databaseDialog.open();
+						text:"Select Database"
+						
+						onReleased:
+						{
+							databaseDialog.open();
+						}
 					}
+					RegularButton
+					{
+						text:"Select Tokenizer Folder"
+						
+						onReleased:
+						{
+							tokenizerFolderDialog.open();
+						}
+					}
+
 				}
 			}
 			
