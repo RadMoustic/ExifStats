@@ -68,6 +68,7 @@ The binaries and all generated files are located in the **generated** folder
 ```
 rustup target add aarch64-linux-android
 rustup target add armv7-linux-androideabi
+cargo install cargo-ndk
 ```
 
 ### Other Platforms
