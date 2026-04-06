@@ -382,8 +382,8 @@ void ESQmlBinder::setCameraModelsFilter(const QVariantMap& pSelectedCameras)
 
 void ESQmlBinder::setCameraModelTo35mmFocalLengthFactor(QString pCameraModel, float pFactor)
 {
-	uint8_t lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
-	if (lCameraModelIndex < ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.size())
+	int lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
+	if (lCameraModelIndex >= 0)
 	{
 		ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors[lCameraModelIndex] = pFactor;
 		updateStats(false);
@@ -398,8 +398,8 @@ void ESQmlBinder::setCameraModelTo35mmFocalLengthFactor(QString pCameraModel, fl
 
 float ESQmlBinder::getCameraModelTo35mmFocalLengthFactor(QString pCameraModel) const
 {
-	uint8_t lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
-	if (lCameraModelIndex < ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors.size())
+	int lCameraModelIndex = ESDatabase::getInstance().getAllCameraModels().indexOf(pCameraModel);
+	if (lCameraModelIndex >= 0)
 	{
 		return ESFocalLengthIn35mmStat::msCameraModelsTo35mmFocalFactors[lCameraModelIndex];
 	}

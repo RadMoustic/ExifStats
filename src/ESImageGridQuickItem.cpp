@@ -92,7 +92,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
 	int lCol = static_cast<int>(pX / mImageSize);
-	int lRow = static_cast<int>((pY + mYOffset) / mImageSize);
+	int lRow = static_cast<int>(pY / mImageSize);
 	int lIndex = lRow * mNbColumns + lCol;
 	if(lIndex >= 0 && lIndex < mImages.size())
 	{

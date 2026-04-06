@@ -127,6 +127,7 @@ public:
 #endif // IMAGETAGGER_ENABLE
 
 	B_QML_PROPERTY(TimelineStep, mDateTimeStat.mCountComp.mStep, double)
+	B_QML_PROPERTY(TimelineStatic, mDateTimeStat.mCountComp.mAddFileCategories, bool)
 	B_QML_PROPERTY(FocalLengthFrom, m35mmFilter.mFilterFrom, int)
 	B_QML_PROPERTY(FocalLengthTo, m35mmFilter.mFilterTo, int)
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)

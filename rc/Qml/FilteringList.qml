@@ -17,6 +17,7 @@ ColumnLayout
 	property var selectedItems: {}
 	property int selectedItemIndex: -1
 	property alias listViewChild: listView
+	property alias vertScrollBarChild: vertScrollBar
 	signal selectionHasChanged()
 		
 	function setAllSelectedItems(pSelected, pEmitSignal=true)
@@ -63,6 +64,7 @@ ColumnLayout
 		id: listView
 		interactive: false
 		boundsBehavior: Flickable.StopAtBounds
+		clip: true
 		
 		model: rootItem.model
 		
@@ -71,6 +73,7 @@ ColumnLayout
 		
 		ScrollBar.vertical: ScrollBar
 		{
+			id: vertScrollBar
 			active: true
 		}
 		
@@ -85,7 +88,7 @@ ColumnLayout
 			
 			property var selected: Object.keys(rootItem.selectedItems).length === 0 ? true : (rootItem.selectedItems[modelData] !== undefined ? rootItem.selectedItems[modelData] : false)
 
-			width: parent.width
+			width: parent.width - vertScrollBar.width
 			height: listItemLabel.contentHeight
 			color: selected ? "lightsteelblue" : "transparent"
 					
@@ -98,7 +101,8 @@ ColumnLayout
 			
 			MouseArea
 			{
-				anchors.fill: parent
+				width: parent.width - vertScrollBar.width
+				height: parent.height
 				onClicked:
 				{
 					if(MainQmlBinder.isCtrlPressed())

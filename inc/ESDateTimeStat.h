@@ -32,10 +32,13 @@ public:
 		addComponent(&mCountComp);
 
 		mCountComp.mStep = 3600 * 24 * 30;
+		mCountComp.mFillEmptySteps = true;
+		mCountComp.mMinFillValue = 0;
+		mCountComp.mMaxFillValue = QDateTime::currentSecsSinceEpoch();
 		mMinMaxComp.mValidMinValue = 1;
 		mMinMaxComp.mValidMaxValue = 0xfffffffffffff000 - 1;
 	}
 
 	static uint64_t getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mDateTime; }
-	static QString getValueLabel(uint64_t aValue) { return QDateTime::fromSecsSinceEpoch(aValue).toString(msTimeFormat); }
+	static QString getValueLabel(uint64_t pValue) { return QDateTime::fromSecsSinceEpoch(pValue).toString(msTimeFormat); }
 };

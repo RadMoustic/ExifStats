@@ -50,4 +50,17 @@ CounterChartFromTo
 			MainQmlBinder.TimelineStep = value*24*3600;
 		}
 	}
+	
+	CheckBox
+	{
+		id: dynamicCheckbox
+		anchors.left: timeLineStep.right
+		anchors.verticalCenter: timeLineStep.verticalCenter
+		checked: !MainQmlBinder.TimelineDynamic
+		text: "Dynamic"
+		onCheckedChanged:
+		{
+			MainQmlBinder.TimelineStatic = !checked;
+		}
+	}
 }

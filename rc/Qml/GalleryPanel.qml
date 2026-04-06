@@ -15,7 +15,7 @@ ESImageGridQuickItem
 	{
 		flickable.contentY = 0;
 	}
-	
+
 	Flickable
 	{
 		id: flickable
@@ -29,14 +29,16 @@ ESImageGridQuickItem
 		
 		onContentYChanged: imageGrid.mYOffset = contentY
 		
-		ScrollBar.vertical: ScrollBar { width: 10 }
+		ScrollBar.vertical: ScrollBar { width: 30 }
 		
 		WheelHandler
 		{
-			acceptedModifiers: Qt.ControlModifier
-			onWheel: (event) =>
+			onWheel: (pWheel) =>
 			{
-				imageGrid.imageScale = Math.min(2.0, Math.max(0.5, imageGrid.imageScale + (event.angleDelta.y > 0 ? 0.1 : -0.1)));
+				if(MainQmlBinder.isCtrlPressed())
+					imageGrid.imageScale = Math.min(2.0, Math.max(0.5, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
+				else
+					flickable.contentY = Math.max(0, Math.min(imageGrid.mContentHeight-height, flickable.contentY - pWheel.angleDelta.y));
 			}
 		}
 		

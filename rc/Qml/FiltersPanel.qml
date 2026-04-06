@@ -643,7 +643,8 @@ ColumnLayout
 
 					MouseArea
 					{
-						anchors.fill: cameraModelsList.listViewChild
+						anchors.fill: parent
+						anchors.rightMargin: cameraModelsList.vertScrollBarChild.width
 						acceptedButtons: Qt.LeftButton | Qt.RightButton
 						propagateComposedEvents: true
 						
@@ -653,8 +654,8 @@ ColumnLayout
 							if (pMouse.button == Qt.RightButton)
 							{
 								pMouse.accepted = true
-								var localMousePos = mainWindow.mapToItem(cameraModelsList.listViewChild, pMouse.x, pMouse.y);
-								cameraModelsList.selectedItemIndex = cameraModelsList.listViewChild.indexAt(pMouse.x, pMouse.y);
+								var localMousePos = mapToItem(cameraModelsList.listViewChild, pMouse.x, pMouse.y);
+								cameraModelsList.selectedItemIndex = cameraModelsList.listViewChild.indexAt(localMousePos.x, localMousePos.y + cameraModelsList.listViewChild.contentY);
 								contextMenu.popup();
 							}
 						}
