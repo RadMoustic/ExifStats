@@ -63,6 +63,13 @@ The binaries and all generated files are located in the **generated** folder
 | Scripts/CleanBuildDebugDeployOpenSln.bat | Delete Generated, CMake, Build, Deploy, Open Sln (Debug) |  |
 | Scripts/CleanBuildRun.bat | Delete Generated, CMake, Build, Run (Release) |  |
 
+### Android ###
+
+```
+rustup target add aarch64-linux-android
+rustup target add armv7-linux-androideabi
+```
+
 ### Other Platforms
 Not supported. With a bit of work it should compile on all platforms supported by Qt.
 
