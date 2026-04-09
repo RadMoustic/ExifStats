@@ -18,21 +18,6 @@ Item
 	Settings
 	{
 		id: settings
-        property alias width: mainWindow.width
-        property alias height: mainWindow.height
-		property alias pathListVisible: foldersList.visible
-		property alias panel35mmVisible: focalLength35mmCounter.visible
-		property alias panelApertureVisible: apertureCounter.visible
-		property alias panelLensVisible: lensModelsCounter.visible
-		property alias panelCameraVisible: cameraModelsCounter.visible
-		property alias panelTimelineVisible: timelineCounter.visible
-		property alias panelOrientationsCounterVisible: orientationsCounter.visible
-		property alias panelMapVisible: mapRoot.visible
-		property alias panelImagesVisible: imageGrid.visible
-		property var mainSplitViewState
-		property var leftPanelState
-		property var centerPanelState
-		property var chartsPanelState
     }
 			
 	function maxList(pList)
