@@ -149,42 +149,25 @@ Item
 		}
 	}
 	
-	ColumnLayout
+	Drawer
 	{
-		id: mainLayout
+		id: sidePanel
 		
-		anchors.fill: parent
+		width: parent.width * 0.90
+		height: parent.height
 		
-		TabBar
+		edge: Qt.LeftEdge
+		interactive: true
+		
+		onPositionChanged: mapRoot.panEnabled = (position === 0.0)
+		
+		Rectangle
 		{
-			id: tabBar
-			Layout.fillWidth: true
+			anchors.fill: parent
 			
-			Repeater
+			ColumnLayout
 			{
-			
-				model: ["[]", "Filters", "Folders", "35mm", "Aperture", "Lens", "Camera", "Timeline", "Orientation", "Map", "Gallery"]
-				TabButton
-				{
-					text: modelData
-					width: implicitWidth
-				}
-			}
-		}
-		
-		StackLayout
-		{
-			id: mainStackLayout
-			currentIndex: tabBar.currentIndex
-			anchors.top: tabBar.bottom
-			anchors.left: parent.left
-			anchors.right: parent.right
-			anchors.bottom: parent.bottom
-			clip: true
-			
-			Item
-			{
-				id: settingsPanel
+				anchors.fill: parent
 				
 				RowLayout
 				{
@@ -208,27 +191,89 @@ Item
 					}
 
 				}
-			}
-			
-			FiltersPanel
-			{
-				id: filtersPanel
-				anchors.fill: parent
-				clip: true
-			}
-			
-			ScrollView
-			{
-				id: foldersList
-							
-				clip: true
-				Label
+				
+				Text
 				{
-					id: pathLbl
-					text: MainQmlBinder.ProcessedFolders.join("\n")
+					text: "Filters Presets"
+					font.pointSize: 12
+				}
+				
+				Rectangle
+				{
+					Layout.fillHeight: true
+					Layout.fillWidth: true
+					
+					FiltersPanel
+					{
+						id: filtersPanel
+						clip: true
+						anchors.fill: parent
+					}
 				}
 			}
+		}
+	}
+	
+	ColumnLayout
+	{
+		id: mainLayout
+		
+		anchors.fill: parent
+		
+		RowLayout
+		{
+			RoundButton
+			{
+				icon.source: "qrc:/Images/Menu.png"
+				icon.width: tabBar.height-30
+				icon.height: tabBar.height-30
+				display: AbstractButton.IconOnly
+				radius: 0
+				padding: 20
+
+				onReleased: sidePanel.open()
+			}
 			
+			TabBar
+			{
+				id: tabBar
+				Layout.fillWidth: true
+				currentIndex: 0
+				clip: true
+				
+				Repeater
+				{
+				
+					model: ["Gallery", "Map", "35mm", "Aperture", "Lens", "Camera", "Timeline", "Orientation", "Folders"]
+					TabButton
+					{
+						text: modelData
+						width: implicitWidth
+					}
+				}
+			}
+		}
+		
+		StackLayout
+		{
+			id: mainStackLayout
+			currentIndex: tabBar.currentIndex
+			anchors.top: tabBar.bottom
+			anchors.left: parent.left
+			anchors.right: parent.right
+			anchors.bottom: parent.bottom
+			clip: true
+			
+			GalleryPanel
+			{
+				id: imageGrid
+			}
+			
+			MapPanel
+			{
+				id: mapRoot
+			}
+						
 			CounterChartFromTo
 			{
 				id: focalLength35mmCounter
@@ -276,14 +321,17 @@ Item
 				title: "Orientation Stats"
 				barChartChild.mAllCategoriesOnly: true
 			}
-
-			MapPanel
+		
+			ScrollView
 			{
-				id: mapRoot
-			}
-			GalleryPanel
-			{
-				id: imageGrid
+				id: foldersList
+							
+				clip: true
+				Label
+				{
+					id: pathLbl
+					text: MainQmlBinder.ProcessedFolders.join("\n")
+				}
 			}
 		}
 	}

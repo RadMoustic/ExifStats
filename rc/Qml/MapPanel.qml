@@ -10,6 +10,7 @@ Item
 	id: mapRoot
 	
 	property alias mapDotsChild: mapDots
+	property alias panEnabled: drag.enabled
 	
 	Component.onCompleted:
 	{

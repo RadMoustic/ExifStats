@@ -62,7 +62,7 @@ ColumnLayout
 	ListView
 	{
 		id: listView
-		interactive: false
+		interactive: true
 		boundsBehavior: Flickable.StopAtBounds
 		clip: true
 		

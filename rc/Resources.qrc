@@ -14,6 +14,7 @@
 	<file>Qml/MapPanel.qml</file>
 	<file>Qml/TimelineCounterChart.qml</file>
 
+	<file>Images/Menu.png</file>
 	<file>Images/DotQuantityLUT.png</file>
 	<file>Images/ExifStats.ico</file>
 </qresource>
