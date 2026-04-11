@@ -97,7 +97,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	if(lIndex >= 0 && lIndex < mImages.size())
 	{
 		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
-#if defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		if(!ESImageTaggerManager::getInstance().isLoading())
 		{
 			ESDatabase& db = ESDatabase::getInstance();
@@ -106,7 +106,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 		}
 
 		ESImageCache::getInstance().printImageDebugInfo(lImage);
-#endif //  defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif //  defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		return lImage->getImagePath();
 	}
 	else

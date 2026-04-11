@@ -5,6 +5,7 @@ import QtQuick.Dialogs
 
 Flickable
 {
+	id: rootItem
 	clip: true
 	width: 300
 	contentHeight: mainLayout.implicitHeight
@@ -617,7 +618,7 @@ Flickable
 		{
 			id: cameraFilters
 			
-			height: 200
+			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 600) / 2)
 			Layout.fillWidth: true
 			
 			Menu
@@ -661,7 +662,7 @@ Flickable
 					{
 						enabled: !MainQmlBinder.isMobile()
 						anchors.fill: MainQmlBinder.isMobile() ? undefined : parent
-						anchors.rightMargin: ainQmlBinder.isMobile() ? 0 : cameraModelsList.vertScrollBarChild.width
+						anchors.rightMargin: MainQmlBinder.isMobile() ? 0 : cameraModelsList.vertScrollBarChild.width
 						acceptedButtons: !MainQmlBinder.isMobile() ? Qt.LeftButton | Qt.RightButton : Qt.NoButton
 						propagateComposedEvents: true
 						
@@ -685,7 +686,7 @@ Flickable
 		{
 			id: lensFilters
 			
-			height: 200
+			implicitHeight: cameraFilters.implicitHeight
 			Layout.fillWidth: true
 			
 			ColumnLayout

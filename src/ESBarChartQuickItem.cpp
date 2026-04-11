@@ -11,8 +11,10 @@ constexpr float cMarkerHalfWidth = 2.f;
 
 ESBarChartQuickItem::ESBarChartQuickItem()
 	: mBarSpacing(1.)
+	, mYAxisMaxWidthAuto(0.f)
 	, mYAxisWidthAuto(true)
 	, mYAxisWidth(0.f)
+	, mXAxisMaxHeightAuto(0.f)
 	, mXAxisHeightAuto(true)
 	, mXAxisHeight(0.f)
 	, mMargin(5.f)
@@ -79,7 +81,7 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		pPainter->setRenderHint(QPainter::Antialiasing);
 
 		pPainter->save();
-		pPainter->setClipRect(mMargin + mYAxisWidth, mMargin, width() - mMargin * 2.0 - mYAxisWidth, height() - mMargin * 2.0 - mXAxisHeight);
+		pPainter->setClipRect(mMargin + mYAxisWidth, mMargin, width() - mMargin * 2.0 - mYAxisWidth, height() - mMargin * 2.0);
 		pPainter->translate(mXOffset, 0);
 
 		// Bars
@@ -93,7 +95,7 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		for (int i = 0 ; i < mValues.size() ; ++i)
 		{
 			int lValue = mValues[i];
-			float lBarHeight = std::min(lMaxBarHeight, lValue * mBarHeightFactor * mYScale);
+			float lBarHeight = std::max(0.001f, std::min(lMaxBarHeight, lValue * mBarHeightFactor * mYScale));
 			QRectF lBarRect(lLeft, height() - mMargin - lBarHeight - mRealXAxisHeight, lActualBarWith, lBarHeight);
 			if(pPainter->clipBoundingRect().intersects(lBarRect))
 			{
@@ -106,7 +108,7 @@ float ESBarChartQuickItem::getChartFullWidth() const
 					if(i % lCategoriesToDisplayInterval == 0)
 					{
 						pPainter->save();
-						pPainter->setPen(Qt::black);
+						setupPainterText(*pPainter);
 						pPainter->translate(lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, height() - mRealXAxisHeight - mMargin + cMarkerTextSpacing);
 						pPainter->rotate(90);
 						pPainter->drawText(0,0, lCat);
@@ -183,9 +185,11 @@ void ESBarChartQuickItem::updateInternal()
 			setupPainterText(lPainter);
 			mRealXAxisHeight = 0;
 			for (const QString& lCat : mCategories)
-				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), lCat).width());
+				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat).width());
 
-			mRealXAxisHeight += mXAxisHeight + mMargin + cMarkerTextSpacing;
+			mRealXAxisHeight += mMargin + mMargin + cMarkerTextSpacing;
+			if(mXAxisMaxHeightAuto > 0.f)
+				mRealXAxisHeight = std::min<float>(mRealXAxisHeight, mXAxisMaxHeightAuto);
 		}
 		else
 		{
@@ -219,4 +223,9 @@ void ESBarChartQuickItem::updateInternal()
 void ESBarChartQuickItem::setupPainterText(QPainter& pPainter)
 {
 	pPainter.setPen(Qt::black);
+	/*
+	QFont lFont = pPainter.font();
+	lFont.setPointSizeF(11.f);
+	pPainter.setFont(lFont);
+	*/
 }

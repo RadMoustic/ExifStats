@@ -31,8 +31,10 @@ public:
 	ES_QML_PROPERTY(Values, QVector<int>, mDataHasChanged = true; update();)
 	
 	ES_QML_PROPERTY(Margin, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(XAxisMaxHeightAuto, float, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(XAxisHeightAuto, bool, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(XAxisHeight, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(YAxisMaxWidthAuto, float, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(YAxisWidthAuto, bool, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(YAxisWidth, float, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(BarSpacing, double, mDataHasChanged = true; update();)

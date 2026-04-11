@@ -39,13 +39,13 @@ ESQmlBinder::ESQmlBinder()
 	}, Qt::QueuedConnection);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingProgressChanged, this, &ESQmlBinder::processingProgressChanged);
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 #ifdef HNSWLIB_ENABLED
 	(void)connect(&mTagsFilter, &ESTagsFilter::propertyUpdatingHNSWIndexChanged, this, &ESQmlBinder::updatingHNSWIndexChanged);
 	(void)connect(&mTagsFilter, &ESTagsFilter::propertyUpdatingHNSWIndexProgressChanged, this, &ESQmlBinder::updatingHNSWIndexProgressChanged);
 #endif // HNSWLIB_ENABLED
 	(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESQmlBinder::onTaggingProgress, Qt::QueuedConnection);
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
 	mStats.push_back(&m35mmStat);
 	mStats.push_back(&mApertureStat);
@@ -96,12 +96,12 @@ void ESQmlBinder::refresh(bool pFullRefresh)
 
 void ESQmlBinder::retag()
 {
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 	if (QMessageBox::question(nullptr, tr("Retag Database"), tr("Are you sure you want to retag all files in the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 	{
 		ESImageTaggerManager::getInstance().retag();
 	}
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 }
 
 /********************************************************************************/
@@ -110,9 +110,9 @@ void ESQmlBinder::clear()
 {
 	if (QMessageBox::question(nullptr, tr("Clear Database"), tr("Are you sure you want to clear the database ?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 	{
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		ESImageCache::getInstance().stopAndCancelAllLoadings();
 
 		ESDatabase::getInstance().clear();
@@ -198,7 +198,7 @@ void ESQmlBinder::parseFolder(const QUrl& pFolderPath, bool pClearDB)
 
 void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
 {
-#ifdef ES_READONLY
+#ifdef EXIFSTATS_READONLY
 	QSettings lSettings;
 #ifdef Q_OS_ANDROID
     QString lFolderPathStr = pFolderPath.toString();
@@ -214,13 +214,13 @@ void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
 	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 			ESImageTaggerManager::getInstance().initialize();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		});
-#else // ES_READONLY
+#else // EXIFSTATS_READONLY
 	(void)pFolderPath;
-#endif // ES_READONLY
+#endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
@@ -807,11 +807,11 @@ QStringList ESQmlBinder::getTagsFound() const
 
 bool ESQmlBinder::isImageTaggerEnabled() const
 {
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 	return ESImageTaggerManager::getInstance().isEnabled();
 #else
 	return false;
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 }
 
 /********************************************************************************/

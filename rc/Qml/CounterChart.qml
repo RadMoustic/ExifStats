@@ -39,7 +39,8 @@ Rectangle
 		y:0
 		mXAxisHeight: 0
 		mXAxisHeightAuto: true
-		mYAxisWidth: 30
+		mXAxisMaxHeightAuto: 150
+		mYAxisWidth: 40
 		mMargin: 5
 		
 		mBarSpacing: 1

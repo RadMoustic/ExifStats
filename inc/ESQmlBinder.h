@@ -120,11 +120,11 @@ public:
 	ES_QML_PROPERTY(TaggingProgress, float)
 
 	ES_QML_PROPERTY(PauseCaching, bool, ESImageCache::getInstance().setPaused(mPauseCaching))
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 	ES_QML_PROPERTY(PauseTagging, bool, ESImageTaggerManager::getInstance().setPaused(mPauseTagging))
 #else
 	ES_QML_PROPERTY(PauseTagging, bool)
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
 	B_QML_PROPERTY(TimelineStep, mDateTimeStat.mCountComp.mStep, double)
 	B_QML_PROPERTY(TimelineStatic, mDateTimeStat.mCountComp.mAddFileCategories, bool)

@@ -118,6 +118,12 @@ ColumnLayout
 					}
 					rootItem.selectionHasChanged();
 				}
+				onPressAndHold:
+				{
+					listItem.selected = !listItem.selected
+					rootItem.selectedItems[modelData] = listItem.selected;
+					rootItem.selectionHasChanged();
+				}
 			}
 		}
 	}

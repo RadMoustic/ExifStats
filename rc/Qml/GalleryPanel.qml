@@ -7,7 +7,7 @@ ESImageGridQuickItem
 {
 	id: imageGrid
 	
-	property real imageScale: 1.0
+	property real imageScale: MainQmlBinder.isMobile() ? 0.75 : 1.0
 	
 	mImageSize: 250 * imageScale
 

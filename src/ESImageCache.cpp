@@ -40,7 +40,7 @@ ESImageCache::ESImageCache()
 {
 	mMaxAsyncTask = QThreadPool::globalInstance()->maxThreadCount();
 
-#ifdef ES_READONLY
+#ifdef EXIFSTATS_READONLY
 	#ifdef Q_OS_ANDROID
 		QString lDataBaseDir = "";
 	#else
@@ -138,14 +138,14 @@ void ESImageCache::queueImageCaching(std::vector<std::shared_ptr<ESImage>>& pIma
 			return a->getExif().mDateTime < b->getExif().mDateTime;
 		});
 
-#ifndef ES_READONLY
+#ifndef EXIFSTATS_READONLY
 	// Initialize cache file after emitting the signal to avoid delaying UI startup
 	for (std::shared_ptr<ESImage>& lImage : pImages)
 	{
 		if (!lImage->hasCacheFile()) // Slow so initialize that too
 			queueImageLoading(lImage, true);
 	}
-#endif // ES_READONLY
+#endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
@@ -213,14 +213,14 @@ QString ESImageCache::getCacheFilePath(const QString& pImagePath)
 		mCacheLoadingTask.processImage(pImage);
 		return;
 	}
-#ifndef ES_READONLY
+#ifndef EXIFSTATS_READONLY
 	else
 	{
 		ESImageLoader::queueImageLoading(pImage, pUseCacheDriveQueueIfAvailable);
 	}
 #else
 	(void)pUseCacheDriveQueueIfAvailable;
-#endif // ES_READONLY
+#endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/

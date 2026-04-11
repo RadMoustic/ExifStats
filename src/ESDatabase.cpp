@@ -63,7 +63,7 @@ void ESDatabase::refresh(bool pFullRefresh)
 
 void ESDatabase::clear()
 {
-#ifndef ES_READONLY
+#ifndef EXIFSTATS_READONLY
 	{
 		mUnlockDatabaseRequested = true;
 		std::scoped_lock lLock(mFilesMutex);
@@ -81,7 +81,7 @@ void ESDatabase::clear()
 	}
 
 	emit dataChanged();
-#endif // #ifdef ES_READONLY
+#endif // #ifdef EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
@@ -95,7 +95,7 @@ void ESDatabase::addFolder(const QUrl& pFolderPath, bool pClearDB)
 
 void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly)
 {
-#ifdef ES_READONLY
+#ifdef EXIFSTATS_READONLY
 	(void)pFolders;
 	(void)pClearDB;
 	(void)pNewFilesOnly;
@@ -222,7 +222,7 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 			setProcessing(false);
 			emit dataChanged();
 		});
-#endif // ES_READONLY
+#endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
@@ -417,7 +417,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 void ESDatabase::saveDatabase()
 {
-#ifndef ES_READONLY
+#ifndef EXIFSTATS_READONLY
 	std::shared_lock lLock(mFilesMutex);
 
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
@@ -450,7 +450,7 @@ void ESDatabase::saveDatabase()
 
 	QSettings lSettings;
 	lSettings.setValue("DataBasePath", lDataBasePath);
-#endif // ES_READONLY
+#endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
@@ -465,7 +465,7 @@ void ESDatabase::loadDatabase()
 
 	// Settings
 	QSettings lSettings;
-#ifdef ES_READONLY
+#ifdef EXIFSTATS_READONLY
 	#ifdef Q_OS_ANDROID
 		QString lDataBasePath = lSettings.value(msReadOnlyDatabaseFolderSettingsKey).toString();
 	#else
@@ -478,7 +478,7 @@ void ESDatabase::loadDatabase()
 		return;
 
 	// Open database
-#if defined(ES_READONLY) && defined(Q_OS_ANDROID)
+#if defined(EXIFSTATS_READONLY) && defined(Q_OS_ANDROID)
 	QuaZip lZip(lDataBasePath);
 	if (!lZip.open(QuaZip::mdUnzip))
 	{

@@ -104,15 +104,13 @@ Item
 		MainQmlBinder.dataHasChanged.connect(displayData);
 		
 		mainSplitView.restoreState(settings.mainSplitViewState);
-		leftPanel.restoreState(settings.leftPanelState);
-		centerPanel.restoreState(settings.centerPanelState);
+			centerPanel.restoreState(settings.centerPanelState);
 		chartsPanel.restoreState(settings.chartsPanelState);
 	}
 	
 	Component.onDestruction:
 	{
 		settings.mainSplitViewState = mainSplitView.saveState();
-		settings.leftPanelState = leftPanel.saveState();
 		settings.centerPanelState = centerPanel.saveState();
 		settings.chartsPanelState = chartsPanel.saveState();
 	}

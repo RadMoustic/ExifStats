@@ -1,4 +1,4 @@
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
 #include <ESImageTaggerManager.h>
 
@@ -432,4 +432,4 @@ void ESImageTaggerManager::onDatabaseProcessingChanged()
 		stopAndCancelAllLoadings();
 }
 
-#endif //  defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif //  defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)

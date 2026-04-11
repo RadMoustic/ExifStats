@@ -178,7 +178,7 @@ endif()
 
 # ReadOnly Mode
 if(ANDROID)
-	list(APPEND CPP_DEFINES ES_READONLY)
+	list(APPEND CPP_DEFINES EXIFSTATS_READONLY)
 endif()
 
 # Include Directories

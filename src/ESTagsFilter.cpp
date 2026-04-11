@@ -82,9 +82,9 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 						onImageTaggerManagerLoadingProgress(0, 0);
 					}
 				}
-#ifndef ES_READONLY
+#ifndef EXIFSTATS_READONLY
 				(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESTagsFilter::onImageTaggerManagerLoadingProgress, Qt::QueuedConnection);
-#endif //ES_READONLY
+#endif //EXIFSTATS_READONLY
 	#endif // HNSWLIB_ENABLED
 
 				onDatabaseTagsHaveChanged();

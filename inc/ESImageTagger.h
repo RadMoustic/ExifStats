@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
 /********************************************************************************/
 /********************************************************************************/
@@ -111,4 +111,4 @@ private:
 	QMutex mSessionRunMutex;
 };
 
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)

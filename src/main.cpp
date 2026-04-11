@@ -68,9 +68,9 @@ int main(int argc, char* argv[])
 	int lAppResult = lApp.exec();
 
 	ESImageCache::getInstance().stopAndCancelAllLoadings();
-#if defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 	ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(ES_READONLY)
+#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
 	QThreadPool::globalInstance()->waitForDone();
 
