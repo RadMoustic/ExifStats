@@ -192,7 +192,7 @@ void ESQmlBinder::onTaggingProgress(int pLoadedCount, int pLoadingCount)
 
 void ESQmlBinder::parseFolder(const QUrl& pFolderPath, bool pClearDB)
 {
-	ESDatabase::getInstance().addFolders(QStringList(pFolderPath.toLocalFile()), pClearDB, false);
+	ESDatabase::getInstance().updateDatabase(QStringList(pFolderPath.toLocalFile()), pClearDB, false);
 }
 
 /********************************************************************************/

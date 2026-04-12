@@ -55,6 +55,7 @@ enum ESExifOrientation : unsigned short
 	Undefined = 9
 };
 
+constexpr uint USEFULLEXIF_VERSION = 2;
 struct ESUsefullExif
 {
 	ESStringId mCameraModel;
@@ -70,6 +71,24 @@ struct ESUsefullExif
 	quint16 mFocalLengthIn35mm;
 	quint16 mFocalLength;
 	ESExifOrientation mOrientation;
+	unsigned short mISOSpeedRatings;
+	unsigned short mWidth;
+	unsigned short mHeight;
+
+	unsigned short getOrientedWidth() const
+	{
+		return mOrientation == ESExifOrientation::UpperRight || mOrientation == ESExifOrientation::LowerLeft ? mHeight : mWidth;
+	}
+
+	unsigned short getOrientedHeight() const
+	{
+		return mOrientation == ESExifOrientation::UpperRight || mOrientation == ESExifOrientation::LowerLeft ? mWidth : mHeight;
+	}
+
+	float getOrientedRatio() const
+	{
+		return float(getOrientedWidth()) / float(getOrientedHeight());
+	}
 };
 
 typedef std::vector<float, ESAlignedAllocator<float, 64>> ESEmbeddings;

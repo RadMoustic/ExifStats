@@ -91,9 +91,24 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
-	int lCol = static_cast<int>(pX / mImageSize);
-	int lRow = static_cast<int>(pY / mImageSize);
-	int lIndex = lRow * mNbColumns + lCol;
+	int lIndex = -1;
+	if(mNbColumns == 1)
+	{
+		for(int i = 0; i < mPackedImagesYOffsets.size(); ++i)
+		{
+			if(pY < mPackedImagesYOffsets[i])
+			{
+				lIndex = i;
+				break;
+			}
+		}
+	}
+	else
+	{
+		int lCol = static_cast<int>(pX / mImageSize);
+		int lRow = static_cast<int>(pY / mImageSize);
+		lIndex = lRow * mNbColumns + lCol;
+	}
 	if(lIndex >= 0 && lIndex < mImages.size())
 	{
 		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
@@ -191,20 +206,9 @@ void ESImageGridQuickItem::updateInternal()
 	if(!mValid)
 		return;
 
-	if (mGeometryHasChanged || mDataHasChanged)
+	if (mDataHasChanged)
 	{
-		int lNbImages = int(mImageFiles.size() > 0 ? mImageFiles.size() : (mFilteredFilesList ? mFilteredFilesList->mListFilesComp.mFiles.size() : 0));
-
-		mNbColumns = std::max<int>(1, width() / mImageSize);
-		mNbRows = CeilIntDiv(lNbImages, mNbColumns);
-		setContentHeight(std::max(1, mNbRows * mImageSize));
-
-		mGeometryHasChanged = false;
-	}
-
-	if(mDataHasChanged)
-	{
-		for(std::shared_ptr<ESImage>& lImage: mImages)
+		for (std::shared_ptr<ESImage>& lImage : mImages)
 		{
 			disconnect(lImage.get(), nullptr, this, nullptr);
 		}
@@ -213,17 +217,17 @@ void ESImageGridQuickItem::updateInternal()
 		auto lGetImage = [this](const QString& pImageFilePath)
 			{
 				std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImageFilePath);
-				if(lImage)
+				if (lImage)
 				{
 					connect(lImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]() { update(); });
 					mImages.push_back(lImage);
 				}
 			};
 
-		if(mImageFiles.size() > 0)
+		if (mImageFiles.size() > 0)
 		{
 			mImages.reserve(mImageFiles.size());
-			for(const QString& lImageFilePath: mImageFiles)
+			for (const QString& lImageFilePath : mImageFiles)
 				lGetImage(lImageFilePath);
 		}
 		else if (mFilteredFilesList)
@@ -234,9 +238,37 @@ void ESImageGridQuickItem::updateInternal()
 		}
 
 		sort();
-
-		mDataHasChanged = false;
 	}
+
+	if (mGeometryHasChanged || mDataHasChanged)
+	{
+		int lNbImages = int(mImages.size());
+
+		mNbColumns = std::max<int>(1, width() / mImageSize);
+		mNbRows = CeilIntDiv(lNbImages, mNbColumns);
+
+		if(mNbColumns == 1)
+		{
+			mPackedImagesYOffsets.clear();
+			mPackedImagesYOffsets.reserve(lNbImages);
+			float lYOffset = 0.f;
+			for(int i = 0; i < lNbImages; ++i)
+			{
+				mPackedImagesYOffsets.push_back(lYOffset);
+				float lRatio = mImages[i]->getExif().getOrientedRatio();
+				lYOffset += lRatio > 1.f ? mImageSize / lRatio : mImageSize;
+			}
+			setContentHeight(std::max(1.f,lYOffset));
+		}
+		else
+			setContentHeight(std::max(1, mNbRows * mImageSize));
+
+		mGeometryHasChanged = false;
+	}
+
+	
+
+	mDataHasChanged = false;
 }
 
 /********************************************************************************/
@@ -416,16 +448,37 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		mInstanceData.clear();
 		mInstanceData.reserve(cMaxDisplayedImages);
 
+		bool lPacked = lItem->mNbColumns == 1;
+
 		QRectF lBoudingRect = lItem->boundingRect();
-		QRectF lPreloadRect = lBoudingRect;
-		lPreloadRect.setY(lPreloadRect.y() - 3.f * lItem->mImageSize);
-		lPreloadRect.setHeight(lPreloadRect.height() + 2.f * 3.f * lItem->mImageSize);
 
-		const int lStartDrawRow = lItem->mYOffset / lItem->mImageSize;
-		const int lEndDrawRow = lStartDrawRow + lBoudingRect.height() / lItem->mImageSize + 1;
+		int lStartDrawRow = -1;
+		int lEndDrawRow = -1;
 
-		const int lStartPreloadRow = lItem->mYOffset / lItem->mImageSize; // No need  to preload rows before because they are already in the cache
-		const int lEndPreloadRow = lStartPreloadRow + lPreloadRect.height() / lItem->mImageSize + 1;
+		if(lPacked)
+		{
+			float lTop = lBoudingRect.top() + lItem->mYOffset;
+			float lBottom = lBoudingRect.bottom() + lItem->mYOffset;
+			for (int i = 0; i < lItem->mPackedImagesYOffsets.size(); ++i)
+			{
+				const float lYOffset = lItem->mPackedImagesYOffsets[i];
+				if(lYOffset > lTop && lStartDrawRow < 0)
+					lStartDrawRow = std::max(0, i - 1);
+				if (lYOffset > lBottom && lEndDrawRow < 0)
+				{
+					lEndDrawRow = std::max(0, i - 1);
+					break;
+				}
+			}
+		}
+		else
+		{
+			lStartDrawRow = lItem->mYOffset / lItem->mImageSize;
+			lEndDrawRow = lStartDrawRow + lBoudingRect.height() / lItem->mImageSize + 1;
+		}
+
+		const int lStartPreloadRow = std::max(0, lStartDrawRow - 3);
+		const int lEndPreloadRow = std::min(lItem->mNbRows, lEndDrawRow + 3);
 
 		// Release slots
 		for (auto it = mImageToTextureSlot.begin(); it != mImageToTextureSlot.end();)
@@ -452,11 +505,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 					break;
 
 				float lX = lCol * lItem->mImageSize;
-				float lY = lRow * lItem->mImageSize - lItem->mYOffset;
+				float lY = (lPacked ? lItem->mPackedImagesYOffsets[lIndex] : lRow * lItem->mImageSize) - lItem->mYOffset;
 				QRectF lImageRect(lX, lY, lItem->mImageSize, lItem->mImageSize);
-
-				if (!lPreloadRect.intersects(lImageRect))
-					continue;
 
 				std::shared_ptr<ESImage>& lImageWrapper = lItem->mImages[lIndex];
 				lImageWrapper->updateLastUsed();
@@ -483,7 +533,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 							lGLImage.fill(Qt::transparent);
 							QPainter lPainter(&lGLImage);
 							int x = (CACHE_IMAGE_SIZE - lImage.width()) / 2;
-							int y = (CACHE_IMAGE_SIZE - lImage.height()) / 2;
+							int y = lPacked ? 0 : (CACHE_IMAGE_SIZE - lImage.height()) / 2;
 							lPainter.drawImage(x, y, lImage);
 							//mImageTextures->setData(0, lTextureSlot, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, lScaledImage.constBits()); checkOpengGLErrors();
 							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();

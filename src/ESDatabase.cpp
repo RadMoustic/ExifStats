@@ -14,6 +14,7 @@
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QMessageBox>
 #include <QGeoCoordinate>
+#include <QTimer>
 
 // Quazip
 #ifdef Q_OS_ANDROID
@@ -29,7 +30,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 9;
+constexpr uint DATABASE_VERSION = 10;
 /*static*/ const char* ESDatabase::msReadOnlyDatabaseFolderSettingsKey = "ReadOnlyDataBaseFolderPath";
 
 /********************************************************************************/
@@ -49,6 +50,7 @@ ESDatabase::ESDatabase()
 	, mProcessingProgress(0.f)
 	, mEmbeddingsDimension(0)
 	, mLastAssignedId(0)
+	, mUsefullExifVersion(USEFULLEXIF_VERSION)
 {
 }
 
@@ -56,7 +58,7 @@ ESDatabase::ESDatabase()
 
 void ESDatabase::refresh(bool pFullRefresh)
 {
-	addFolders(mFolders, pFullRefresh, !pFullRefresh);
+	updateDatabase(mFolders, pFullRefresh, !pFullRefresh);
 }
 
 /********************************************************************************/
@@ -88,12 +90,12 @@ void ESDatabase::clear()
 
 void ESDatabase::addFolder(const QUrl& pFolderPath, bool pClearDB)
 {
-	addFolders(QStringList(pFolderPath.toLocalFile()), pClearDB, false);
+	updateDatabase(QStringList(pFolderPath.toLocalFile()), pClearDB, true);
 }
 
 /********************************************************************************/
 
-void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly)
+void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly)
 {
 #ifdef EXIFSTATS_READONLY
 	(void)pFolders;
@@ -219,6 +221,8 @@ void ESDatabase::addFolders(const QStringList& pFolders, bool pClearDB, bool pNe
 				}
 			}
 
+			mUsefullExifVersion = USEFULLEXIF_VERSION;
+
 			setProcessing(false);
 			emit dataChanged();
 		});
@@ -323,6 +327,10 @@ ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& pFullEx
 	lResult.mFocalLength = pFullExif.FocalLength;
 	lResult.mFocalLengthIn35mm = pFullExif.FocalLengthIn35mm;
 	lResult.mOrientation = ESExifOrientation(pFullExif.Orientation);
+	lResult.mShutterSpeedValue = pFullExif.ShutterSpeedValue;
+	lResult.mISOSpeedRatings = pFullExif.ISOSpeedRatings;
+	lResult.mWidth = pFullExif.ImageWidth > std::numeric_limits<decltype(lResult.mWidth)>::max() ? 0 : pFullExif.ImageWidth;
+	lResult.mHeight = pFullExif.ImageHeight > std::numeric_limits<decltype(lResult.mHeight)>::max() ? 0 : pFullExif.ImageHeight;
 
 	return lResult;
 }
@@ -343,6 +351,18 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 	{
 		qWarning() << "Cannot load database: version '" << lDatabaseVersion << "' not supported: " << pFilePath;
 		return false;
+	}
+
+	if(lDatabaseVersion >= 10)
+	{
+		pSerializer.Serialize(mUsefullExifVersion);
+	}
+	else
+	{
+		if constexpr (SERIALIZER::msIsReading)
+		{
+			mUsefullExifVersion = 1;
+		}
 	}
 
 	pSerializer.Serialize(mFolders);
@@ -373,6 +393,12 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
 			if(lDatabaseVersion >= 5)
 				pSerializer.Serialize(pFileInfo.mExif.mOrientation);
+			if (lDatabaseVersion >= 10)
+			{
+				pSerializer.Serialize(pFileInfo.mExif.mISOSpeedRatings);
+				pSerializer.Serialize(pFileInfo.mExif.mWidth);
+				pSerializer.Serialize(pFileInfo.mExif.mHeight);
+			}
 			if(lDatabaseVersion >= 6)
 			{
 				pSerializer.Serialize(pFileInfo.mTagsGenerated);
@@ -511,6 +537,14 @@ void ESDatabase::loadDatabase()
 	setProperty("Processing", false);
 	emit tagsChanged();
 	emit dataChanged();
+
+	if(mUsefullExifVersion != USEFULLEXIF_VERSION)
+	{
+		QTimer::singleShot(1000,[this]()
+		{
+			updateDatabase(mFolders, false, false);
+		});
+	}
 }
 
 /********************************************************************************/

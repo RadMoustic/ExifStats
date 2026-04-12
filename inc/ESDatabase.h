@@ -61,7 +61,7 @@ public:
 	void clear();
 
 	void addFolder(const QUrl& pFolderPath, bool pClearDB);
-	void addFolders(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly);
+	void updateDatabase(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly);
 
 	void saveDatabase();
 	void loadDatabase();
@@ -110,6 +110,7 @@ private:
 	std::atomic_bool mUnlockDatabaseRequested;
 
 	ESFileInfoId mLastAssignedId;
+	int mUsefullExifVersion;
 
 	/********************************* METHODS ***********************************/
 

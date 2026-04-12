@@ -128,6 +128,7 @@ private:
 	bool mGeometryHasChanged;
 
 	std::vector<std::shared_ptr<ESImage>> mImages;
+	std::vector<float> mPackedImagesYOffsets;
 	const ESListFilesStatComponent* mFilteredFilesListComponent;
 
 	/********************************* METHODS ***********************************/
