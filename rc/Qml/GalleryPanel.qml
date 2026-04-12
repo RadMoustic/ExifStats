@@ -7,10 +7,11 @@ ESImageGridQuickItem
 {
 	id: imageGrid
 	
-	property real imageScale: MainQmlBinder.isMobile() ? 0.75 : 1.0
+	property real imageScale: MainQmlBinder.isMobile() ? imageGrid.width : 250
 	property var imageViewerItem
+	property real maxGridCol: 4
 	
-	mImageSize: 250 * imageScale
+	mImageSize: MainQmlBinder.isMobile() ? imageGrid.width / Math.floor(imageGrid.width / imageScale) : imageScale
 
 	onMImageFilesChanged:
 	{
@@ -37,7 +38,7 @@ ESImageGridQuickItem
 			onWheel: (pWheel) =>
 			{
 				if(MainQmlBinder.isCtrlPressed())
-					imageGrid.imageScale = Math.min(4.0, Math.max(0.5, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
+					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
 				else
 					flickable.contentY = Math.max(0, Math.min(imageGrid.mContentHeight-height, flickable.contentY - pWheel.angleDelta.y));
 			}
@@ -55,7 +56,7 @@ ESImageGridQuickItem
 			}
 			onPinchUpdated: (pinch) => 
 			{
-				imageGrid.imageScale = Math.min(4.0, Math.max(0.5, initialScale * pinch.scale));
+				imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, initialScale * pinch.scale));
 			}
 			
 			MouseArea

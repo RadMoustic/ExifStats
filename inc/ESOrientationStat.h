@@ -30,5 +30,5 @@ public:
 	}
 
 	static bool getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mOrientation == UpperRight || pFile.mExif.mOrientation == LowerLeft; }
-	static QString getValueLabel(bool aValue) { return aValue ? "Portrait" : "Landscape"; }
+	static QString getValueLabel(bool pValue) { return pValue ? "Portrait" : "Landscape"; }
 };

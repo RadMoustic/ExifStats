@@ -23,7 +23,7 @@
 
 static const char* CACHE_VERSION = "3";
 static const QString CACHE_IMAGE_FILE_EXTENSION = ".escache";
-static const int MAX_NUM_IMAGE_LOADED = 512;
+static const int MAX_NUM_IMAGE_LOADED = 256;
 
 /********************************************************************************/
 

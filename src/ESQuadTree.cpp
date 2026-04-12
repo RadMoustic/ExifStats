@@ -26,11 +26,11 @@ ESQuadTree::Node::Node(QRectF pRect, const QVector<QPointF>& pPoints)
 	, mTotalPoints(0)
 {
 	QVector<QPointF> lNodePoints;
-	for (const QPointF& aPoint : pPoints)
+	for (const QPointF& lPoint : pPoints)
 	{
-		if (mRect.contains(aPoint))
+		if (mRect.contains(lPoint))
 		{
-			lNodePoints.append(aPoint);
+			lNodePoints.append(lPoint);
 		}
 	}
 

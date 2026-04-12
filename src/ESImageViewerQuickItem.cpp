@@ -49,6 +49,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 			lX = (lW - lWidth) / 2.f;
 			lY = 0.f;
 		}
+		pPainter->setRenderHint(QPainter::SmoothPixmapTransform);
 		pPainter->drawImage(QRectF(lX, lY, lWidth, lHeight), lImage);
 	}
 }

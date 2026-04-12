@@ -31,5 +31,5 @@ public:
 	}
 
 	static float getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mFNumber; }
-	static QString getValueLabel(float aValue) { return QString::number(aValue); }
+	static QString getValueLabel(float pValue) { return QString::number(pValue); }
 };

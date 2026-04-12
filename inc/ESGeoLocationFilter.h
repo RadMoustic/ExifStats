@@ -39,11 +39,11 @@ public:
 					||	!mGeoShapeFilter.contains(QGeoCoordinate(pFile.mExif.mGeoLococation.mLatitude, pFile.mExif.mGeoLococation.mLongitude)));
 	}
 
-	QJsonObject serializeGeoCoordinates(const QGeoCoordinate& aGeoCoordinate) const
+	QJsonObject serializeGeoCoordinates(const QGeoCoordinate& pGeoCoordinate) const
 	{
 		QJsonObject lResult;
-		lResult["Latitude"] = aGeoCoordinate.latitude();
-		lResult["Longitude"] = aGeoCoordinate.longitude();
+		lResult["Latitude"] = pGeoCoordinate.latitude();
+		lResult["Longitude"] = pGeoCoordinate.longitude();
 		return lResult;
 	}
 

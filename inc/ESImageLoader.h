@@ -40,7 +40,7 @@ public:
 signals:
 	/********************************** SIGNALS ***********************************/
 
-	void imageLoadingProgress(int pCachedCount, int pCachingCount);
+	void imageLoadingProgress(int pLoadedCount, int pLoadingCount);
 
 protected:
 	/********************************** TYPES *************************************/

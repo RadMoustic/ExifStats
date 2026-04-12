@@ -11,7 +11,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-#define CACHE_IMAGE_SIZE 640
+#define CACHE_IMAGE_SIZE 850
 #define CACHE_IMAGE_JPEG_COMPRESSION 50
 
 class ESDatabase;

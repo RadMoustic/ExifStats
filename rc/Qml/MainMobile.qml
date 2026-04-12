@@ -2,10 +2,11 @@ import QtQuick
 import Qt.labs.platform
 import QtQuick.Controls
 import QtQuick.Controls.Material
-import QtQuick.Layouts
+import QtQuick.Layouts 
 import QtQuick.Dialogs
 import QtLocation
 import QtCore
+import QtQuick.Effects
 
 import ExifStats
 
@@ -363,16 +364,51 @@ Item
 			}
 		}
 		
-		RegularButton
+		RoundButton
 		{
-			id: sortMode
+			id: closeButton
 			text: "X"
+			anchors.top: parent.top
 			anchors.right: parent.right
-			anchors.margins: 10
+			anchors.margins: 15
+			radius: 4
 			
-			implicitWidth: 30
-			implicitHeight: 30
+			implicitWidth: 40
+			implicitHeight: 40
 
+			contentItem: Text
+			{
+				text: closeButton.text
+				font.pixelSize: 15
+				font.bold: true
+				color: "#666666"
+				horizontalAlignment: Text.AlignHCenter
+				verticalAlignment: Text.AlignVCenter
+			}
+
+			background: Item
+			{
+				Rectangle
+				{
+					id: bgRect
+					anchors.fill: parent
+					color: closeButton.down ? "#222222" : "#111111"
+					border.color: "#666666"
+					border.width: 2
+					radius: closeButton.radius
+					visible: false
+				}
+
+				MultiEffect
+				{
+					source: bgRect
+					anchors.fill: parent
+					shadowEnabled: true
+					shadowColor: "#CC000000"
+					shadowBlur: 1.0
+				}
+			}
+			
 			onReleased:
 			{
 				imageViewer.visible = false;

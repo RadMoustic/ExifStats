@@ -98,7 +98,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 		{
 			if(pY < mPackedImagesYOffsets[i])
 			{
-				lIndex = i;
+				lIndex = i - 1;
 				break;
 			}
 		}

@@ -29,5 +29,5 @@ public:
 
 	static ESStringId getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mLensModel; }
 	static uint8_t getFileValueIndex(const ESFileInfo& pFile) { return pFile.mLensModelIdx; }
-	static QString getValueLabel(ESStringId aValue) { return aValue.getString(); }
+	static QString getValueLabel(ESStringId pValue) { return pValue.getString(); }
 };
