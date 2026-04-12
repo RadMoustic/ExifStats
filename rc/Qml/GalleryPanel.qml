@@ -9,9 +9,9 @@ ESImageGridQuickItem
 	
 	property real imageScale: MainQmlBinder.isMobile() ? imageGrid.width : 250
 	property var imageViewerItem
-	property real maxGridCol: 4
+	property real maxGridCol: MainQmlBinder.isMobile() ? 4 : 20
 	
-	mImageSize: MainQmlBinder.isMobile() ? imageGrid.width / Math.floor(imageGrid.width / imageScale) : imageScale
+	mImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
 
 	onMImageFilesChanged:
 	{
@@ -38,7 +38,7 @@ ESImageGridQuickItem
 			onWheel: (pWheel) =>
 			{
 				if(MainQmlBinder.isCtrlPressed())
-					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
+					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 25 : -25)));
 				else
 					flickable.contentY = Math.max(0, Math.min(imageGrid.mContentHeight-height, flickable.contentY - pWheel.angleDelta.y));
 			}

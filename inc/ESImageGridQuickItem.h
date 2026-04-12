@@ -65,11 +65,13 @@ private:
 	std::unordered_map<ESImage*, ImageTextureSlot> mImageToTextureSlot;
 	std::vector<ImageInstanceData> mInstanceData;
 	QSizeF mSize;
+	float mCurrentTextureSize;
 
 	/********************************* METHODS ***********************************/
 
 	void initializeGL();
 	void checkOpengGLErrors();
+	void allocateImageTextures(float pTextureSize);
 };
 
 class ESImageGridQuickItem : public QQuickFramebufferObject

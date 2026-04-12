@@ -19,7 +19,11 @@
 constexpr float cMarkerTextSpacing = 5.f;
 constexpr int cNbYMarker = 5;
 constexpr float cMarkerHalfWidth = 2.f;
+#ifdef Q_OS_ANDROID
 constexpr int cMaxDisplayedImages = 256;
+#else
+constexpr int cMaxDisplayedImages = 512;
+#endif
 
 /********************************************************************************/
 
@@ -250,15 +254,30 @@ void ESImageGridQuickItem::updateInternal()
 		if(mNbColumns == 1)
 		{
 			mPackedImagesYOffsets.clear();
-			mPackedImagesYOffsets.reserve(lNbImages);
-			float lYOffset = 0.f;
-			for(int i = 0; i < lNbImages; ++i)
+			if(lNbImages)
 			{
-				mPackedImagesYOffsets.push_back(lYOffset);
-				float lRatio = mImages[i]->getExif().getOrientedRatio();
-				lYOffset += lRatio > 1.f ? mImageSize / lRatio : mImageSize;
+				mPackedImagesYOffsets.reserve(lNbImages);
+				float lYOffset = 0.f;
+				for(int i = 0; i < lNbImages; ++i)
+				{
+					float lRatio = mImages[i]->getExif().getOrientedRatio();
+					float lImageHeight = lRatio > 1.f ? mImageSize / lRatio : mImageSize;
+					if(lRatio > 1.f)
+					{
+						float lImageOffset = (mImageSize - lImageHeight) / 2.f;
+						mPackedImagesYOffsets.push_back(lYOffset - lImageOffset);
+					}
+					else
+					{
+						mPackedImagesYOffsets.push_back(lYOffset);
+					}
+
+					lYOffset += lImageHeight;
+				}
+				setContentHeight(std::max(1.f, lYOffset));
 			}
-			setContentHeight(std::max(1.f,lYOffset));
+			else
+				setContentHeight(1);
 		}
 		else
 			setContentHeight(std::max(1, mNbRows * mImageSize));
@@ -306,6 +325,7 @@ void ESImageGridQuickItem::sort()
 /********************************************************************************/
 
 ESImageGridQuickItemRenderer::ESImageGridQuickItemRenderer()
+	: mCurrentTextureSize(0.f)
 {
 	initializeGL(); checkOpengGLErrors();
 }
@@ -380,19 +400,28 @@ void ESImageGridQuickItemRenderer::initializeGL()
 		mVBOInstances->bind(); checkOpengGLErrors();
 		mVBOInstances->allocate(cMaxDisplayedImages * sizeof(ImageInstanceData)); checkOpengGLErrors();
 
-		mImageTextures.reset(new QOpenGLTexture(QOpenGLTexture::Target2DArray));checkOpengGLErrors();
-		mImageTextures->create();checkOpengGLErrors();
-		mImageTextures->setSize(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE);checkOpengGLErrors();
-		mImageTextures->setLayers(cMaxDisplayedImages);checkOpengGLErrors();
-		mImageTextures->setMipLevels(1);checkOpengGLErrors();
-		mImageTextures->setFormat(QOpenGLTexture::RGBA8_UNorm);checkOpengGLErrors();
-		//mImageTextures->allocateStorage(); checkOpengGLErrors();
-		mImageTextures->bind();
-		glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, 0x8058, CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE, cMaxDisplayedImages);checkOpengGLErrors();
-		mImageTextures->release();
-
 		mVAO.reset(new QOpenGLVertexArrayObject());
 		mVAO->create(); checkOpengGLErrors();
+	}
+}
+
+/********************************************************************************/
+
+void ESImageGridQuickItemRenderer::allocateImageTextures(float pTextureSize)
+{
+	if(!mImageTextures || mCurrentTextureSize != pTextureSize)
+	{
+		mCurrentTextureSize = pTextureSize;
+		mImageTextures.reset(new QOpenGLTexture(QOpenGLTexture::Target2DArray)); checkOpengGLErrors();
+		mImageTextures->create(); checkOpengGLErrors();
+		mImageTextures->setSize(pTextureSize, pTextureSize); checkOpengGLErrors();
+		mImageTextures->setLayers(cMaxDisplayedImages); checkOpengGLErrors();
+		mImageTextures->setMipLevels(1); checkOpengGLErrors();
+		mImageTextures->setFormat(QOpenGLTexture::RGBA8_UNorm); checkOpengGLErrors();
+		//mImageTextures->allocateStorage(); checkOpengGLErrors();
+		mImageTextures->bind(); checkOpengGLErrors();
+		glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, 0x8058, pTextureSize, pTextureSize, cMaxDisplayedImages); checkOpengGLErrors();
+		mImageTextures->release(); checkOpengGLErrors();
 	}
 }
 
@@ -444,6 +473,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 	if (lItem->mValid)
 	{
 		assert(mShaderProgram->isLinked() && "Fix Shader Errors");
+
+		allocateImageTextures(lItem->mImageSize);
 
 		mInstanceData.clear();
 		mInstanceData.reserve(cMaxDisplayedImages);
@@ -529,14 +560,28 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 							lTextureSlot = mFreeImageTextureSlots.back();
 							mFreeImageTextureSlots.pop_back();
 							const QImage& lImage = lImageWrapper->getImage();
-							QImage lGLImage(CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE, QImage::Format_RGBA8888);
+							QImage lGLImage(lItem->mImageSize, lItem->mImageSize, QImage::Format_RGBA8888);
 							lGLImage.fill(Qt::transparent);
 							QPainter lPainter(&lGLImage);
-							int x = (CACHE_IMAGE_SIZE - lImage.width()) / 2;
-							int y = lPacked ? 0 : (CACHE_IMAGE_SIZE - lImage.height()) / 2;
-							lPainter.drawImage(x, y, lImage);
+							float lImageRatio = float(lImage.width()) / float(lImage.height());
+							float lX, lY, lWidth, lHeight;
+							if (lImageRatio >= 1.0f)
+							{
+								lWidth = lItem->mImageSize;
+								lHeight = lItem->mImageSize / lImageRatio;
+								lX = 0.f;
+								lY = (lItem->mImageSize - lHeight) / 2.f;
+							}
+							else
+							{
+								lWidth = lItem->mImageSize * lImageRatio;
+								lHeight = lItem->mImageSize;
+								lX = (lItem->mImageSize - lWidth) / 2.f;
+								lY = 0.f;
+							}
+							lPainter.drawImage(QRectF(lX, lY, lWidth, lHeight), lImage);
 							//mImageTextures->setData(0, lTextureSlot, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, lScaledImage.constBits()); checkOpengGLErrors();
-							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, CACHE_IMAGE_SIZE, CACHE_IMAGE_SIZE, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();
+							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, lItem->mImageSize, lItem->mImageSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();
 							mImageToTextureSlot[lImageWrapper.get()] = { lTextureSlot, lRow };
 						}
 					}
@@ -560,6 +605,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 				}
 			}
 		}
+		assert(mInstanceData.size() < cMaxDisplayedImages);
 		mImageTextures->release();
 	}
 }
@@ -600,21 +646,21 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		glVertexAttribDivisor(lPosAttr, 0);
 
 		mVBOInstances->bind(); checkOpengGLErrors();
-		mVBOInstances->write(0, mInstanceData.data(), int(mInstanceData.size() * sizeof(ImageInstanceData)));
+		mVBOInstances->write(0, mInstanceData.data(), int(mInstanceData.size() * sizeof(ImageInstanceData))); checkOpengGLErrors();
 
 		mShaderProgram->enableAttributeArray(lInstPosAttr);
 		mShaderProgram->enableAttributeArray(lInstSizeAttr);
 		mShaderProgram->enableAttributeArray(lInstTexIdxAttr);
-		mShaderProgram->setAttributeBuffer(lInstPosAttr, GL_FLOAT, 0, 2, sizeof(ImageInstanceData));
-		mShaderProgram->setAttributeBuffer(lInstSizeAttr, GL_FLOAT, 8, 1, sizeof(ImageInstanceData));
-		mShaderProgram->setAttributeBuffer(lInstTexIdxAttr, GL_FLOAT, 12, 1, sizeof(ImageInstanceData));
+		mShaderProgram->setAttributeBuffer(lInstPosAttr, GL_FLOAT, 0, 2, sizeof(ImageInstanceData)); checkOpengGLErrors();
+		mShaderProgram->setAttributeBuffer(lInstSizeAttr, GL_FLOAT, 8, 1, sizeof(ImageInstanceData)); checkOpengGLErrors();
+		mShaderProgram->setAttributeBuffer(lInstTexIdxAttr, GL_FLOAT, 12, 1, sizeof(ImageInstanceData)); checkOpengGLErrors();
 
 		glVertexAttribDivisor(lInstPosAttr, 1);
 		glVertexAttribDivisor(lInstSizeAttr, 1);
 		glVertexAttribDivisor(lInstTexIdxAttr, 1);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND); checkOpengGLErrors();
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); checkOpengGLErrors();
 
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, int(mInstanceData.size())); checkOpengGLErrors();
 
