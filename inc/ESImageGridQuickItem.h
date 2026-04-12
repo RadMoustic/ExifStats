@@ -108,6 +108,8 @@ public:
 	ES_QML_READ_PROPERTY(ContentHeight, int)
 
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
+	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
+	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
 
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
@@ -133,4 +135,5 @@ private:
 	void updateInternal();
 	void onImageCachingProgress(int pLoadedCount, int pLoadingCount);
 	void sort();
+	void preloadImagesAround(int pImageIdx, int pPreloadCountAround) const;
 };

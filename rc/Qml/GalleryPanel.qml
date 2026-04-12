@@ -8,6 +8,7 @@ ESImageGridQuickItem
 	id: imageGrid
 	
 	property real imageScale: MainQmlBinder.isMobile() ? 0.75 : 1.0
+	property var imageViewerItem
 	
 	mImageSize: 250 * imageScale
 
@@ -36,7 +37,7 @@ ESImageGridQuickItem
 			onWheel: (pWheel) =>
 			{
 				if(MainQmlBinder.isCtrlPressed())
-					imageGrid.imageScale = Math.min(2.0, Math.max(0.5, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
+					imageGrid.imageScale = Math.min(4.0, Math.max(0.5, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 0.1 : -0.1)));
 				else
 					flickable.contentY = Math.max(0, Math.min(imageGrid.mContentHeight-height, flickable.contentY - pWheel.angleDelta.y));
 			}
@@ -54,13 +55,27 @@ ESImageGridQuickItem
 			}
 			onPinchUpdated: (pinch) => 
 			{
-				imageGrid.imageScale = Math.min(2.0, Math.max(0.5, initialScale * pinch.scale));
+				imageGrid.imageScale = Math.min(4.0, Math.max(0.5, initialScale * pinch.scale));
 			}
 			
 			MouseArea
 			{
 				anchors.fill: parent
 				preventStealing: false
+				
+				onClicked: (pMouse) =>
+				{
+					if(MainQmlBinder.isMobile())
+					{
+						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
+						if(selectedFile !== "")
+						{
+							imageViewerItem.visible = true;
+							imageViewerItem.mImagePath = selectedFile;
+							MainQmlBinder.mFullScreen = true;
+						}
+					}
+				}
 				
 				onDoubleClicked: (pMouse) =>
 				{
@@ -72,7 +87,9 @@ ESImageGridQuickItem
 					{
 						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
 						if(selectedFile !== "")
+						{
 							Qt.openUrlExternally("file:///" + selectedFile);
+						}
 					}
 				}
 			}

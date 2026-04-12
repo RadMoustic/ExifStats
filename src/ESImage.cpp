@@ -399,7 +399,7 @@ void ESImage::readImage(QImageReader& pImageReader, QSize pMaxSize)
 			mImage = mImage.transformed(lTransform, Qt::SmoothTransformation);
 		}
 
-		mImage.save(mImageCachePath, "JPG", 90);
+		mImage.save(mImageCachePath, "JPG", CACHE_IMAGE_JPEG_COMPRESSION);
 	}
 
 	mDriveLetter = mImageCachePath[0];

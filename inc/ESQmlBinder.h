@@ -97,6 +97,8 @@ class ESQmlBinder : public QObject
 public:
 	/******************************** ATTRIBUTES **********************************/
 
+	ES_QML_PROPERTY(FullScreen, bool)
+
 	Q_PROPERTY(QVector<QString> ProcessedFolders READ getProcessedFolders NOTIFY processedFoldersChanged)
 	Q_PROPERTY(bool Processing READ getProcessing NOTIFY processingChanged)
 	Q_PROPERTY(float ProcessingProgress READ getProcessingProgress NOTIFY processingProgressChanged)

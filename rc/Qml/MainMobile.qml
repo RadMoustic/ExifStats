@@ -252,6 +252,7 @@ Item
 			GalleryPanel
 			{
 				id: imageGrid
+				imageViewerItem: imageViewer
 			}
 			
 			MapPanel
@@ -317,6 +318,65 @@ Item
 					id: pathLbl
 					text: MainQmlBinder.ProcessedFolders.join("\n")
 				}
+			}
+		}
+	}
+	
+	ESImageViewerQuickItem
+	{
+		id: imageViewer
+		visible: false
+		anchors.fill: parent
+
+		MouseArea
+		{
+			anchors.fill: parent
+			
+			property int swipeThreshold: 50
+			property int startX: 0
+
+			onPressed: (pMouse) =>
+			{
+				startX = pMouse.x
+			}
+
+			onReleased: (pMouse) =>
+			{
+				var diffX = pMouse.x - startX
+
+				if (Math.abs(diffX) > swipeThreshold)
+				{
+					var newImage = "";
+					if (diffX < 0)
+					{
+						newImage = imageGrid.getNextImage(imageViewer.mImagePath, 5);
+					}
+					else
+					{
+						newImage = imageGrid.getPreviousImage(imageViewer.mImagePath, 5);
+					}
+					if(newImage != "")
+					{
+						imageViewer.mImagePath = newImage;
+					}
+				}
+			}
+		}
+		
+		RegularButton
+		{
+			id: sortMode
+			text: "X"
+			anchors.right: parent.right
+			anchors.margins: 10
+			
+			implicitWidth: 30
+			implicitHeight: 30
+
+			onReleased:
+			{
+				imageViewer.visible = false;
+				MainQmlBinder.mFullScreen = false;
 			}
 		}
 	}

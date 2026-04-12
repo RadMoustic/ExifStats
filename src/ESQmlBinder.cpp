@@ -25,7 +25,8 @@ static const char* scPresetExtension = "espreset";
 /********************************************************************************/
 
 ESQmlBinder::ESQmlBinder()
-	: mTagging(false)
+	: mFullScreen(false)
+	, mTagging(false)
 	, mTaggingProgress(1.f)
 	, mPauseCaching(false)
 	, mPauseTagging(false)
@@ -605,7 +606,7 @@ bool ESQmlBinder::isCtrlPressed() const
 
 bool ESQmlBinder::isMobile() const
 {
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(EXIFSTATS_READONLY)
 	return true;
 #else
 	return false;

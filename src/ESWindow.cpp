@@ -7,6 +7,7 @@
 #include "ESMapDotsQuickItem.h"
 #include "ESBarChartQuickItem.h"
 #include "ESImageGridQuickItem.h"
+#include "ESImageViewerQuickItem.h"
 #include "ESImageTaggerManager.h"
 
 // Qt
@@ -32,7 +33,7 @@ static const char* scMainQmlDirPath = "../../../rc/Qml";
 static const char* scMainQmlDirPath = "ESQml";
 #endif
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(EXIFSTATS_READONLY)
 static const char* scMainQmlLocalPath = "MainMobile.qml";
 static const char* scMainQmlPathQRC = "qrc:/Qml/MainMobile.qml";
 #else
@@ -61,6 +62,15 @@ ESWindow::ESWindow()
 
 	mBinder = std::make_shared<ESQmlBinder>();
 	mDebugBinder = std::make_shared<ESDebugQmlBinder>();
+
+	(void)connect(mBinder.get(), &ESQmlBinder::propertyFullScreenChanged, this, 
+		[&]()
+		{
+			if (mBinder->getFullScreen())
+				showFullScreen();
+			else
+				showNormal();
+		});
 }
 
 /********************************************************************************/
@@ -104,6 +114,7 @@ void ESWindow::initializeQml()
 	qmlRegisterType<ESMapDotsQuickItem>("ExifStats", 1, 0, "ESMapDotsQuickItem");
 	qmlRegisterType<ESBarChartQuickItem>("ExifStats", 1, 0, "ESBarChartQuickItem");
 	qmlRegisterType<ESImageGridQuickItem>("ExifStats", 1, 0, "ESImageGridQuickItem");
+	qmlRegisterType<ESImageViewerQuickItem>("ExifStats", 1, 0, "ESImageViewerQuickItem");
 
 	engine()->rootContext()->setContextProperty("MainQmlBinder", mBinder.get());
 	engine()->rootContext()->setContextProperty("DebugQmlBinder", mDebugBinder.get());

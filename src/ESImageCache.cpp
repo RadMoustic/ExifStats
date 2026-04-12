@@ -184,6 +184,7 @@ QByteArray ESImageCache::getImageHash(const QString& pImagePath)
 
 	lHasher.addData(CACHE_VERSION);
 	lHasher.addData(TOSTR(CACHE_IMAGE_SIZE));
+	lHasher.addData(TOSTR(CACHE_IMAGE_JPEG_COMPRESSION));
 	lHasher.addData(pImagePath.toUtf8());
 
 	return lHasher.result();

@@ -117,6 +117,73 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 
 /********************************************************************************/
 
+QString ESImageGridQuickItem::getPreviousImage(QString pImage, int pPreloadCountAround) const
+{
+	ESStringId lImagePath = pImage;
+	ESStringId lResult;
+	int lImageIdx = 0;
+	for (const std::shared_ptr<ESImage>& lImage : mImages)
+	{
+		if(lImagePath == lImage->getImagePath())
+		{
+			preloadImagesAround(lImageIdx, pPreloadCountAround);
+			break;
+		}
+		lResult = lImage->getImagePath();
+		++lImageIdx;
+	}
+
+	return lResult;
+}
+
+/********************************************************************************/
+
+QString ESImageGridQuickItem::getNextImage(QString pImage, int pPreloadCountAround) const
+{
+	ESStringId lImagePath = pImage;
+	ESStringId lResult;
+	bool lBreakNext = false;
+	int lImageIdx = 0;
+	for (const std::shared_ptr<ESImage>& lImage : mImages)
+	{
+		if (lBreakNext)
+		{
+			lResult = lImage->getImagePath();
+			break;
+		}
+		if (lImage->getImagePath() == lImagePath)
+		{
+			preloadImagesAround(lImageIdx, pPreloadCountAround);
+			lBreakNext = true;
+		}
+		++lImageIdx;
+	}
+
+	return lResult;
+}
+
+/********************************************************************************/
+
+void ESImageGridQuickItem::preloadImagesAround(int pImageIdx, int pPreloadCountAround) const
+{
+	if (pPreloadCountAround > 0 && pImageIdx < mImages.size())
+	{
+		for (int i = std::max(0, pImageIdx - pPreloadCountAround);
+			i < std::min(int(mImages.size()), pImageIdx + pPreloadCountAround);
+			++i)
+		{
+			const std::shared_ptr<ESImage>& lImage = mImages[i];
+			if (!lImage->isLoaded())
+			{
+				lImage->loadImage();
+				lImage->updateLastUsed();
+			}
+		}
+	}
+}
+
+/********************************************************************************/
+
 void ESImageGridQuickItem::updateInternal()
 {
 	mValid = !ESImageCache::getInstance().isUpdating();
