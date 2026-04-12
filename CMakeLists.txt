@@ -86,7 +86,7 @@ endif()
 
 # Version setup # TODO Replace with Git
 include(FindSubversion)
-Subversion_WC_INFO(${PROJECT_SRC_DIR} MY)
+Subversion_WC_INFO(${PROJECT_SRC_DIR} MY IGNORE_SVN_FAILURE)
 set(SVN_REV ${MY_WC_REVISION})
 configure_file(${PROJECT_SRC_DIR}/inc/version.h.in ${PROJECT_SRC_DIR}/inc/version.h @ONLY)
 
