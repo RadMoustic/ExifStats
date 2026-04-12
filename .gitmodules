@@ -1,5 +1,5 @@
 [submodule "Externals/tokenizer-cpp"]
-	path = Externals/tokenizer-cpp
+	path = Externals/tokenizers-cpp
 	url = https://github.com/RadMoustic/tokenizers-cpp.git
 [submodule "Externals/hnswlib"]
 	path = Externals/hnswlib
