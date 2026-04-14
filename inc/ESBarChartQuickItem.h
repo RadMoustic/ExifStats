@@ -46,6 +46,8 @@ public:
 	ES_QML_PROPERTY(AllCategoriesOnly, bool)
 	ES_QML_PROPERTY(CategorySpacing, float)
 
+	ES_QML_PROPERTY(InvertAxis, bool, mDataHasChanged = true; update();)
+
 	Q_INVOKABLE QPoint mapToValue(float pX);
 	Q_INVOKABLE QPointF mapToPlotArea(float pX, float pY);
 	Q_INVOKABLE float getChartFullWidth() const;

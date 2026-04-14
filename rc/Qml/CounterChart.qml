@@ -37,6 +37,8 @@ Rectangle
 		width: parent.width
 		x:0
 		y:0
+		
+		mInvertAxis: height > width
 		mXAxisHeight: 0
 		mXAxisHeightAuto: true
 		mXAxisMaxHeightAuto: 150
@@ -102,8 +104,8 @@ Rectangle
 				startDistX = Math.max(1, Math.abs(pinch.point1.x - pinch.point2.x));
 				startDistY = Math.max(1, Math.abs(pinch.point1.y - pinch.point2.y));
 				
-				startScaleX = barChartItem.mXScale;
-				startScaleY = barChartItem.mYScale;
+				startScaleX = barChartItem.mInvertAxis ? barChartItem.mYScale : barChartItem.mXScale;
+				startScaleY = barChartItem.mInvertAxis ? barChartItem.mXScale : barChartItem.mYScale;
 				startOffsetX = barChartItem.mXOffset;
 				oldFullWidth = barChartItem.getChartFullWidth();
 				
@@ -117,14 +119,22 @@ Rectangle
 				
 				if (startDistX > 20 && currentDistX > 20) 
 				{
-					barChartItem.mXScale = startScaleX * (currentDistX / startDistX);
+					var newScale = startScaleX * (currentDistX / startDistX);
+					if(barChartItem.mInvertAxis)
+						barChartItem.mYScale = newScale;
+					else
+						barChartItem.mXScale = newScale;
 					var newFullWidth = barChartItem.getChartFullWidth();
 					barChartItem.mXOffset = (startOffsetX - pinchStartX) * newFullWidth / oldFullWidth + pinchStartX;
 				}
 				
 				if (startDistY > 50 && currentDistY > 50) 
 				{
-					barChartItem.mYScale = startScaleY * (currentDistY / startDistY);
+					var newScale = startScaleY * (currentDistY / startDistY);
+					if(barChartItem.mInvertAxis)
+						barChartItem.mXScale = newScale;
+					else
+						barChartItem.mYScale
 				}
 			}
 
@@ -132,12 +142,14 @@ Rectangle
 			{
 				anchors.fill: parent
 				property real lastX: 0
+				property real lastY: 0
 				property real pressX: 0
 				property real pressY: 0
 				
 				onPressed: (mouse) =>
 				{
 					lastX = mouse.x;
+					lastY = mouse.y;
 					pressX = mouse.x;
 					pressY = mouse.y;
 				}
@@ -147,8 +159,12 @@ Rectangle
 					if (pressed) 
 					{
 						valueToltip.visible = false;
-						barChartItem.mXOffset += (mouse.x - lastX);
+						if(barChartItem.mInvertAxis)
+							barChartItem.mXOffset += (mouse.y - lastY);
+						else
+							barChartItem.mXOffset += (mouse.x - lastX);
 						lastX = mouse.x;
+						lastY = mouse.y;
 					}
 				}
 				
@@ -161,7 +177,7 @@ Rectangle
 				{
 					if (Math.abs(mouse.x - pressX) > 5 || Math.abs(mouse.y - pressY) > 5) return;
 
-					var p = barChartItem.mapToValue(mouse.x);
+					var p = barChartItem.mapToValue(barChartItem.mInvertAxis ? mouse.y : mouse.x);
 					valueToltip.text = rootItem.categories[p.x] + " => " + p.y;
 					valueToltip.x = mouse.x - valueToltip.width/2;
 					valueToltip.y = mouse.y - valueToltip.height;

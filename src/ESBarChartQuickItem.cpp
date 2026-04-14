@@ -23,6 +23,7 @@ ESBarChartQuickItem::ESBarChartQuickItem()
 	, mYScale(1.f)
 	, mAllCategoriesOnly(false)
 	, mCategorySpacing(0.f)
+	, mInvertAxis(false)
 	, mMaxValue(0)
 	, mBarWidth(0.)
 	, mBarHeightFactor(1.f)
@@ -42,8 +43,8 @@ QPoint ESBarChartQuickItem::mapToValue(float pX)
 {
 	if(!mValid || std::isnan(pX))
 		return QPoint(-1,-1);
-	QPointF lPLotAreaPos = mapToPlotArea(pX, 0.f);
-	float lX = lPLotAreaPos.x() - mXOffset;
+	QPointF lPLotAreaPos = mInvertAxis ? mapToPlotArea(0.f, pX) : mapToPlotArea(pX, 0.f);
+	float lX = (mInvertAxis ? lPLotAreaPos.y() : lPLotAreaPos.x()) - mXOffset;
 	float lChartFullWidth = getChartFullWidth();
 	if(lX < 0 || lX > lChartFullWidth)
 		return QPoint(-1, -1);
@@ -55,7 +56,10 @@ QPoint ESBarChartQuickItem::mapToValue(float pX)
 
 QPointF ESBarChartQuickItem::mapToPlotArea(float pX, float pY)
 {
-	return QPointF(pX - mYAxisWidth - mMargin, pY - mMargin);
+	if(mInvertAxis)
+		return QPointF(pX - mRealXAxisHeight - mMargin, pY - mMargin);
+	else
+		return QPointF(pX - mYAxisWidth - mMargin, pY - mMargin);
 }
 
 /********************************************************************************/
@@ -63,6 +67,22 @@ QPointF ESBarChartQuickItem::mapToPlotArea(float pX, float pY)
 float ESBarChartQuickItem::getChartFullWidth() const
 {
 	return float(mValues.size()) * (mBarWidth * mXScale + std::min(mBarSpacing, mActualBarSpacing * mXScale));
+}
+
+/********************************************************************************/
+
+template<typename T>
+void InvertRect(T& pRect)
+{
+	pRect = T(pRect.y(), pRect.x(), pRect.height(), pRect.width());
+}
+
+/********************************************************************************/
+
+template<typename T>
+void InvertPos(T& pPos)
+{
+	pPos = T(pPos.y(), pPos.x());
 }
 
 /********************************************************************************/
@@ -79,13 +99,20 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		pPainter->setPen(Qt::NoPen);
 		pPainter->setBrush(Qt::lightGray);
 		pPainter->setRenderHint(QPainter::Antialiasing);
+		pPainter->setRenderHint(QPainter::TextAntialiasing);
 
 		pPainter->save();
-		pPainter->setClipRect(mMargin + mYAxisWidth, mMargin, width() - mMargin * 2.0 - mYAxisWidth, height() - mMargin * 2.0);
-		pPainter->translate(mXOffset, 0);
+		if (mInvertAxis)
+			pPainter->setClipRect(mMargin, mMargin, width() - 2.f * mMargin, height() - 2.f * mMargin - mYAxisWidth);
+		else
+			pPainter->setClipRect(mMargin + mYAxisWidth, mMargin, width() - mMargin * 2.0 - mYAxisWidth, height() - mMargin * 2.0);
+		QPointF lPos(mXOffset, 0);
+		if (mInvertAxis)
+			InvertPos(lPos);
+		pPainter->translate(lPos);
 
 		// Bars
-		float lLeft = mMargin + mYAxisWidth;
+		float lLeft = mMargin + (mInvertAxis ? 0 : mYAxisWidth);
 		float lTextHeight = pPainter->boundingRect(QRectF(), "CAT").height();
 		float lMaxBarHeight = mBarHeightFactor * mMaxValue;
 		float lActualBarWith = std::max(0.5f, mBarWidth * mXScale);
@@ -96,7 +123,9 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		{
 			int lValue = mValues[i];
 			float lBarHeight = std::max(0.001f, std::min(lMaxBarHeight, lValue * mBarHeightFactor * mYScale));
-			QRectF lBarRect(lLeft, height() - mMargin - lBarHeight - mRealXAxisHeight, lActualBarWith, lBarHeight);
+			QRectF lBarRect(lLeft, (mInvertAxis ? mMargin + mRealXAxisHeight : height() - mMargin - lBarHeight - mRealXAxisHeight), lActualBarWith, lBarHeight);
+			if (mInvertAxis)
+				InvertRect(lBarRect);
 			if(pPainter->clipBoundingRect().intersects(lBarRect))
 			{
 				pPainter->drawRect(lBarRect);
@@ -109,9 +138,18 @@ float ESBarChartQuickItem::getChartFullWidth() const
 					{
 						pPainter->save();
 						setupPainterText(*pPainter);
-						pPainter->translate(lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, height() - mRealXAxisHeight - mMargin + cMarkerTextSpacing);
-						pPainter->rotate(90);
-						pPainter->drawText(0,0, lCat);
+						if (mInvertAxis)
+						{
+							QRectF lTextRect(mMargin, lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, mRealXAxisHeight - cMarkerTextSpacing, lTextHeight);
+							QRectF lTextBoundingRect = pPainter->boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat);
+							pPainter->drawText(lTextRect, lTextBoundingRect.width() > lTextRect.width() ? 0 : Qt::AlignRight, lCat);
+						}
+						else
+						{
+							pPainter->translate(lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, mInvertAxis ? mMargin : height() - mRealXAxisHeight - mMargin + cMarkerTextSpacing);
+							pPainter->rotate(90);
+							pPainter->drawText(0,0, lCat);
+						}
 						pPainter->restore();
 					}
 				}
@@ -140,8 +178,12 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		lInterval = lRounded == 0.f ? lMult / 10.f : lRounded * lMult;
 
 		int lNbMarker = ceil(float(lScaledMaxValue) / lInterval);
-		float lMarkerSpacing = (height() - mMargin * 2.f - mRealXAxisHeight) / lScaledMaxValue;
-		pPainter->drawLine(QLineF(mYAxisWidth + mMargin, mMargin, mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin));
+		float lMarkerSpacing = ((mInvertAxis ? width() : height()) - mMargin * 2.f - mRealXAxisHeight) / lScaledMaxValue;
+
+		if (mInvertAxis)
+			pPainter->drawLine(QLineF(mMargin + mRealXAxisHeight, height() - mYAxisWidth - mMargin, width() - mMargin, height() - mYAxisWidth - mMargin));
+		else
+			pPainter->drawLine(QLineF(mYAxisWidth + mMargin, mMargin, mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin));
 
 		pPainter->save();
 		QPen lPen(Qt::darkGray);
@@ -152,16 +194,38 @@ float ESBarChartQuickItem::getChartFullWidth() const
 		for (int i = 1; i < lNbMarker; ++i)
 		{
 			int lMarkerValue = lInterval * i;
-			float lMarkerY = height() - mRealXAxisHeight - mMargin - lMarkerSpacing * lMarkerValue;
-			pPainter->drawLine(QLineF(mYAxisWidth + mMargin - cMarkerHalfWidth, lMarkerY, width() - mYAxisWidth - mMargin*2.f, lMarkerY));
+			float lMarkerY;
+			if (mInvertAxis)
+				lMarkerY = mRealXAxisHeight + mMargin + lMarkerSpacing * lMarkerValue;
+			else
+				lMarkerY = height() - mRealXAxisHeight - mMargin - lMarkerSpacing * lMarkerValue;
+			if (mInvertAxis)
+				pPainter->drawLine(QLineF(lMarkerY, mMargin * 2.f, lMarkerY, height() - mYAxisWidth - cMarkerHalfWidth));
+			else
+				pPainter->drawLine(QLineF(mYAxisWidth + mMargin - cMarkerHalfWidth, lMarkerY, width() - mYAxisWidth - mMargin*2.f, lMarkerY));
+
 			QString lMarkerText = QString::number(lMarkerValue);
-			QRectF lTextBoundingRect = pPainter->boundingRect(QRectF(), Qt::AlignVCenter, lMarkerText);
-			pPainter->drawText(mYAxisWidth + mMargin - lTextBoundingRect.width() - cMarkerTextSpacing, lMarkerY - lTextBoundingRect.y() - 3, lMarkerText); // why 3 no idea
+			if (mInvertAxis)
+			{
+				pPainter->save();
+				pPainter->translate(lMarkerY - lTextHeight / 2.f + 3, height() - mMargin - mYAxisWidth + cMarkerTextSpacing);
+				pPainter->rotate(90);
+				pPainter->drawText(0, 0, lMarkerText);
+				pPainter->restore();
+			}
+			else
+			{
+				QRectF lTextBoundingRect = pPainter->boundingRect(QRectF(), Qt::AlignVCenter, lMarkerText);
+				pPainter->drawText(mYAxisWidth + mMargin - lTextBoundingRect.width() - cMarkerTextSpacing, lMarkerY - lTextBoundingRect.y() - 3, lMarkerText); // why 3 no idea
+			}
 		}
 		pPainter->restore();
 
 		// X
-		pPainter->drawLine(QLineF(mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin, width() - mMargin, height() - mRealXAxisHeight - mMargin));
+		if (mInvertAxis)
+			pPainter->drawLine(QLineF(mRealXAxisHeight + mMargin, mMargin, mRealXAxisHeight + mMargin, height() - mYAxisWidth - mMargin));
+		else
+			pPainter->drawLine(QLineF(mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin, width() - mMargin, height() - mRealXAxisHeight - mMargin));
 	}
 }
 
@@ -198,8 +262,9 @@ void ESBarChartQuickItem::updateInternal()
 	}
 	if (mGeometryHasChanged || mDataHasChanged)
 	{
-		double lContentWidth = width() - mYAxisWidth - 2.f * mMargin;
-		float lContentHeight = height() - mRealXAxisHeight - 2.f * mMargin;
+		float lContentWidth = (mInvertAxis ? height() : width()) - mYAxisWidth - 2.f * mMargin;
+		float lContentHeight = (mInvertAxis ? width() : height()) - mRealXAxisHeight - 2.f * mMargin;
+
 		float lBarSpacingSum = mBarSpacing * (mCategories.size() - 1);
 		if (lBarSpacingSum >= 0.5*lContentWidth) // Can't have at least 1px wide bars
 		{
