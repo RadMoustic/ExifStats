@@ -65,6 +65,14 @@ The binaries and all generated files are located in the **generated** folder
 
 ### Android ###
 
+* Add the QtCreator bin folder (ex: C:\Dev\Qt\Tools\QtCreator\bin) to the PATH variable
+* Launch the Scripts/OpenQtCreator.bat
+* Follow the QtCreator instructions to setup Android:
+  * Install the JDK
+  * Install the Android SDK
+  * Install all the required packages
+  * Download OpenSSL
+* You will also need to setup Rust for android:
 ```
 rustup target add aarch64-linux-android
 rustup target add armv7-linux-androideabi
