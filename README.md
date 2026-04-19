@@ -66,11 +66,16 @@ The binaries and all generated files are located in the **generated** folder
 ### Android ###
 
 * Add the QtCreator bin folder (ex: C:\Dev\Qt\Tools\QtCreator\bin) to the PATH variable
+* Start QtCreator and edit the settings/preferences: in "Compile and Execute" => "Default Compilation Properties" => "Default Compilation Folder" => Change it to build inside the **Generated** folder:
+```
+  Generated/%{JS: Util.asciify("build-%{Project:Name}-%{Kit:FileSystemName}-%{BuildConfig:Name}")}
+```
+* Close QtCreator
 * Launch the Scripts/OpenQtCreator.bat
 * Follow the QtCreator instructions to setup Android:
   * Install the JDK
   * Install the Android SDK
-  * Install all the required packages
+  * Install all the required packages (NDK 26+)
   * Download OpenSSL
   * Configure the project for Android armv8 with all folders in the "Generated" folder
 * You will also need to setup Rust for android:
