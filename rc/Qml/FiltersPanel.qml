@@ -14,7 +14,11 @@ Flickable
 	
 	flickDeceleration: 1200
 	
-	ScrollBar.vertical: ScrollBar { width: 30 }
+	ScrollBar.vertical: ScrollBar
+	{
+		width: 30
+		policy: ScrollBar.AlwaysOff
+	}
 	
 	function displayData()
 	{
@@ -102,13 +106,17 @@ Flickable
 			
 			Layout.fillWidth: true
 			
-			Rectangle
+			Label
+			{
+				text: "Filters Presets"
+				font.pointSize: 12
+				visible: MainQmlBinder.isMobile()
+			}
+			
+			Frame 
 			{
 				Layout.fillWidth: true
 				implicitHeight: MainQmlBinder.isMobile() ? 100 : 200
-				border.width: 2
-				border.color: searchText.focus ? "#AAAAFF" : "#CCCCCC"
-				radius: 4
 				
 				ListView
 				{
@@ -122,9 +130,11 @@ Flickable
 					
 					model: []
 					
-					delegate: Text
+					delegate: Label
 					{
+						id: labelDelegate
 						text: modelData ? modelData : "<empty>"
+						color: ListView.isCurrentItem ? (Material.theme == Material.Dark ? "#000000" : "#FFFFFF") : Material.foreground
 						width: parent.width
 						MouseArea
 						{
@@ -144,8 +154,7 @@ Flickable
 
 					highlight: Rectangle
 					{
-						color: "lightsteelblue"
-
+						color: Material.accent
 					}
 					
 					ScrollBar.vertical: ScrollBar
@@ -248,35 +257,18 @@ Flickable
 				}
 			}
 			
-			Text
+			TextField
 			{
-				text: "Search: "
-				Layout.fillWidth: false
-			}
-			
-			Rectangle
-			{
+				id: searchText
 				Layout.fillWidth: true
-				x: 0
-				border.width: 2
-				border.color: searchText.focus ? "#AAAAFF" : "#CCCCCC"
-				radius: 4
-				implicitHeight: 30
-				
-				TextInput
-				{
-					id: searchText
-					anchors.fill: parent
-					text: MainQmlBinder.TagsSearchString
-					verticalAlignment: TextInput.AlignVCenter
-					anchors.margins: 5
-					clip: true
+				implicitHeight: 40
+				text: MainQmlBinder.TagsSearchString
+				placeholderText: "Search"
 
-					onEditingFinished:
-					{
-						MainQmlBinder.TagsSearchString = text.trim();
-						actualSearchedTags.text = MainQmlBinder.getTagsFound().join(", ");
-					}
+				onEditingFinished:
+				{
+					MainQmlBinder.TagsSearchString = text.trim();
+					actualSearchedTags.text = MainQmlBinder.getTagsFound().join(", ");
 				}
 			}
 			
@@ -300,7 +292,7 @@ Flickable
 		RowLayout
 		{
 			visible: MainQmlBinder.isTokenizerEnabled() && actualSearchedTags.text !== ""
-			Text
+			Label
 			{
 				id: actualSearchedTags
 				Layout.fillWidth: true
@@ -329,38 +321,21 @@ Flickable
 				}
 			}
 			
-			Text
+			TextField
 			{
-				text: "Path: "
-				Layout.fillWidth: false
-			}
-
-			Rectangle
-			{
+				id: searchPathText
 				Layout.fillWidth: true
-				x: 0
-				border.width: 2
-				border.color: searchPathText.focus ? "#AAAAFF" : "#CCCCCC"
-				radius: 4
-				implicitHeight: 30
+				implicitHeight: 40
+				placeholderText: "Path"
+				text: MainQmlBinder.PathInclusiveFilters.length > 0 ? MainQmlBinder.PathInclusiveFilters.join(" ") : ""
 				
-				TextInput
+				onEditingFinished:
 				{
-					id: searchPathText
-					anchors.fill: parent
-					text: MainQmlBinder.PathInclusiveFilters.length > 0 ? MainQmlBinder.PathInclusiveFilters.join(" ") : ""
-					verticalAlignment: TextInput.AlignVCenter
-					anchors.margins: 5
-					clip: true
-					
-					onEditingFinished:
-					{
-						var trimmedText = text.trim();
-						if(trimmedText === "")
-							MainQmlBinder.PathInclusiveFilters = [];
-						else
-							MainQmlBinder.PathInclusiveFilters = text.split(" ");
-					}
+					var trimmedText = text.trim();
+					if(trimmedText === "")
+						MainQmlBinder.PathInclusiveFilters = [];
+					else
+						MainQmlBinder.PathInclusiveFilters = text.split(" ");
 				}
 			}
 		}
@@ -386,19 +361,20 @@ Flickable
 				}
 			}
 			
-			Text
+			Label
 			{
-				text: "Focal Length 35mm: from "
+				text: "Focal: "
 				Layout.fillWidth: false
 			}
 
-			TextInput
+			TextField
 			{
 				x: 0
 				Layout.fillWidth: false
 				text: MainQmlBinder.FocalLengthFrom
 				validator: RegularExpressionValidator { regularExpression: /\d{1,4}/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.FocalLengthFrom = text;
@@ -406,25 +382,26 @@ Flickable
 
 			}
 			
-			Text
+			Label
 			{
-				text: "mm to "
+				text: "mm  to "
 				Layout.fillWidth: false
 			}
 			
-			TextInput
+			TextField
 			{
 				Layout.fillWidth: false
 				text: MainQmlBinder.FocalLengthTo
 				validator: RegularExpressionValidator { regularExpression: /\d{1,4}/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.FocalLengthTo = text;
 				}
 			}
 			
-			Text
+			Label
 			{
 				text: "mm "
 				Layout.fillWidth: true
@@ -452,19 +429,20 @@ Flickable
 				}
 			}
 			
-			Text
+			Label
 			{
-				text: "Aperture: from "
+				text: "Aperture: "
 				Layout.fillWidth: false
 			}
 
-			TextInput
+			TextField
 			{
 				x: 0
 				Layout.fillWidth: false
 				text: MainQmlBinder.ApertureFrom.toPrecision(2)
 				validator: RegularExpressionValidator { regularExpression: /[0-9]*\.?[0-9]+/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.ApertureFrom = text;
@@ -472,18 +450,19 @@ Flickable
 
 			}
 			
-			Text
+			Label
 			{
 				text: " to "
 				Layout.fillWidth: false
 			}
 			
-			TextInput
+			TextField
 			{
 				Layout.fillWidth: false
 				text: MainQmlBinder.ApertureTo.toPrecision(2)
 				validator: RegularExpressionValidator { regularExpression: /[0-9]*\.?[0-9]+/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.ApertureTo = text;
@@ -518,19 +497,20 @@ Flickable
 				}
 			}
 			
-			Text
+			Label
 			{
-				text: "Date: from "
+				text: ""
 				Layout.fillWidth: false
 			}
 
-			TextInput
+			TextField
 			{
 				x: 0
 				Layout.fillWidth: false
 				text: MainQmlBinder.TimeFrom
 				validator: RegularExpressionValidator { regularExpression: /\d{1,4}\/\d{1,2}\/\d{1,2}/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.TimeFrom = text;
@@ -538,25 +518,26 @@ Flickable
 
 			}
 			
-			Text
+			Label
 			{
 				text: " to "
 				Layout.fillWidth: false
 			}
 			
-			TextInput
+			TextField
 			{
 				Layout.fillWidth: false
 				text: MainQmlBinder.TimeTo
 				validator: RegularExpressionValidator { regularExpression: /\d{1,4}\/\d{1,2}\/\d{1,2}/ }
 				font.bold: true
+				background: null
 				onEditingFinished:
 				{
 					MainQmlBinder.TimeTo = text;
 				}
 			}
 			
-			Text
+			Label
 			{
 				text: ""
 				Layout.fillWidth: true
@@ -618,7 +599,7 @@ Flickable
 		{
 			id: cameraFilters
 			
-			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 600) / 2)
+			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 650) / 2)
 			Layout.fillWidth: true
 			
 			Menu
@@ -640,7 +621,7 @@ Flickable
 			{
 				anchors.fill: parent
 
-				Text
+				Label
 				{
 					text: "Camera Filters"
 				}
@@ -693,7 +674,7 @@ Flickable
 			{
 				anchors.fill: parent
 
-				Text
+				Label
 				{
 					text: "Lens Filters"
 				}

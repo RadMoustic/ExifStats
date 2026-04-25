@@ -8,7 +8,7 @@ import QtQuick.Shapes
 import QtQuick.Layouts
 import ExifStats
 
-Rectangle
+Pane
 {
 	id:rootItem
 	clip:true
@@ -37,6 +37,18 @@ Rectangle
 		width: parent.width
 		x:0
 		y:0
+		
+		Material.theme: Material.theme
+		
+		Connections
+		{
+			target: barChartItem.parent.parent.parent.Material
+			function onThemeChanged()
+			{
+				barChartItem.Material.theme = barChartItem.parent.parent.parent.Material.theme;
+				barChartItem.update();
+			}
+		}
 		
 		mInvertAxis: height > width
 		mXAxisHeight: 0

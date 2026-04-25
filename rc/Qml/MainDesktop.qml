@@ -8,11 +8,14 @@ import QtCore
 
 import ExifStats
 
-Item
+Pane
 {
 	id: mainWindow
 	visible: true
 	enabled: !MainQmlBinder.Processing
+	
+	Material.theme: Material.Dark
+	Material.accent: Material.BlueGrey
 
 	width: 700
 	height: 500
@@ -35,6 +38,7 @@ Item
 		property var leftPanelState
 		property var centerPanelState
 		property var chartsPanelState
+		property var theme
     }
 			
 	function maxList(pList)
@@ -90,13 +94,7 @@ Item
 
 		filtersPanel.displayData();
 	}
-	
-	Plugin
-	{
-		id: mapPlugin
-		name: "osm"
-	}
-	
+		
 	Component.onCompleted:
 	{
 		imageGrid.mFilteredFilesList = MainQmlBinder.getFilteredFilesList();
@@ -106,6 +104,7 @@ Item
 		mainSplitView.restoreState(settings.mainSplitViewState);
 			centerPanel.restoreState(settings.centerPanelState);
 		chartsPanel.restoreState(settings.chartsPanelState);
+		mainWindow.Material.theme = settings.theme;
 	}
 	
 	Component.onDestruction:
@@ -113,6 +112,7 @@ Item
 		settings.mainSplitViewState = mainSplitView.saveState();
 		settings.centerPanelState = centerPanel.saveState();
 		settings.chartsPanelState = chartsPanel.saveState();
+		settings.theme = mainWindow.Material.theme;
 	}
 
 	FolderDialog
@@ -377,6 +377,26 @@ Item
 						onReleased:
 						{
 							imageGrid.visible = !imageGrid.visible;
+						}
+					}
+					
+					Item
+					{
+						Layout.fillWidth: true
+					}
+					
+					RegularButton
+					{
+						text:"Dark Theme"
+						highlighted: mainWindow.Material.theme == Material.Dark
+						
+						onReleased:
+						{
+							if(mainWindow.Material.theme == Material.Dark)
+								mainWindow.Material.theme = Material.Light;
+							else
+								mainWindow.Material.theme = Material.Dark;
+							MainQmlBinder.themeHasChanged();
 						}
 					}
 				}

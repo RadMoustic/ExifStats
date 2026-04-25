@@ -10,15 +10,22 @@ import QtQuick.Effects
 
 import ExifStats
 
-Item
+Pane
 {
 	id: mainWindow
 	visible: true
 	enabled: !MainQmlBinder.Processing
 	
+	padding: 0
+	
+	Material.theme: Material.Dark
+	Material.accent: Material.BlueGrey
+	
 	Settings
 	{
 		id: settings
+		
+		property var theme
     }
 			
 	function maxList(pList)
@@ -75,21 +82,19 @@ Item
 		filtersPanel.displayData();
 	}
 	
-	Plugin
-	{
-		id: mapPlugin
-		name: "osm"
-	}
-	
 	Component.onCompleted:
 	{
 		imageGrid.mFilteredFilesList = MainQmlBinder.getFilteredFilesList();
 		displayData();
 		MainQmlBinder.dataHasChanged.connect(displayData);
+		
+		mainWindow.Material.theme = settings.theme;
+		sidePanel.Material.theme = settings.theme;
 	}
 	
 	Component.onDestruction:
 	{
+		settings.theme = mainWindow.Material.theme;
 	}
 	
 	FileDialog
@@ -139,6 +144,9 @@ Item
 	{
 		id: sidePanel
 		
+		Material.theme: mainWindow.Material.Dark
+		Material.accent: mainWindow.Material.BlueGrey
+		
 		width: parent.width * 0.90
 		height: parent.height
 		
@@ -147,19 +155,20 @@ Item
 		
 		onPositionChanged: mapRoot.panEnabled = (position === 0.0)
 		
-		Rectangle
+		Item
 		{
 			anchors.fill: parent
-			
+
 			ColumnLayout
 			{
+				id: sidePanelMainLayout
 				anchors.fill: parent
 				
 				RowLayout
 				{
 					RegularButton
 					{
-						text:"Select Database"
+						text:"Database"
 						
 						onReleased:
 						{
@@ -168,23 +177,40 @@ Item
 					}
 					RegularButton
 					{
-						text:"Select Tokenizer Folder"
+						text:"Models"
 						
 						onReleased:
 						{
 							tokenizerFolderDialog.open();
 						}
 					}
+					Item
+					{
+						Layout.fillWidth: true
+					}
+					RegularButton
+					{
+						text:"Dark"
+						highlighted: mainWindow.Material.theme == Material.Dark
+						
+						onReleased:
+						{
+							if(mainWindow.Material.theme == Material.Dark)
+							{
+								mainWindow.Material.theme = Material.Light;
+								sidePanel.Material.theme = Material.Light;
+							}
+							else
+							{
+								mainWindow.Material.theme = Material.Dark;
+								sidePanel.Material.theme = Material.Dark;
+							}
+							MainQmlBinder.themeHasChanged();
+						}
+					}
+				}
 
-				}
-				
-				Text
-				{
-					text: "Filters Presets"
-					font.pointSize: 12
-				}
-				
-				Rectangle
+				Pane
 				{
 					Layout.fillHeight: true
 					Layout.fillWidth: true

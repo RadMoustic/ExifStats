@@ -22,10 +22,53 @@ Item
 		id: map
 		anchors.fill: parent
 
+		color: Material.background
 		plugin: mapPlugin
 		center: QtPositioning.coordinate(43.61, 3.87)
 		zoomLevel: 14
 		property geoCoordinate startCentroid
+		
+		Plugin
+		{
+			id: mapPlugin
+			name: "osm"
+			
+			PluginParameter
+			{
+				name: "osm.mapping.custom.host"
+				value: "https://basemaps.cartocdn.com/dark_all/"
+			}
+		}
+		
+		function updateMapTheme()
+		{
+			var isDark = (map.Material.theme === Material.Dark);
+			for (var i = 0; i < map.supportedMapTypes.length; ++i)
+			{
+				var type = map.supportedMapTypes[i];
+				if (isDark && type.name.includes("Custom"))
+				{
+					map.activeMapType = type;
+					return;
+				}
+				else if (!isDark && !type.name.includes("custom"))
+				{
+					map.activeMapType = type;
+					return;
+				}
+			}
+		}
+		
+		Component.onCompleted: updateMapTheme()
+		
+		Connections
+		{
+			target: map.Material
+			function onThemeChanged()
+			{
+				map.updateMapTheme()
+			}
+		}
 		
 		Timer
 		{

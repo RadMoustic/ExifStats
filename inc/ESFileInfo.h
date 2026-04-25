@@ -87,7 +87,7 @@ struct ESUsefullExif
 
 	float getOrientedRatio() const
 	{
-		return float(getOrientedWidth()) / float(getOrientedHeight());
+		return mWidth > 0 && mHeight > 0 ? float(getOrientedWidth()) / float(getOrientedHeight()) : 1.f;
 	}
 };
 

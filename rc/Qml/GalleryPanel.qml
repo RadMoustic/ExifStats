@@ -64,8 +64,19 @@ ESImageGridQuickItem
 				anchors.fill: parent
 				preventStealing: false
 				
+				property real pressX: 0
+				property real pressY: 0
+				
+				onPressed: (pMouse) =>
+				{
+					pressX = pMouse.x;
+					pressY = pMouse.y;
+				}
+				
 				onClicked: (pMouse) =>
 				{
+					if (Math.abs(pMouse.x - pressX) > 5 || Math.abs(pMouse.y - pressY) > 5)
+						return;
 					if(MainQmlBinder.isMobile())
 					{
 						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);

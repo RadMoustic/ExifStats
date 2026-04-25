@@ -98,6 +98,7 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	int lIndex = -1;
 	if(mNbColumns == 1)
 	{
+		lIndex = int(mPackedImagesYOffsets.size() - 1);
 		for(int i = 0; i < mPackedImagesYOffsets.size(); ++i)
 		{
 			if(pY < mPackedImagesYOffsets[i])
@@ -261,7 +262,7 @@ void ESImageGridQuickItem::updateInternal()
 				for(int i = 0; i < lNbImages; ++i)
 				{
 					float lRatio = mImages[i]->getExif().getOrientedRatio();
-					float lImageHeight = lRatio > 1.f ? mImageSize / lRatio : mImageSize;
+					float lImageHeight = mImageSize / lRatio;
 					if(lRatio > 1.f)
 					{
 						float lImageOffset = (mImageSize - lImageHeight) / 2.f;
@@ -353,7 +354,7 @@ void ESImageGridQuickItemRenderer::initializeGL()
 
 		const bool lIsOpenGLES = QOpenGLContext::currentContext()->isOpenGLES();
 		QString lGLSLVersion = lIsOpenGLES ? "#version 300 es\n" : "#version 330 core\n";
-		QString lGLSLPrecision = lIsOpenGLES ? "precision mediump float;\nprecision mediump sampler2DArray;\n" : "";
+		QString lGLSLPrecision = lIsOpenGLES ? "precision highp float;\nprecision highp sampler2DArray;\n" : "";
 
 		mShaderProgram.reset(new QOpenGLShaderProgram());
 
@@ -474,7 +475,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 	{
 		assert(mShaderProgram->isLinked() && "Fix Shader Errors");
 
-		allocateImageTextures(lItem->mImageSize);
+		int lTextureSize = std::min(lItem->mImageSize, CACHE_IMAGE_SIZE);
+		allocateImageTextures(lTextureSize);
 
 		mInstanceData.clear();
 		mInstanceData.reserve(cMaxDisplayedImages);
@@ -490,12 +492,13 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		{
 			float lTop = lBoudingRect.top() + lItem->mYOffset;
 			float lBottom = lBoudingRect.bottom() + lItem->mYOffset;
+			lEndDrawRow = int(lItem->mPackedImagesYOffsets.size()) - 1;
 			for (int i = 0; i < lItem->mPackedImagesYOffsets.size(); ++i)
 			{
 				const float lYOffset = lItem->mPackedImagesYOffsets[i];
 				if(lYOffset > lTop && lStartDrawRow < 0)
 					lStartDrawRow = std::max(0, i - 1);
-				if (lYOffset > lBottom && lEndDrawRow < 0)
+				if (lYOffset > lBottom)
 				{
 					lEndDrawRow = std::max(0, i - 1);
 					break;
@@ -535,12 +538,21 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 				if (lIndex >= lItem->mImages.size())
 					break;
 
-				float lX = lCol * lItem->mImageSize;
-				float lY = (lPacked ? lItem->mPackedImagesYOffsets[lIndex] : lRow * lItem->mImageSize) - lItem->mYOffset;
-				QRectF lImageRect(lX, lY, lItem->mImageSize, lItem->mImageSize);
-
 				std::shared_ptr<ESImage>& lImageWrapper = lItem->mImages[lIndex];
 				lImageWrapper->updateLastUsed();
+
+				float lImageRatio = lImageWrapper->getExif().getOrientedRatio();
+				float lImageQuadSize = lItem->mImageSize;
+
+				float lX = lCol * lItem->mImageSize;
+				if(lPacked && lImageRatio < 1.f)
+				{
+					lImageQuadSize = lItem->mImageSize / lImageRatio;
+					lX -= (lImageQuadSize - lItem->mImageSize) / 2.f;
+				}
+				float lY = (lPacked ? lItem->mPackedImagesYOffsets[lIndex] : lRow * lItem->mImageSize) - lItem->mYOffset;
+
+				QRectF lImageRect(lX, lY, lImageQuadSize, lImageQuadSize);
 
 				if (!lImageWrapper->isLoaded() && !lImageWrapper->isLoading())
 					lImageWrapper->loadImage();
@@ -560,28 +572,32 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 							lTextureSlot = mFreeImageTextureSlots.back();
 							mFreeImageTextureSlots.pop_back();
 							const QImage& lImage = lImageWrapper->getImage();
-							QImage lGLImage(lItem->mImageSize, lItem->mImageSize, QImage::Format_RGBA8888);
+							int lTextureSize = std::min(lItem->mImageSize, CACHE_IMAGE_SIZE);
+							QImage lGLImage(lTextureSize, lTextureSize, QImage::Format_RGBA8888);
 							lGLImage.fill(Qt::transparent);
 							QPainter lPainter(&lGLImage);
-							float lImageRatio = float(lImage.width()) / float(lImage.height());
+#ifdef Q_OS_ANDROID
+							if(lTextureSize < 300) // Too slow on android
+#endif
+								lPainter.setRenderHint(QPainter::SmoothPixmapTransform);
 							float lX, lY, lWidth, lHeight;
 							if (lImageRatio >= 1.0f)
 							{
-								lWidth = lItem->mImageSize;
-								lHeight = lItem->mImageSize / lImageRatio;
+								lWidth = lTextureSize;
+								lHeight = lTextureSize / lImageRatio;
 								lX = 0.f;
-								lY = (lItem->mImageSize - lHeight) / 2.f;
+								lY = (lTextureSize - lHeight) / 2.f;
 							}
 							else
 							{
-								lWidth = lItem->mImageSize * lImageRatio;
-								lHeight = lItem->mImageSize;
-								lX = (lItem->mImageSize - lWidth) / 2.f;
+								lWidth = lTextureSize * lImageRatio;
+								lHeight = lTextureSize;
+								lX = (lTextureSize - lWidth) / 2.f;
 								lY = 0.f;
 							}
 							lPainter.drawImage(QRectF(lX, lY, lWidth, lHeight), lImage);
 							//mImageTextures->setData(0, lTextureSlot, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, lScaledImage.constBits()); checkOpengGLErrors();
-							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, lItem->mImageSize, lItem->mImageSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();
+							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, lTextureSize, lTextureSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();
 							mImageToTextureSlot[lImageWrapper.get()] = { lTextureSlot, lRow };
 						}
 					}
@@ -592,7 +608,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 					}
 					if (lTextureSlot >= 0)
 					{
-						mInstanceData.emplace_back(lX, lY, lItem->mImageSize, lTextureSlot);
+						mInstanceData.emplace_back(lX, lY, lImageQuadSize, lTextureSlot);
 						lDrawPlaceholder = false;
 					}
 				}
@@ -616,7 +632,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 {
 	if (!mInstanceData.empty())
 	{
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		mShaderProgram->bind(); checkOpengGLErrors();

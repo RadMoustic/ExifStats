@@ -77,7 +77,6 @@ private:
 
 	/********************************* METHODS ***********************************/
 
-	void setupPainterText(QPainter& pPainter);
 	void updateInternal();
 };
 

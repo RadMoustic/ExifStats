@@ -1,5 +1,8 @@
 #include "ESBarChartQuickItem.h"
 
+// ES
+#include "ESMaterialPalette.h"
+
 // Qt
 #include <QPainter>
 
@@ -96,10 +99,13 @@ void InvertPos(T& pPos)
 
 	if (mValid)
 	{
+		std::shared_ptr<ESMaterialPalette::PaletteData> lPalette = ESMaterialPalette::getPalette(this);
+
 		pPainter->setPen(Qt::NoPen);
-		pPainter->setBrush(Qt::lightGray);
+		
 		pPainter->setRenderHint(QPainter::Antialiasing);
 		pPainter->setRenderHint(QPainter::TextAntialiasing);
+		pPainter->fillRect(pPainter->viewport(), Qt::transparent);
 
 		pPainter->save();
 		if (mInvertAxis)
@@ -128,7 +134,7 @@ void InvertPos(T& pPos)
 				InvertRect(lBarRect);
 			if(pPainter->clipBoundingRect().intersects(lBarRect))
 			{
-				pPainter->drawRect(lBarRect);
+				lPalette->drawForegroundRect(pPainter, lBarRect, 200);
 
 				// Category
 				const QString& lCat = mCategories[i];
@@ -137,7 +143,7 @@ void InvertPos(T& pPos)
 					if(i % lCategoriesToDisplayInterval == 0)
 					{
 						pPainter->save();
-						setupPainterText(*pPainter);
+						pPainter->setPen(lPalette->mForeground);
 						if (mInvertAxis)
 						{
 							QRectF lTextRect(mMargin, lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, mRealXAxisHeight - cMarkerTextSpacing, lTextHeight);
@@ -161,7 +167,7 @@ void InvertPos(T& pPos)
 		pPainter->restore();
 
 		// Axis
-		pPainter->setPen(Qt::black);
+		pPainter->setPen(lPalette->mForeground);
 		pPainter->setBrush(Qt::NoBrush);
 
 		// Y
@@ -186,7 +192,7 @@ void InvertPos(T& pPos)
 			pPainter->drawLine(QLineF(mYAxisWidth + mMargin, mMargin, mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin));
 
 		pPainter->save();
-		QPen lPen(Qt::darkGray);
+		QPen lPen(lPalette->mForeground);
 		lPen.setStyle(Qt::DashLine);
 		lPen.setWidthF(1.0f);
 		pPainter->setPen(lPen);
@@ -246,7 +252,6 @@ void ESBarChartQuickItem::updateInternal()
 		{
 			QPixmap lPixmap(10,10);
 			QPainter lPainter(&lPixmap);
-			setupPainterText(lPainter);
 			mRealXAxisHeight = 0;
 			for (const QString& lCat : mCategories)
 				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat).width());
@@ -281,16 +286,4 @@ void ESBarChartQuickItem::updateInternal()
 
 	mDataHasChanged = false;
 	mGeometryHasChanged = false;
-}
-
-/********************************************************************************/
-
-void ESBarChartQuickItem::setupPainterText(QPainter& pPainter)
-{
-	pPainter.setPen(Qt::black);
-	/*
-	QFont lFont = pPainter.font();
-	lFont.setPointSizeF(11.f);
-	pPainter.setFont(lFont);
-	*/
 }

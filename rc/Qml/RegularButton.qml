@@ -11,7 +11,6 @@ RoundButton
 {
 	id: bt
 	radius: 0
-	Material.accent: Material.Green
 	
 	contentItem: Label
 	{

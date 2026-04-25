@@ -159,7 +159,8 @@ public:
 	Q_INVOKABLE bool isMobile() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
 	Q_INVOKABLE void setDatabaseFolder(const QUrl& pFolderPath);
-    Q_INVOKABLE void setTokenizerFolder(const QUrl& pFolderPath);
+	Q_INVOKABLE void setTokenizerFolder(const QUrl& pFolderPath);
+	Q_INVOKABLE void themeHasChanged();
 
 	// Lens Model
 	Q_INVOKABLE QVector<QString> getLensModels() const;

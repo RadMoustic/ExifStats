@@ -43,7 +43,9 @@ ESTagsFilter::ESTagsFilter()
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 {
-    loadTokenizerAndHNSW();
+#ifdef IMAGETAGGER_ENABLE
+	loadTokenizerAndHNSW();
+#endif // IMAGETAGGER_ENABLE
 }
 
 /********************************************************************************/
@@ -65,7 +67,7 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 	{
 		mTokenizerEnabled = true;
 
-        (void)QtConcurrent::run([this]()
+		(void)QtConcurrent::run([this]()
 			{
 				mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
 
@@ -91,7 +93,7 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 				(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
 					[this]()
 					{
-                        (void)QtConcurrent::run([this]()
+						(void)QtConcurrent::run([this]()
 							{
 								onDatabaseTagsHaveChanged();
 							});
@@ -441,45 +443,37 @@ bool ESTagsFilter::loadHnswIndex()
 {
 	if (mHnswIndex)
 	{
+#if defined(Q_OS_ANDROID) && defined(EXIFSTATS_READONLY)
 		QSettings lSettings;
-		QString lIndexPath = lSettings.value("HnswIndex").toString();
-		if (!lIndexPath.isEmpty() && QFile::exists(lIndexPath))
-		{
-			mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
-
-			return true;
-		}
-
-#ifdef Q_OS_ANDROID
-        QString lDataBasePath = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString();
+		QString lDataBasePath = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString();
 
 		if (lDataBasePath.isEmpty())
-            return false;
+			return false;
 
 		QuaZip lZip(lDataBasePath);
 		if (!lZip.open(QuaZip::mdUnzip))
 		{
 			qWarning() << "Cannot open ExifStats archive file";
-            return false;
+			return false;
 		}
 		if (!lZip.setCurrentFile("hnswIndex.esti"))
 		{
 			qWarning() << "File 'hnswIndex.esti' not found in ExifStats archive file";
-            return false;
+			return false;
 		}
 		QuaZipFile lHNSWIndexFile(&lZip);
-        if(!lHNSWIndexFile.open(QIODevice::ReadOnly))
-        {
-            qWarning() << "Cannot open ExifStats archive HNSW Index file";
-            return false;
-        }
+		if(!lHNSWIndexFile.open(QIODevice::ReadOnly))
+		{
+			qWarning() << "Cannot open ExifStats archive HNSW Index file";
+			return false;
+		}
 		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-        lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
+		QString lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
 		QFile lLocalIndexFile(lIndexPath);
-        if (!lLocalIndexFile.open(QIODevice::WriteOnly))
+		if (!lLocalIndexFile.open(QIODevice::WriteOnly))
 		{
 			qWarning() << "Cannot create local 'hnswIndex.esti'";
-            return false;
+			return false;
 		}
 		lLocalIndexFile.write(lHNSWIndexFile.readAll());
 		lLocalIndexFile.close();
@@ -489,6 +483,15 @@ bool ESTagsFilter::loadHnswIndex()
 		mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
 
 		return true;
+#else
+		QSettings lSettings;
+		QString lIndexPath = lSettings.value("HnswIndex").toString();
+		if (!lIndexPath.isEmpty() && QFile::exists(lIndexPath))
+		{
+			mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
+
+			return true;
+		}
 #endif
 	}
 
@@ -499,6 +502,7 @@ bool ESTagsFilter::loadHnswIndex()
 
 void ESTagsFilter::saveHnswIndex()
 {
+#ifndef EXIFSTATS_READONLY
 	if(mHnswIndex)
 	{
 		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
@@ -509,6 +513,7 @@ void ESTagsFilter::saveHnswIndex()
 		QSettings lSettings;
 		lSettings.setValue("HnswIndex", lIndexPath);
 	}
+#endif // EXIFSTATS_READONLY
 }
 
 #endif // HNSWLIB_ENABLED

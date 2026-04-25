@@ -4,6 +4,7 @@
 #include "ESDatabase.h"
 #include "ESPerfLog.h"
 #include "ESImageTaggerManager.h"
+#include "ESMaterialPalette.h"
 
 // Qt
 #include <QApplication>
@@ -202,7 +203,7 @@ void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
 #ifdef EXIFSTATS_READONLY
 	QSettings lSettings;
 #ifdef Q_OS_ANDROID
-    QString lFolderPathStr = pFolderPath.toString();
+	QString lFolderPathStr = pFolderPath.toString();
 #else
 	QString lFolderPathStr = pFolderPath.toLocalFile();
 	if (!lFolderPathStr.endsWith('/'))
@@ -249,6 +250,13 @@ void ESQmlBinder::setTokenizerFolder(const QUrl& pFolderPath)
 #else
 	(void)pFolderPath;
 #endif // IMAGETAGGER_ENABLE
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::themeHasChanged()
+{
+	ESMaterialPalette::clearCache();
 }
 
 /********************************************************************************/
@@ -820,7 +828,7 @@ bool ESQmlBinder::isImageTaggerEnabled() const
 bool ESQmlBinder::isHNSWIndexEnabled() const
 {
 #if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
-    return true;
+	return true;
 #else
 	return false;
 #endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
