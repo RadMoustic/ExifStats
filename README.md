@@ -77,7 +77,11 @@ The binaries and all generated files are located in the **generated** folder
   * Install the JDK
   * Install the Android SDK
   * Install all the required packages (NDK 26+)
-  * Download OpenSSL
+  * Download and setup Android OpenSSL
+  	* Update the **User.Setup.bat**:
+```
+set ANDROID_OPENSSL_DIR=C:\Android\Sdk\android_openssl
+```
   * Configure the project for Android armv8 with all folders in the "Generated" folder
 * You will also need to setup Rust for android:
 ```
