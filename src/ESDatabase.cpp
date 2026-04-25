@@ -168,6 +168,17 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 
 					lFileInfo.mExif = convertToUsefullExif(lExifData);
 
+					// If the size is missing in the exif, read the values directly from the file, slow, but we need them and it is only done once
+					if (lFileInfo.mExif.mWidth == 0 || lFileInfo.mExif.mHeight == 0)
+					{
+						QImage lImage(lFileInfo.mFilePath.getString());
+						if (!lImage.isNull())
+						{
+							lFileInfo.mExif.mWidth = lImage.width();
+							lFileInfo.mExif.mHeight = lImage.height();
+						}
+					}
+
 					int lProcessedFiles = mProcessedFilesCounter.fetch_add(1);
 
 					if (mProgressMutex.tryLock())
