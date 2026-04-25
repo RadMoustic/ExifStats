@@ -5,6 +5,8 @@ Exif statistics of your JPEG and HEIF library
 
 ## Usage
 * **Open** or **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data. Then it will create thumbnails for all images. Then it will analyse all images with a machine learning model and then it will index all the images to speed up the search.
+* You can filter images by date, path or any visible exif value
+* You can search images with text using the Immich (or any other compatible) visual and text AI models
 * You can use the **Refresh** button to find new files without reparsing all the files already there or the **Full Refresh** to reparse all files.
 * You can use the **ReTag** button to reanalyse all images (if you changed the model for instance)
 * <ins>The creation of thumbnails and the machine learning processing of the images can take hours</ins> and are heavy tasks so you can use the **Pause Caching** (thumbnails) and **Pause Tagging** (machine learning analysis) to pause them.
@@ -20,7 +22,6 @@ Exif statistics of your JPEG and HEIF library
 * You can click on the map to see the images around the clicked position (if you want to reset the click in an empty space)
 * All files (database, presets, logs and image cache are stored in **%localappdata%/ExifStats/ExifStats**
 * All settings are stored in **HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats**
-* You can search though
 
 ## Customize UI / QML
 
@@ -65,6 +66,20 @@ The binaries and all generated files are located in the **generated** folder
 
 ### Android ###
 
+* Add the QtCreator bin folder (ex: C:\Dev\Qt\Tools\QtCreator\bin) to the PATH variable
+* Start QtCreator and edit the settings/preferences: in "Compile and Execute" => "Default Compilation Properties" => "Default Compilation Folder" => Change it to build inside the **Generated** folder:
+```
+  Generated/%{JS: Util.asciify("build-%{Project:Name}-%{Kit:FileSystemName}-%{BuildConfig:Name}")}
+```
+* Close QtCreator
+* Launch the Scripts/OpenQtCreator.bat
+* Follow the QtCreator instructions to setup Android:
+  * Install the JDK
+  * Install the Android SDK
+  * Install all the required packages (NDK 26+)
+  * Download OpenSSL
+  * Configure the project for Android armv8 with all folders in the "Generated" folder
+* You will also need to setup Rust for android:
 ```
 rustup target add aarch64-linux-android
 rustup target add armv7-linux-androideabi
@@ -98,8 +113,8 @@ set TURBOJPEG_PLUGIN_ENABLE=true
 ExifStats uses three libraries to be able to search through the images:
 * [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
 * [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
-* ExifStats uses the [Immich](https://github.com/immich-app/immich) onnxruntime models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
 * [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
+* The [Immich](https://github.com/immich-app/immich) onnxruntime visual and text models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
 
 You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
 Then you can enable ImageTagger and HNSWL in the **User.Setup.bat**:
