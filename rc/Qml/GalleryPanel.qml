@@ -59,7 +59,6 @@ ESImageGridQuickItem
 		boundsBehavior: Flickable.StopAtBounds
 		
 		flickDeceleration: 1200
-		contentY: imageGrid.mYOffset
 		
 		onContentYChanged: imageGrid.mYOffset = contentY
 		
@@ -105,7 +104,6 @@ ESImageGridQuickItem
 				{
 					pMouse.accepted = true;
 					galleryMenu.selectedImage = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
-					print(galleryMenu.selectedImage);
 					if(galleryMenu.selectedImage !== "")
 						galleryMenu.popup();
 				}
