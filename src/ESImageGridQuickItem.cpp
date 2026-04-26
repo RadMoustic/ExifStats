@@ -184,6 +184,42 @@ QString ESImageGridQuickItem::getNextImage(QString pImage, int pPreloadCountArou
 
 /********************************************************************************/
 
+float ESImageGridQuickItem::scrollViewTo(QString pImage)
+{
+	ESStringId lImagePath = pImage;
+	int lImageIdx = 0;
+	for (const std::shared_ptr<ESImage>& lImage : mImages)
+	{
+		if (lImage->getImagePath() == lImagePath)
+		{
+			if(mNbColumns == 1)
+			{
+				float lYOffset = mPackedImagesYOffsets[lImageIdx];
+				if(lYOffset < getYOffset() || lYOffset > getYOffset() + height())
+				{
+					setYOffset(lYOffset);
+				}
+			}
+			else
+			{
+				int lRow = lImageIdx / mNbColumns;
+				float lRowTop = lRow * mImageSize;
+				float lRowBottom = lRowTop + mImageSize;
+				if(lRowTop < getYOffset() || lRowBottom > getYOffset() + height())
+				{
+					setYOffset(lRowTop);
+				}
+			}
+			return getYOffset();
+		}
+		++lImageIdx;
+	}
+
+	return 0.f;
+}
+
+/********************************************************************************/
+
 void ESImageGridQuickItem::preloadImagesAround(int pImageIdx, int pPreloadCountAround) const
 {
 	if (pPreloadCountAround > 0 && pImageIdx < mImages.size())

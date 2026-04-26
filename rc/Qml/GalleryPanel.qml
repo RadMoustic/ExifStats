@@ -11,11 +11,42 @@ ESImageGridQuickItem
 	property var imageViewerItem
 	property real maxGridCol: MainQmlBinder.isMobile() ? 4 : 20
 	
+	property var storedImage
+	
 	mImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
 
 	onMImageFilesChanged:
 	{
 		flickable.contentY = 0;
+	}
+	
+	Timer
+	{
+		id: scrollAfterResetTimer
+		interval: 1
+		repeat: false
+		onTriggered:
+		{
+			flickable.contentY = imageGrid.scrollViewTo(galleryMenu.selectedImage);
+		}
+	}
+	
+	Menu
+	{
+		id: galleryMenu
+		width: 350
+		property var selectedImage
+
+		MenuItem
+		{
+			id: storeImage
+			text: "Reset and Scroll"
+			onTriggered:
+			{
+				MainQmlBinder.resetFilters();
+				scrollAfterResetTimer.start();
+			}
+		}
 	}
 
 	Flickable
@@ -28,6 +59,7 @@ ESImageGridQuickItem
 		boundsBehavior: Flickable.StopAtBounds
 		
 		flickDeceleration: 1200
+		contentY: imageGrid.mYOffset
 		
 		onContentYChanged: imageGrid.mYOffset = contentY
 		
@@ -64,8 +96,19 @@ ESImageGridQuickItem
 				anchors.fill: parent
 				preventStealing: false
 				
+				acceptedButtons: Qt.LeftButton | Qt.RightButton
+				
 				property real pressX: 0
 				property real pressY: 0
+				
+				function popupContextMenu(pMouse)
+				{
+					pMouse.accepted = true;
+					galleryMenu.selectedImage = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
+					print(galleryMenu.selectedImage);
+					if(galleryMenu.selectedImage !== "")
+						galleryMenu.popup();
+				}
 				
 				onPressed: (pMouse) =>
 				{
@@ -75,10 +118,12 @@ ESImageGridQuickItem
 				
 				onClicked: (pMouse) =>
 				{
+					pMouse.accepted = false;
 					if (Math.abs(pMouse.x - pressX) > 5 || Math.abs(pMouse.y - pressY) > 5)
 						return;
 					if(MainQmlBinder.isMobile())
 					{
+						pMouse.accepted = true;
 						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
 						if(selectedFile !== "")
 						{
@@ -86,6 +131,10 @@ ESImageGridQuickItem
 							imageViewerItem.mImagePath = selectedFile;
 							MainQmlBinder.mFullScreen = true;
 						}
+					}
+					else if (pMouse.button == Qt.RightButton)
+					{
+						popupContextMenu(pMouse);
 					}
 				}
 				
@@ -103,6 +152,12 @@ ESImageGridQuickItem
 							Qt.openUrlExternally("file:///" + selectedFile);
 						}
 					}
+				}
+				
+				onPressAndHold: (pMouse)=>
+				{
+					if(MainQmlBinder.isMobile())
+						popupContextMenu(pMouse);
 				}
 			}
 		}

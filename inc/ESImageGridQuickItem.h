@@ -113,6 +113,8 @@ public:
 	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
 	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
 
+	Q_INVOKABLE float scrollViewTo(QString pImage);
+
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
 signals:
