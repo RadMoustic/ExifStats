@@ -139,9 +139,16 @@ public:
 	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 
+	// Features
+	ES_QML_PROPERTY(ImageTaggerEnabled, bool)
+	ES_QML_PROPERTY(HNSWIndexEnabled, bool)
+	ES_QML_PROPERTY(TokenizerEnabled, bool)
+
 	/********************************* METHODS ***********************************/
 
 	ESQmlBinder();
+
+	void initialize();
 
 	QVector<QString> getProcessedFolders();
 	bool getProcessing();
@@ -219,9 +226,6 @@ public:
 
 	// Search tags
 	Q_INVOKABLE QStringList getTagsFound() const;
-	Q_INVOKABLE bool isImageTaggerEnabled() const;
-	Q_INVOKABLE bool isHNSWIndexEnabled() const;
-	Q_INVOKABLE bool isTokenizerEnabled() const;
 
 	void save();
 

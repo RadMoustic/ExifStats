@@ -228,7 +228,7 @@ Pane
 					RegularButton
 					{
 						text:"ReTag"
-						enabled: MainQmlBinder.isImageTaggerEnabled()
+						enabled: MainQmlBinder.mImageTaggerEnabled
 
 						onReleased:
 						{
@@ -262,7 +262,7 @@ Pane
 						CheckBox
 						{
 							id: pauseTagging
-							enabled: MainQmlBinder.isImageTaggerEnabled()
+							enabled: MainQmlBinder.mImageTaggerEnabled
 							Layout.preferredHeight: 25
 							padding: 0
 							checked: MainQmlBinder.mPauseTagging

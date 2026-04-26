@@ -43,9 +43,6 @@ ESTagsFilter::ESTagsFilter()
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 {
-#ifdef IMAGETAGGER_ENABLE
-	loadTokenizerAndHNSW();
-#endif // IMAGETAGGER_ENABLE
 }
 
 /********************************************************************************/
@@ -55,7 +52,7 @@ ESTagsFilter::~ESTagsFilter() = default;
 /********************************************************************************/
 
 #ifdef IMAGETAGGER_ENABLE
-void ESTagsFilter::loadTokenizerAndHNSW()
+void ESTagsFilter::loadTokenizerAndHNSW(std::function<void(bool,bool)> pDoneCallback)
 {
 #ifdef Q_OS_ANDROID
 	mTokenizerDirectoryPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer";
@@ -67,10 +64,9 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 	{
 		mTokenizerEnabled = true;
 
-		(void)QtConcurrent::run([this]()
+		(void)QtConcurrent::run([this, pDoneCallback]()
 			{
 				mTextEncoder.reset(new ESTextEncoder(mTokenizerDirectoryPath + "/model.onnx", mTokenizerDirectoryPath + "/tokenizer.json", mTokenizerDirectoryPath + "/config.json"));
-
 	#ifdef HNSWLIB_ENABLED
 				const ESDatabase& lDB = ESDatabase::getInstance();
 				if (lDB.getEmbeddingsDimension() > 0)
@@ -84,11 +80,14 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 						onImageTaggerManagerLoadingProgress(0, 0);
 					}
 				}
-#ifndef EXIFSTATS_READONLY
+		#ifndef EXIFSTATS_READONLY
 				(void)connect(&ESImageTaggerManager::getInstance(), &ESImageTaggerManager::imageLoadingProgress, this, &ESTagsFilter::onImageTaggerManagerLoadingProgress, Qt::QueuedConnection);
-#endif //EXIFSTATS_READONLY
+		#endif //EXIFSTATS_READONLY
+				pDoneCallback(true, !!mHnswIndex);
+	#else
+				pDoneCallback(true, false);
 	#endif // HNSWLIB_ENABLED
-
+				
 				onDatabaseTagsHaveChanged();
 				(void)connect(&ESDatabase::getInstance(), &ESDatabase::tagsChanged, this,
 					[this]()
@@ -99,6 +98,10 @@ void ESTagsFilter::loadTokenizerAndHNSW()
 							});
 					}, Qt::DirectConnection);
 			});
+	}
+	else
+	{
+		pDoneCallback(false, false);
 	}
 }
 #endif // IMAGETAGGER_ENABLE
@@ -366,7 +369,7 @@ void ESTagsFilter::updateHnswSearchResults()
 		constexpr size_t cMaxResults = 10000;
 		mHnswSearchResults.clear();
 		mHnswSearchResults.reserve(cMaxResults);
-		hnswlib::EpsilonSearchStopCondition<float> lStopCondition(1.f - mMinSimilarityScore, 100, cMaxResults);
+		hnswlib::EpsilonSearchStopCondition<float> lStopCondition(1.f - mMinSimilarityScore*0.5, 100, cMaxResults);
 		std::vector<std::pair<float, uint64_t>> lSearchResults = mHnswIndex->searchStopConditionClosest(mSearchTagsEmbeddings.mEmbeddings.data(), lStopCondition);
 		for (std::pair<float, ESStringPool::InternalId> lResult : lSearchResults)
 		{

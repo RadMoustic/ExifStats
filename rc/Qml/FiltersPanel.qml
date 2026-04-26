@@ -239,7 +239,7 @@ Flickable
 		{
 			id: searchTextFilter
 			
-			enabled: MainQmlBinder.isTokenizerEnabled()
+			enabled: MainQmlBinder.mTokenizerEnabled
 			SplitView.fillWidth: true
 			SplitView.preferredHeight: parent.height / parent.children.length
 			
@@ -291,7 +291,7 @@ Flickable
 		
 		RowLayout
 		{
-			visible: MainQmlBinder.isTokenizerEnabled() && actualSearchedTags.text !== ""
+			visible: MainQmlBinder.mTokenizerEnabled && actualSearchedTags.text !== ""
 			Label
 			{
 				id: actualSearchedTags

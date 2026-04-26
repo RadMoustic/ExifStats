@@ -53,7 +53,7 @@ public:
 	virtual ~ESTagsFilter();
 
 #ifdef IMAGETAGGER_ENABLE
-	void loadTokenizerAndHNSW();
+	void loadTokenizerAndHNSW(std::function<void(bool, bool)> pDoneCallback);
 #endif // IMAGETAGGER_ENABLE
 	virtual void reset() override;
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override;

@@ -100,7 +100,7 @@ Frame
 					id: listItemLabel
 					anchors.fill: parent
 					text: modelData ? modelData : "<empty>"
-					color: listItem.selected ? Material.accentTextColor : Material.foreground
+					color: selected ? (Material.theme == Material.Dark ? "#000000" : "#FFFFFF") : Material.foreground
 				}
 				
 				MouseArea

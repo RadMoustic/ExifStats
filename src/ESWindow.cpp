@@ -92,6 +92,7 @@ void ESWindow::initialize()
 	loadMainQml();
 
 	ESDatabase::getInstance().loadDatabase();
+	mBinder->initialize();
 	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();

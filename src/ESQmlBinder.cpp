@@ -31,6 +31,9 @@ ESQmlBinder::ESQmlBinder()
 	, mTaggingProgress(1.f)
 	, mPauseCaching(false)
 	, mPauseTagging(false)
+	, mImageTaggerEnabled(false)
+	, mHNSWIndexEnabled(false)
+	, mTokenizerEnabled(false)
 {
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
@@ -82,6 +85,23 @@ ESQmlBinder::ESQmlBinder()
 	mFilters.push_back(&mPathFilter);
 	mFilters.push_back(&mTagsFilter);
 	mFilters.push_back(&mOrientationFilter);
+
+#ifdef IMAGETAGGER_ENABLE
+	setImageTaggerEnabled(true);
+#endif // IMAGETAGGER_ENABLE
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::initialize()
+{
+#ifdef IMAGETAGGER_ENABLE
+	mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
+		{
+			setTokenizerEnabled(pTokenizerEnabled);
+			setHNSWIndexEnabled(pHNSWEnabled);
+		});
+#endif // IMAGETAGGER_ENABLE
 }
 
 /********************************************************************************/
@@ -242,10 +262,15 @@ void ESQmlBinder::setTokenizerFolder(const QUrl& pFolderPath)
 
 		QDir lSourceDir(pFolderPath.toString());
 
+		// TODO: add a progress bar for that
 		for (const QFileInfo& lFile : lSourceDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot))
 			QFile::copy(lFile.absoluteFilePath(), lDestPath + "/" + lFile.fileName());
 
-		mTagsFilter.loadTokenizerAndHNSW();
+		mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
+			{
+				setTokenizerEnabled(pTokenizerEnabled);
+				setHNSWIndexEnabled(pHNSWEnabled);
+			});
 	});
 #else
 	(void)pFolderPath;
@@ -810,39 +835,6 @@ QString ESQmlBinder::getPresetFilePathPath(const QString& pPresetName) const
 QStringList ESQmlBinder::getTagsFound() const
 {
 	return mTagsFilter.getTagsFound();
-}
-
-/********************************************************************************/
-
-bool ESQmlBinder::isImageTaggerEnabled() const
-{
-#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-	return ESImageTaggerManager::getInstance().isEnabled();
-#else
-	return false;
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-}
-
-/********************************************************************************/
-
-bool ESQmlBinder::isHNSWIndexEnabled() const
-{
-#if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
-	return true;
-#else
-	return false;
-#endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
-}
-
-/********************************************************************************/
-
-bool ESQmlBinder::isTokenizerEnabled() const
-{
-#ifdef IMAGETAGGER_ENABLE
-	return mTagsFilter.isTokenizerEnabled();
-#else
-	return false;
-#endif // IMAGETAGGER_ENABLE
 }
 
 /********************************************************************************/
