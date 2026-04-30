@@ -89,8 +89,6 @@ public:
 		eSortBySimilarityScore,
 	};
 
-	
-
 	/******************************** ATTRIBUTES **********************************/
 
 	
@@ -101,7 +99,8 @@ public:
 
 	ES_QML_PROPERTY(FilteredFilesList, const ESListFilesStat*)
 	ES_QML_PROPERTY(ImageFiles, QVector<QString>, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(ImageSize, int, mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(ImageSize, int, mImageSize = std::clamp(mImageSize, 128, width() > CACHE_IMAGE_SIZE ? int(width()) : CACHE_IMAGE_SIZE); mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(ZoomCenter, QVector2D)
 	ES_QML_PROPERTY(YOffset, float, update();)
 	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(Loading, bool)
@@ -113,6 +112,7 @@ public:
 	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
 	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
 
+	Q_INVOKABLE QVector2D getImagePos(QString pImage);
 	Q_INVOKABLE float scrollViewTo(QString pImage);
 
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
@@ -126,6 +126,7 @@ private:
 	QSizeF mPreviousSize;
 	int mNbColumns;
 	int mNbRows;
+	int mVisibleImageSize;
 
 	bool mValid;
 	bool mDataHasChanged;
@@ -141,4 +142,6 @@ private:
 	void onImageCachingProgress(int pLoadedCount, int pLoadingCount);
 	void sort();
 	void preloadImagesAround(int pImageIdx, int pPreloadCountAround) const;
+	int getImageIndexAtPos(float pX, float pY) const;
+	QVector2D getImagePos(int pIndex) const;
 };

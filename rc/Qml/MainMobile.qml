@@ -26,6 +26,8 @@ Pane
 		id: settings
 		
 		property var theme
+		property var imageGridYOffset
+		property var imageGridImageSize
     }
 			
 	function maxList(pList)
@@ -90,11 +92,19 @@ Pane
 		
 		mainWindow.Material.theme = settings.theme;
 		sidePanel.Material.theme = settings.theme;
+		
+		imageGrid.flickableChild.contentY = settings.imageGridYOffset;
+		imageGrid.mImageSize = settings.imageGridImageSize;
+		
+		MainQmlBinder.loadDefaultFilters();
 	}
 	
 	Component.onDestruction:
 	{
 		settings.theme = mainWindow.Material.theme;
+		settings.imageGridYOffset = imageGrid.mYOffset;
+		settings.imageGridImageSize = imageGrid.mImageSize;
+		MainQmlBinder.saveDefaultFilters();
 	}
 	
 	FileDialog

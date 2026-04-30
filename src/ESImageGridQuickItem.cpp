@@ -30,6 +30,7 @@ constexpr int cMaxDisplayedImages = 512;
 ESImageGridQuickItem::ESImageGridQuickItem()
 	: mFilteredFilesList(nullptr)
 	, mImageSize(CACHE_IMAGE_SIZE)
+	, mVisibleImageSize(CACHE_IMAGE_SIZE)
 	, mContentHeight(100)
 	, mYOffset(0.f)
 	, mSortingMode(int(eSortByDatetime))
@@ -41,6 +42,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	, mDataHasChanged(false)
 	, mGeometryHasChanged(false)
 	, mFilteredFilesListComponent(nullptr)
+	, mZoomCenter(0,0)
 {
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
@@ -95,6 +97,32 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
+	int lIndex = getImageIndexAtPos(pX, pY);
+	if (lIndex >= 0 && lIndex < mImages.size())
+	{
+		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
+#if defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
+		if (!ESImageTaggerManager::getInstance().isLoading())
+		{
+			ESDatabase& db = ESDatabase::getInstance();
+			QStringList lTagLabels = db.getTagsLabels(db.getFileInfo(lImage->getImagePath())->mTagIndexes);
+			qDebug() << lTagLabels.join(", ");
+		}
+
+		ESImageCache::getInstance().printImageDebugInfo(lImage);
+#endif //  defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
+		return lImage->getImagePath();
+	}
+	else
+	{
+		return QString();
+	}
+}
+
+/********************************************************************************/
+
+int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY) const
+{
 	int lIndex = -1;
 	if(mNbColumns == 1)
 	{
@@ -110,29 +138,12 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 	}
 	else
 	{
-		int lCol = static_cast<int>(pX / mImageSize);
-		int lRow = static_cast<int>(pY / mImageSize);
+		int lCol = static_cast<int>(pX / mVisibleImageSize);
+		int lRow = static_cast<int>(pY / mVisibleImageSize);
 		lIndex = lRow * mNbColumns + lCol;
 	}
-	if(lIndex >= 0 && lIndex < mImages.size())
-	{
-		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
-#if defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-		if(!ESImageTaggerManager::getInstance().isLoading())
-		{
-			ESDatabase& db = ESDatabase::getInstance();
-			QStringList lTagLabels = db.getTagsLabels(db.getFileInfo(lImage->getImagePath())->mTagIndexes);
-			qDebug()  << lTagLabels.join(", ");
-		}
 
-		ESImageCache::getInstance().printImageDebugInfo(lImage);
-#endif //  defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-		return lImage->getImagePath();
-	}
-	else
-	{
-		return QString();
-	}
+	return lIndex;
 }
 
 /********************************************************************************/
@@ -186,36 +197,47 @@ QString ESImageGridQuickItem::getNextImage(QString pImage, int pPreloadCountArou
 
 float ESImageGridQuickItem::scrollViewTo(QString pImage)
 {
+	QVector2D lImagePos = getImagePos(pImage);
+	setYOffset(lImagePos.y());
+	return lImagePos.y();
+}
+
+/********************************************************************************/
+
+QVector2D ESImageGridQuickItem::getImagePos(QString pImage)
+{
+	QVector2D lResult(0,0);
 	ESStringId lImagePath = pImage;
 	int lImageIdx = 0;
 	for (const std::shared_ptr<ESImage>& lImage : mImages)
 	{
 		if (lImage->getImagePath() == lImagePath)
 		{
-			if(mNbColumns == 1)
-			{
-				float lYOffset = mPackedImagesYOffsets[lImageIdx];
-				if(lYOffset < getYOffset() || lYOffset > getYOffset() + height())
-				{
-					setYOffset(lYOffset);
-				}
-			}
-			else
-			{
-				int lRow = lImageIdx / mNbColumns;
-				float lRowTop = lRow * mImageSize;
-				float lRowBottom = lRowTop + mImageSize;
-				if(lRowTop < getYOffset() || lRowBottom > getYOffset() + height())
-				{
-					setYOffset(lRowTop);
-				}
-			}
-			return getYOffset();
+			lResult = getImagePos(lImageIdx);
+			break;
 		}
 		++lImageIdx;
 	}
 
-	return 0.f;
+	return lResult;
+}
+
+/********************************************************************************/
+
+QVector2D ESImageGridQuickItem::getImagePos(int pIndex) const
+{
+	QVector2D lResult(0, 0);
+	if (mNbColumns == 1)
+	{
+		lResult.setY(mPackedImagesYOffsets[pIndex]);
+	}
+	else
+	{
+		lResult.setX((pIndex % mNbColumns) * mVisibleImageSize);
+		lResult.setY((pIndex / mNbColumns) * mVisibleImageSize);
+	}
+
+	return lResult;
 }
 
 /********************************************************************************/
@@ -285,8 +307,22 @@ void ESImageGridQuickItem::updateInternal()
 	{
 		int lNbImages = int(mImages.size());
 
+		int lImageAtZoomCenter = -1;
+		float lKeepInViewImageYOffset = 0.f;
+		if(mNbColumns > 0)
+		{
+			lImageAtZoomCenter = getImageIndexAtPos(mZoomCenter.x(), mZoomCenter.y() + mYOffset);
+			if(lImageAtZoomCenter == -1)
+				lImageAtZoomCenter = lNbImages - 1;
+			QVector2D lKeepInViewImagePos = getImagePos(lImageAtZoomCenter);
+			lKeepInViewImageYOffset = lKeepInViewImagePos.y() - getYOffset();
+			assert(lKeepInViewImageYOffset < height());
+		}
+
 		mNbColumns = std::max<int>(1, width() / mImageSize);
 		mNbRows = CeilIntDiv(lNbImages, mNbColumns);
+
+		float lNewContentHeight = 1;
 
 		if(mNbColumns == 1)
 		{
@@ -311,18 +347,23 @@ void ESImageGridQuickItem::updateInternal()
 
 					lYOffset += lImageHeight;
 				}
-				setContentHeight(std::max(1.f, lYOffset));
+				lNewContentHeight = lYOffset;
 			}
-			else
-				setContentHeight(1);
 		}
 		else
-			setContentHeight(std::max(1, mNbRows * mImageSize));
+			lNewContentHeight = mNbRows * mImageSize;
 
+		mVisibleImageSize = mImageSize;
+
+		if (!mDataHasChanged && lImageAtZoomCenter >= 0)
+		{
+			QVector2D lNewKeepInViewImagePos = getImagePos(lImageAtZoomCenter);
+			setYOffset(lNewKeepInViewImagePos.y() - lKeepInViewImageYOffset);
+		}
+		setContentHeight(std::max(1.f, lNewContentHeight));
+				
 		mGeometryHasChanged = false;
 	}
-
-	
 
 	mDataHasChanged = false;
 }
@@ -547,8 +588,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 			lEndDrawRow = lStartDrawRow + lBoudingRect.height() / lItem->mImageSize + 1;
 		}
 
-		const int lStartPreloadRow = std::max(0, lStartDrawRow - 3);
-		const int lEndPreloadRow = std::min(lItem->mNbRows, lEndDrawRow + 3);
+		const int lStartPreloadRow = std::max(0, lStartDrawRow - 5);
+		const int lEndPreloadRow = std::min(lItem->mNbRows, lEndDrawRow + 5);
 
 		// Release slots
 		for (auto it = mImageToTextureSlot.begin(); it != mImageToTextureSlot.end();)

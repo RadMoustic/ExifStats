@@ -61,9 +61,12 @@
 	} \
 	void set##pName(pType p##pName) \
 	{ \
-		m##pName = p##pName; \
-		pCustomCode; \
-		emit property##pName##Changed(); \
+		if(m##pName != p##pName) \
+		{ \
+			m##pName = p##pName; \
+			pCustomCode; \
+			emit property##pName##Changed(); \
+		} \
 	} \
 	private: \
 		pType m##pName; \

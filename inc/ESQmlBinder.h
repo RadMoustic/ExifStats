@@ -219,6 +219,8 @@ public:
 
 	// Filter Presets
 	Q_INVOKABLE void resetFilters();
+	Q_INVOKABLE bool saveDefaultFilters();
+	Q_INVOKABLE bool loadDefaultFilters();
 	Q_INVOKABLE bool saveFilters(QString pPresetName);
 	Q_INVOKABLE bool loadFilters(QString pPresetName);
 	Q_INVOKABLE bool deleteFilters(QString pPresetName);

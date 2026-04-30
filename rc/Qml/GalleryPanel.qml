@@ -9,25 +9,45 @@ ESImageGridQuickItem
 	
 	property real imageScale: MainQmlBinder.isMobile() ? imageGrid.width : 250
 	property var imageViewerItem
-	property real maxGridCol: MainQmlBinder.isMobile() ? 4 : 20
-	
-	property var storedImage
-	
+	property real maxGridCol: MainQmlBinder.isMobile() ? 4 : 10
+	property alias flickableChild: flickable
+
 	mImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
+	
+	Behavior on mImageSize
+	{
+		id: imageSizeAnim
+		enabled: false
+		
+		NumberAnimation
+		{ 
+			duration: 500 
+			easing.type: Easing.InOutQuad 
+		}
+	}
 
 	onMImageFilesChanged:
 	{
 		flickable.contentY = 0;
 	}
 	
+	onMContentHeightChanged:
+	{
+		flickable.contentY = mYOffset;
+		flickable.contentHeight = mContentHeight;
+		imageSizeAnim.enabled = true;
+	}
+	
 	Timer
 	{
-		id: scrollAfterResetTimer
-		interval: 1
+		id: scrollToImageTimer
+		interval: 30
 		repeat: false
+		property var imageToScrollTo
 		onTriggered:
 		{
-			flickable.contentY = imageGrid.scrollViewTo(galleryMenu.selectedImage);
+			flickable.contentY = imageGrid.scrollViewTo(imageToScrollTo);
+			imageToScrollTo = "";
 		}
 	}
 	
@@ -43,8 +63,9 @@ ESImageGridQuickItem
 			text: "Reset and Scroll"
 			onTriggered:
 			{
+				scrollToImageTimer.imageToScrollTo = galleryMenu.selectedImage;
+				scrollToImageTimer.start();
 				MainQmlBinder.resetFilters();
-				scrollAfterResetTimer.start();
 			}
 		}
 	}
@@ -54,24 +75,38 @@ ESImageGridQuickItem
 		id: flickable
 		anchors.fill: parent
 		
-		contentHeight: imageGrid.mContentHeight
 		contentWidth: width
 		boundsBehavior: Flickable.StopAtBounds
 		
+		property bool ignoreNextContentYChanges: false
+		
 		flickDeceleration: 1200
 		
-		onContentYChanged: imageGrid.mYOffset = contentY
+		onContentYChanged:
+		{
+			if(!ignoreNextContentYChanges)
+				imageGrid.mYOffset = contentY;
+			ignoreNextContentYChanges = false;
+		}
 		
 		ScrollBar.vertical: ScrollBar { width: 30 }
 		
 		WheelHandler
 		{
+			enabled: !MainQmlBinder.isMobile()
 			onWheel: (pWheel) =>
 			{
+				flickable.ignoreNextContentYChanges = true;
 				if(MainQmlBinder.isCtrlPressed())
-					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale + (pWheel.angleDelta.y > 0 ? 25 : -25)));
+				{
+					imageGrid.mZoomCenter = parent.mapToItem(imageGrid, pWheel);
+					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale * (pWheel.angleDelta.y > 0 ? 1.05 : 0.95)));
+				}
 				else
+				{
 					flickable.contentY = Math.max(0, Math.min(imageGrid.mContentHeight-height, flickable.contentY - pWheel.angleDelta.y));
+					imageGrid.mYOffset = flickable.contentY;
+				}
 			}
 		}
 		
@@ -85,9 +120,11 @@ ESImageGridQuickItem
 			{
 				initialScale = imageGrid.imageScale;
 			}
-			onPinchUpdated: (pinch) => 
+			onPinchUpdated: (pPinch) => 
 			{
-				imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, initialScale * pinch.scale));
+				flickable.ignoreNextContentYChanges = true;
+				imageGrid.mZoomCenter = parent.mapToItem(imageGrid, pPinch.center);
+				imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, initialScale * pPinch.scale * 0.75));
 			}
 			
 			MouseArea

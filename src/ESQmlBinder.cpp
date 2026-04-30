@@ -20,6 +20,7 @@
 /********************************************************************************/
 
 static const char* scPresetExtension = "espreset";
+static const char* scDefaultPresetName = "__Default__";
 
 /********************************************************************************/
 /********************************************************************************/
@@ -684,6 +685,21 @@ void ESQmlBinder::resetFilters()
 
 /********************************************************************************/
 
+bool ESQmlBinder::saveDefaultFilters()
+{
+	return saveFilters(scDefaultPresetName);
+}
+
+/********************************************************************************/
+
+bool ESQmlBinder::loadDefaultFilters()
+{
+	return loadFilters(scDefaultPresetName);
+}
+
+
+/********************************************************************************/
+
 bool ESQmlBinder::saveFilters(QString pPresetName)
 {
 	if (pPresetName.isEmpty())
@@ -811,7 +827,10 @@ QStringList ESQmlBinder::getFiltersPresets() const
 	QStringList lPresetFiles = lDir.entryList(QStringList() << QString("*.%1").arg(scPresetExtension), QDir::Files);
 	for (const QString& lPresetFile : lPresetFiles)
 	{
-		lResult.push_back(lPresetFile.left(lPresetFile.length() - constExprStringLength(scPresetExtension) - 1));
+		QString lPresetName = lPresetFile.left(lPresetFile.size() - QString(scPresetExtension).size() - 1);
+		if (lPresetName == scDefaultPresetName)
+			continue;
+		lResult.push_back(lPresetName);
 	}
 	return lResult;
 }
