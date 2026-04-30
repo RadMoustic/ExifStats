@@ -51,7 +51,7 @@ private:
 	struct ImageTextureSlot
 	{
 		int mTextureSlot;
-		int mRow;
+		int mIndex;
 	};
 
 	/******************************** ATTRIBUTES **********************************/
@@ -91,7 +91,12 @@ public:
 
 	/******************************** ATTRIBUTES **********************************/
 
-	
+#ifdef Q_OS_ANDROID
+	static constexpr int cMinImageSize = 64;
+#else
+	static constexpr int cMinImageSize = 128;
+#endif
+
 	/********************************* METHODS ***********************************/
 
 	ESImageGridQuickItem();
@@ -99,7 +104,8 @@ public:
 
 	ES_QML_PROPERTY(FilteredFilesList, const ESListFilesStat*)
 	ES_QML_PROPERTY(ImageFiles, QVector<QString>, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(ImageSize, int, mImageSize = std::clamp(mImageSize, 128, width() > CACHE_IMAGE_SIZE ? int(width()) : CACHE_IMAGE_SIZE); mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(TargetImageSize, int, mTargetImageSize = std::clamp(mTargetImageSize, cMinImageSize, width() > CACHE_IMAGE_SIZE ? int(width()) : CACHE_IMAGE_SIZE);)
+	ES_QML_PROPERTY(ImageSize, int, mImageSize = std::clamp(mImageSize, cMinImageSize, width() > CACHE_IMAGE_SIZE ? int(width()) : CACHE_IMAGE_SIZE); mGeometryHasChanged = true; update();)
 	ES_QML_PROPERTY(ZoomCenter, QVector2D)
 	ES_QML_PROPERTY(YOffset, float, update();)
 	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)

@@ -9,10 +9,11 @@ ESImageGridQuickItem
 	
 	property real imageScale: MainQmlBinder.isMobile() ? imageGrid.width : 250
 	property var imageViewerItem
-	property real maxGridCol: MainQmlBinder.isMobile() ? 4 : 10
+	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : 10
 	property alias flickableChild: flickable
 
-	mImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
+	mTargetImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
+	mImageSize: mTargetImageSize
 	
 	Behavior on mImageSize
 	{
