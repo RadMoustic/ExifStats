@@ -7,13 +7,23 @@ ESImageGridQuickItem
 {
 	id: imageGrid
 	
-	property real imageScale: MainQmlBinder.isMobile() ? imageGrid.width : 250
 	property var imageViewerItem
 	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : 10
+	property real gridCol: MainQmlBinder.isMobile() ? 1 : Math.floor(width / 250)
 	property alias flickableChild: flickable
+	property bool orientation: width > height
 
-	mTargetImageSize: imageGrid.width / Math.floor(imageGrid.width / imageScale)
+	mTargetImageSize: imageGrid.width / Math.floor(gridCol)
 	mImageSize: mTargetImageSize
+	
+	onOrientationChanged:
+	{
+		if(MainQmlBinder.isMobile())
+		{
+			var gridColRatio = orientation ? 2 : 0.5;
+			gridCol = Math.min(width > height ? 8 : 4, Math.max(1, Math.round(gridCol * gridColRatio)));
+		}
+	}
 	
 	Behavior on mImageSize
 	{
@@ -101,7 +111,7 @@ ESImageGridQuickItem
 				if(MainQmlBinder.isCtrlPressed())
 				{
 					imageGrid.mZoomCenter = parent.mapToItem(imageGrid, pWheel);
-					imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, imageGrid.imageScale * (pWheel.angleDelta.y > 0 ? 1.05 : 0.95)));
+					imageGrid.gridCol = Math.min(maxGridCol, Math.max(1, imageGrid.gridCol + (pWheel.angleDelta.y > 0 ? -0.25 : 0.25)));
 				}
 				else
 				{
@@ -115,19 +125,20 @@ ESImageGridQuickItem
 		{
 			anchors.fill: parent
 			
-			property real initialScale: 1.0
+			property real initialGridCol: 1.0
+			property bool firstPinchFinished: false
 			
 			onPinchStarted: 
 			{
-				initialScale = imageGrid.imageScale;
+				initialGridCol = imageGrid.gridCol;
 			}
 			onPinchUpdated: (pPinch) => 
 			{
 				flickable.ignoreNextContentYChanges = true;
 				imageGrid.mZoomCenter = parent.mapToItem(imageGrid, pPinch.center);
-				imageGrid.imageScale = Math.min(imageGrid.width, Math.max(imageGrid.width / maxGridCol, initialScale * pPinch.scale * 0.75));
+				imageGrid.gridCol = Math.min(maxGridCol, Math.max(1, initialGridCol - Math.floor(Math.log2(pPinch.scale))));
 			}
-			
+
 			MouseArea
 			{
 				anchors.fill: parent
