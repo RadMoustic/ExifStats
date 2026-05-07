@@ -40,6 +40,7 @@ public:
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const = 0;
 	virtual QJsonObject serialize() const = 0;
 	virtual bool deserialize(const QJsonObject& pJson) = 0;
+	virtual bool isEnabled() const = 0;
 
 	template<typename T>
 	QJsonValue toJsonValue(T pValue) const

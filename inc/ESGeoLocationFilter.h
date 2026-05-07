@@ -31,6 +31,11 @@ public:
 		mGeoShapeFilter = QGeoShape();
 	}
 
+	virtual bool isEnabled() const override
+	{
+		return mGeoShapeFilter.isValid();
+	}
+
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		return		mGeoShapeFilter.isValid()

@@ -55,6 +55,7 @@ public:
 #ifdef IMAGETAGGER_ENABLE
 	void loadTokenizerAndHNSW(std::function<void(bool, bool)> pDoneCallback);
 #endif // IMAGETAGGER_ENABLE
+	virtual bool isEnabled() const override;
 	virtual void reset() override;
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override;
 	virtual QJsonObject serialize() const override;

@@ -322,7 +322,14 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 
 	const ESDatabase& lDB = ESDatabase::getInstance();
 	std::shared_lock lLock(lDB.getFilesMutex());
-	
+
+	std::vector<const ESFilter*> lActiveFilters;
+	for(const ESFilter* lFilter: mFilters)
+	{
+		if(lFilter->isEnabled())
+			lActiveFilters.push_back(lFilter);
+	}
+
 	for (ESStat* lStat : mStats)
 		lStat->reset();
 	for (ESStat* lStat : mStats)
@@ -336,7 +343,7 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 			bool lKeepCategory = false;
 			if(!pIgnoreFilters)
 			{
-				for (const ESFilter* lFilter : mFilters)
+				for (const ESFilter* lFilter : lActiveFilters)
 				{
 					if (lFilter->isFileFilteredOut(lFileInfo))
 					{

@@ -21,6 +21,11 @@ class ESPathFilter : public ESFilter
 public:
 	QStringList mPathInclusiveFilters;
 
+	virtual bool isEnabled() const override
+	{
+		return !mPathInclusiveFilters.isEmpty();
+	}
+
 	virtual void reset() override
 	{
 		mPathInclusiveFilters.clear();

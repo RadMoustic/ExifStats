@@ -15,12 +15,20 @@ template<class ExifStatType, typename T>
 class ESListFilter: public ESFilter
 {
 public:
+	virtual bool isEnabled() const override
+	{
+		return !mVectorFilters.empty();
+	}
+
 	virtual void reset() override
 	{
 		resetFilters();
 	}
+
 	const QMap<T, bool>& getFilters() const { return mFilters; }
+
 	void resetFilters() { setFilters(QMap<T, bool>(), QVector<T>()); }
+
 	void setFilters(const QMap<T, bool>& pFilters, const QVector<T>& pAllValues)
 	{
 		mFilters = pFilters;

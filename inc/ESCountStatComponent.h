@@ -46,11 +46,18 @@ public:
 		mCounters.resize(mValueCounters.size());
 		mCounterLabels.resize(mValueCounters.size());
 
-		int i = 0;
+		std::vector<std::tuple<T, int, QString>> lSortedValues;
+
 		for (const auto& lValueCount : mValueCounters)
+			lSortedValues.emplace_back(lValueCount.first, lValueCount.second, Derived::getValueLabel(lValueCount.first));
+
+		std::sort(lSortedValues.begin(), lSortedValues.end(), [](const auto& a, const auto& b) { return std::get<0>(a) < std::get<0>(b); });
+
+		int i = 0;
+		for (const auto& lValueCount : lSortedValues)
 		{
-			mCounters[i] = lValueCount.second;
-			mCounterLabels[i] = Derived::getValueLabel(lValueCount.first);
+			mCounters[i] = std::get<1>(lValueCount);
+			mCounterLabels[i] = std::get<2>(lValueCount);
 			++i;
 		}
 
@@ -61,7 +68,7 @@ public:
 
 protected:
 
-	std::map<T, int> mValueCounters;
+	std::unordered_map<T, int> mValueCounters;
 	QVector<QString> mCounterLabels;
 	QVector<int> mCounters;
 };

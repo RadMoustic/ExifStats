@@ -30,6 +30,11 @@ public:
 
 	}
 
+	virtual bool isEnabled() const override
+	{
+		return mFilterFrom != std::numeric_limits<T>::min() || mFilterTo != std::numeric_limits<T>::max();
+	}
+
 	virtual void reset() override
 	{
 		mFilterFrom = std::numeric_limits<T>::min();

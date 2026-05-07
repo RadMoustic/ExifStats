@@ -108,6 +108,13 @@ void ESTagsFilter::loadTokenizerAndHNSW(std::function<void(bool,bool)> pDoneCall
 
 /********************************************************************************/
 
+/*virtual*/ bool ESTagsFilter::isEnabled() const /*override*/
+{
+	return !mSearchString.isEmpty();
+}
+
+/********************************************************************************/
+
 /*virtual*/ void ESTagsFilter::reset() /*override*/
 {
 	mSearchString = "";

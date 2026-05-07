@@ -52,8 +52,31 @@ public:
 	{
 		if(!Super::mValueCounters.empty() && mFillEmptySteps)
 		{
-			T lFirstValue = Super::mValueCounters.begin()->first;
-			T lLastValue = Super::mValueCounters.rbegin()->first;
+			bool lFirstValueSet = false;
+			bool lLastValueSet = false;
+			T lFirstValue = T();
+			T lLastValue = T();
+			for(const auto& lValueCount : Super::mValueCounters)
+			{
+				if(!lFirstValueSet)
+				{
+					lFirstValue = lValueCount.first;
+					lFirstValueSet = true;
+				}
+				else
+				{
+					lFirstValue = std::min(lFirstValue, lValueCount.first);
+				}
+				if(!lLastValueSet)
+				{
+					lLastValue = lValueCount.first;
+					lLastValueSet = true;
+				}
+				else
+				{
+					lLastValue = std::max(lLastValue, lValueCount.first);
+				}
+			}
 			if(mMinFillValue != mMaxFillValue)
 			{
 				lFirstValue = std::max(mMinFillValue, lFirstValue);

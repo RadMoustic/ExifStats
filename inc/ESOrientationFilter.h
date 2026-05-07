@@ -24,6 +24,11 @@ public:
 
 	FilterMode mFilterMode = eNoFilter;
 
+	virtual bool isEnabled() const override
+	{
+		return mFilterMode != eNoFilter;
+	}
+
 	virtual void reset() override
 	{
 		mFilterMode = eNoFilter;
