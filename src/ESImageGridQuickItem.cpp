@@ -96,6 +96,13 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 /********************************************************************************/
 
+float ESImageGridQuickItem::getMinImageSize() const
+{
+	return cMinImageSize;
+}
+
+/********************************************************************************/
+
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
 	int lIndex = getImageIndexAtPos(pX, pY);
@@ -125,23 +132,16 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY) const
 {
 	int lIndex = -1;
-	if(mNbColumns == 1)
+
+	for(int i = 0; i < mImagesYOffsets.size(); ++i)
 	{
-		lIndex = int(mPackedImagesYOffsets.size() - 1);
-		for(int i = 0; i < mPackedImagesYOffsets.size(); ++i)
+		int lImageCol = 1 + i % mNbColumns;
+		float lImageRightX = lImageCol == mNbColumns ? width() : lImageCol * mVisibleImageSize;
+		if(pY < mVisibleImageSize + mImagesYOffsets[i] * mVisibleImageSize && pX < lImageRightX)
 		{
-			if(pY < mPackedImagesYOffsets[i] * mVisibleImageSize)
-			{
-				lIndex = i - 1;
-				break;
-			}
+			lIndex = i;
+			break;
 		}
-	}
-	else
-	{
-		int lCol = static_cast<int>(pX / mVisibleImageSize);
-		int lRow = static_cast<int>(pY / mVisibleImageSize);
-		lIndex = lRow * mNbColumns + lCol;
 	}
 
 	return lIndex;
@@ -228,15 +228,9 @@ QVector2D ESImageGridQuickItem::getImagePos(QString pImage)
 QVector2D ESImageGridQuickItem::getImagePos(int pIndex) const
 {
 	QVector2D lResult(0, 0);
-	if (mNbColumns == 1)
-	{
-		lResult.setY(mPackedImagesYOffsets[pIndex] * mVisibleImageSize);
-	}
-	else
-	{
-		lResult.setX((pIndex % mNbColumns) * mVisibleImageSize);
-		lResult.setY((pIndex / mNbColumns) * mVisibleImageSize);
-	}
+
+	if(!mImagesYOffsets.empty())
+		lResult.setY(mImagesYOffsets[pIndex] * mVisibleImageSize);
 
 	return lResult;
 }
@@ -320,49 +314,57 @@ void ESImageGridQuickItem::updateInternal()
 			assert(lKeepInViewImageYOffset < height());
 		}
 
+		int lPreviousNbColumns = mNbColumns;
+
 		mNbColumns = std::max<int>(1, width() / mImageSize);
 		mNbRows = CeilIntDiv(lNbImages, mNbColumns);
 
 		float lNewContentHeight = 1;
 
-		if(mNbColumns == 1)
+		if(mDataHasChanged || lPreviousNbColumns != mNbColumns)
+			mImagesYOffsets.clear();
+		if(lNbImages)
 		{
-			if(mDataHasChanged)
-				mPackedImagesYOffsets.clear();
-			if(lNbImages)
+			if(mImagesYOffsets.size() == 0)
 			{
-				if(mPackedImagesYOffsets.size() == 0)
+				mImagesYOffsets.reserve(lNbImages);
+
+				float lYOffset = 0.f;
+				for(int i = 0; i < mNbRows; ++i)
 				{
-					mPackedImagesYOffsets.reserve(lNbImages);
-					float lYOffset = 0.f;
-					for(int i = 0; i < lNbImages; ++i)
+					float lRowHeight = 0.f;
+					for(int j = 0; j < mNbColumns; ++j)
 					{
-						float lRatio = mImages[i]->getExif().getOrientedRatio();
-						float lImageHeight = 1.f / lRatio;
-						if(lRatio > 1.f)
+						int lImageIdx = i * mNbColumns + j;
+						if(lImageIdx >= lNbImages)
+							break;
+						float lRatio = mImages[lImageIdx]->getExif().getOrientedRatio();
+						float lImageHeight = mNbColumns == 1 ? 1.f / lRatio : std::min(1.0f, 1.f / lRatio);
+				
+						lRowHeight = std::max(lRowHeight, lImageHeight);
+
+						if (lRatio > 1.f)
 						{
 							float lImageOffset = (1.f - lImageHeight) / 2.f;
-							mPackedImagesYOffsets.push_back(lYOffset - lImageOffset);
+							mImagesYOffsets.push_back(lYOffset - lImageOffset);
 						}
 						else
 						{
-							mPackedImagesYOffsets.push_back(lYOffset);
+							mImagesYOffsets.push_back(lYOffset);
 						}
-
-						lYOffset += lImageHeight;
 					}
-					lNewContentHeight = lYOffset;
-				}
-				else
-				{
-					lNewContentHeight = mPackedImagesYOffsets.back() + (mImageSize / mImages.back()->getExif().getOrientedRatio());
+					lYOffset += lRowHeight;
 				}
 
-				lNewContentHeight *= mImageSize;
+				lNewContentHeight = lYOffset;
 			}
+			else
+			{
+				lNewContentHeight = mImagesYOffsets.back() + (mImageSize / mImages.back()->getExif().getOrientedRatio());
+			}
+
+			lNewContentHeight *= mImageSize;
 		}
-		else
-			lNewContentHeight = mNbRows * mImageSize;
 
 		mVisibleImageSize = mImageSize;
 
@@ -569,34 +571,25 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		mInstanceData.clear();
 		mInstanceData.reserve(cMaxDisplayedImages);
 
-		bool lPacked = lItem->mNbColumns == 1;
-
 		QRectF lBoudingRect = lItem->boundingRect();
 
 		int lStartDrawRow = -1;
 		int lEndDrawRow = -1;
 
-		if(lPacked)
+		float lTop = lBoudingRect.top() + lItem->mYOffset;
+		float lBottom = lBoudingRect.bottom() + lItem->mYOffset;
+		lEndDrawRow = int(lItem->mImagesYOffsets.size()) - 1;
+		for (int i = 0; i < lItem->mImagesYOffsets.size(); ++i)
 		{
-			float lTop = lBoudingRect.top() + lItem->mYOffset;
-			float lBottom = lBoudingRect.bottom() + lItem->mYOffset;
-			lEndDrawRow = int(lItem->mPackedImagesYOffsets.size()) - 1;
-			for (int i = 0; i < lItem->mPackedImagesYOffsets.size(); ++i)
+			int lRowIndex = i / lItem->mNbColumns;
+			const float lYOffset = lItem->mImagesYOffsets[i] * lItem->mVisibleImageSize;
+			if(lYOffset > lTop && lStartDrawRow < 0)
+				lStartDrawRow = std::max(0, lRowIndex - 1);
+			if (lYOffset > lBottom)
 			{
-				const float lYOffset = lItem->mPackedImagesYOffsets[i] * lItem->mVisibleImageSize;
-				if(lYOffset > lTop && lStartDrawRow < 0)
-					lStartDrawRow = std::max(0, i - 1);
-				if (lYOffset > lBottom)
-				{
-					lEndDrawRow = std::max(0, i - 1);
-					break;
-				}
+				lEndDrawRow = std::max(0, lRowIndex - 1);
+				break;
 			}
-		}
-		else
-		{
-			lStartDrawRow = lItem->mYOffset / lItem->mImageSize;
-			lEndDrawRow = lStartDrawRow + lBoudingRect.height() / lItem->mImageSize + 1;
 		}
 
 		const int lStartPreloadRow = std::max(0, lStartDrawRow - 5);
@@ -634,12 +627,12 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 				float lImageQuadSize = lItem->mImageSize;
 
 				float lX = lCol * lItem->mImageSize;
-				if(lPacked && lImageRatio < 1.f)
+				if(lItem->mNbColumns == 1 && lImageRatio < 1.f)
 				{
 					lImageQuadSize = lItem->mImageSize / lImageRatio;
 					lX -= (lImageQuadSize - lItem->mImageSize) / 2.f;
 				}
-				float lY = (lPacked ? lItem->mPackedImagesYOffsets[lIndex] * lItem->mVisibleImageSize : lRow * lItem->mImageSize) - lItem->mYOffset;
+				float lY = lItem->mImagesYOffsets[lIndex] * lItem->mVisibleImageSize - lItem->mYOffset;
 
 				QRectF lImageRect(lX, lY, lImageQuadSize, lImageQuadSize);
 

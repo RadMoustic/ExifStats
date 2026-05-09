@@ -37,13 +37,7 @@ CounterChartFromTo
 		to: 365
 		stepSize: 1
 		editable: true
-		background: Rectangle
-		{
-			color: "white"
-			border.color: "gray"
-			border.width: 2
-			radius: 10
-		}
+		background: Pane{}
 		
 		onValueChanged:
 		{

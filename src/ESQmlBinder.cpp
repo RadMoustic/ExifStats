@@ -5,6 +5,7 @@
 #include "ESPerfLog.h"
 #include "ESImageTaggerManager.h"
 #include "ESMaterialPalette.h"
+#include "ESCrashHandler.h"
 
 // Qt
 #include <QApplication>
@@ -656,6 +657,27 @@ bool ESQmlBinder::isMobile() const
 
 /********************************************************************************/
 
+bool ESQmlBinder::hasPreviousCrash() const
+{
+	return ESCrashHandler::hasPreviousCrash();
+}
+
+/********************************************************************************/
+
+QString ESQmlBinder::getPreviousCrashLogs() const
+{
+	return ESCrashHandler::getPreviousCrashLogs();
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::resetPreviousCrash() const
+{
+	ESCrashHandler::resetPreviousCrash();
+}
+
+/********************************************************************************/
+
 const ESListFilesStat* ESQmlBinder::getFilteredFilesList() const
 {
 	return &mListFilesStat;
@@ -694,6 +716,7 @@ void ESQmlBinder::resetFilters()
 
 bool ESQmlBinder::saveDefaultFilters()
 {
+	deleteFilters(scDefaultPresetName);
 	return saveFilters(scDefaultPresetName);
 }
 
@@ -703,7 +726,6 @@ bool ESQmlBinder::loadDefaultFilters()
 {
 	return loadFilters(scDefaultPresetName);
 }
-
 
 /********************************************************************************/
 

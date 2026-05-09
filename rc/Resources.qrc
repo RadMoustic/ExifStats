@@ -13,6 +13,7 @@
 	<file>Qml/GalleryPanel.qml</file>
 	<file>Qml/MapPanel.qml</file>
 	<file>Qml/TimelineCounterChart.qml</file>
+	<file>Qml/PreviousCrashView.qml</file>
 
 	<file>Images/Menu.png</file>
 	<file>Images/DotQuantityLUT.png</file>

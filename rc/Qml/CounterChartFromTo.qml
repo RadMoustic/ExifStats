@@ -20,6 +20,31 @@ CounterChart
 	property var selectedValueFrom: function(pValue) { return pValue; }
 	property var selectedValueTo: function(pValue) { return pValue; }
 	
+	popupMenuFunction: function(pMouse)
+	{
+		print("ouech");
+		var cursorPos = parent.mapToItem(rootItem.barChartChild, pMouse);
+		var p = rootItem.barChartChild.mapToValue(rootItem.barChartChild.mInvertAxis ? cursorPos.y : cursorPos.x);
+		pMouse.accepted = true;
+		if(p.y > 0)
+		{
+			var selectedValue = rootItem.categories[Math.round(p.x)];
+						
+			setFromTo.from = selectedValueFrom(selectedValue);
+			setFromTo.to = selectedValueTo(selectedValue);
+			
+			setFrom.from = setFromTo.from;
+			setTo.to = setFromTo.to;
+			
+			barsContextMenu.oneBarSelected = true;
+		}
+		else
+		{
+			barsContextMenu.oneBarSelected = false;
+		}
+		barsContextMenu.popup();
+	}
+	
 	Menu
 	{
 		id: barsContextMenu
@@ -74,38 +99,6 @@ CounterChart
 				MainQmlBinder[fromPropertyName] = setFromTo.from;
 				MainQmlBinder[toPropertyName] = setFromTo.to;
 			}
-		}
-	}
-			
-	MouseArea
-	{
-		width: parent.width
-		height: parent.height
-		propagateComposedEvents: true
-		acceptedButtons: Qt.RightButton
-
-		onClicked: (pMouse)=>
-		{
-			var cursorPos = parent.mapToItem(rootItem.barChartChild, pMouse);
-			var p = rootItem.barChartChild.mapToValue(cursorPos.x);
-			pMouse.accepted = true;
-			if(p.y > 0)
-			{
-				var selectedValue = rootItem.categories[Math.round(p.x)];
-							
-				setFromTo.from = selectedValueFrom(selectedValue);
-				setFromTo.to = selectedValueTo(selectedValue);
-				
-				setFrom.from = setFromTo.from;
-				setTo.to = setFromTo.to;
-				
-				barsContextMenu.oneBarSelected = true;
-			}
-			else
-			{
-				barsContextMenu.oneBarSelected = false;
-			}
-			barsContextMenu.popup();
 		}
 	}
 }

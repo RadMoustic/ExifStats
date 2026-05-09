@@ -6,6 +6,7 @@
 
 // ES
 #include "ESFilter.h"
+#include "ESDatabase.h"
 
 /********************************************************************************/
 /********************************************************************************/
@@ -87,7 +88,7 @@ public:
 			lFilters.insert(lKeys[i], lValues[i].toBool());
 		}
 
-		setFilters(lFilters, mAllValues);
+		setFilters(lFilters, ESDatabase::getInstance().getAllCameraModels());
 
 		return true;
 	}

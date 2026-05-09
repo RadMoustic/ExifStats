@@ -642,7 +642,7 @@ Flickable
 					MouseArea
 					{
 						enabled: !MainQmlBinder.isMobile()
-						anchors.fill: MainQmlBinder.isMobile() ? undefined : parent
+						anchors.fill: MainQmlBinder.isMobile() ? undefined : parent.listViewChild
 						anchors.rightMargin: MainQmlBinder.isMobile() ? 0 : cameraModelsList.vertScrollBarChild.width
 						acceptedButtons: !MainQmlBinder.isMobile() ? Qt.LeftButton | Qt.RightButton : Qt.NoButton
 						propagateComposedEvents: true

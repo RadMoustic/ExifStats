@@ -4,6 +4,7 @@
 #include "ESLogger.h"
 #include "ESImageCache.h"
 #include "ESImageTaggerManager.h"
+#include "ESCrashHandler.h"
 
 // Qt
 #include <QApplication>
@@ -24,6 +25,11 @@ Q_IMPORT_PLUGIN(QHeifPlugin)
 Q_IMPORT_PLUGIN(QTurboJpegPlugin)
 #endif
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#include <Dbghelp.h>
+#endif // _MSC_VER
+
 /********************************************************************************/
 
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
@@ -33,6 +39,14 @@ int main(int argc, char* argv[])
 #endif
 {
 	qInstallMessageHandler(ESLogger::qtMessageHandler);
+
+#if defined(_MSC_VER)
+	// Required to get valid backtraces with backward on windows
+	SymInitialize(GetCurrentProcess(), nullptr, true);
+	SymSetOptions(SYMOPT_LOAD_LINES);
+#endif
+
+	ESCrashHandler::init();
 
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 

@@ -570,4 +570,10 @@ Pane
 			}
 		}
 	}
+	
+	PreviousCrashView
+	{
+		id: previousCrashView
+		anchors.fill: parent
+	}
 }

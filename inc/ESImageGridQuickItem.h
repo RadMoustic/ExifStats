@@ -114,6 +114,7 @@ public:
 
 	ES_QML_READ_PROPERTY(ContentHeight, int)
 
+	Q_INVOKABLE float getMinImageSize() const;
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
 	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
 	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
@@ -139,7 +140,7 @@ private:
 	bool mGeometryHasChanged;
 
 	std::vector<std::shared_ptr<ESImage>> mImages;
-	std::vector<float> mPackedImagesYOffsets;
+	std::vector<float> mImagesYOffsets;
 	const ESListFilesStatComponent* mFilteredFilesListComponent;
 
 	/********************************* METHODS ***********************************/

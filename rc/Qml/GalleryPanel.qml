@@ -8,7 +8,7 @@ ESImageGridQuickItem
 	id: imageGrid
 	
 	property var imageViewerItem
-	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : 10
+	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : Math.min(10, Math.floor(width / getMinImageSize()))
 	property real gridCol: MainQmlBinder.isMobile() ? 1 : Math.floor(width / 250)
 	property alias flickableChild: flickable
 	property bool orientation: width > height
@@ -145,10 +145,7 @@ ESImageGridQuickItem
 				preventStealing: false
 				
 				acceptedButtons: Qt.LeftButton | Qt.RightButton
-				
-				property real pressX: 0
-				property real pressY: 0
-				
+								
 				function popupContextMenu(pMouse)
 				{
 					pMouse.accepted = true;
@@ -156,6 +153,9 @@ ESImageGridQuickItem
 					if(galleryMenu.selectedImage !== "")
 						galleryMenu.popup();
 				}
+				
+				property real pressX: 0
+				property real pressY: 0
 				
 				onPressed: (pMouse) =>
 				{

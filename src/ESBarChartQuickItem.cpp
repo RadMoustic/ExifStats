@@ -14,24 +14,23 @@ constexpr float cMarkerHalfWidth = 2.f;
 
 ESBarChartQuickItem::ESBarChartQuickItem()
 	: mBarSpacing(1.)
-	, mYAxisMaxWidthAuto(0.f)
-	, mYAxisWidthAuto(true)
-	, mYAxisWidth(0.f)
-	, mXAxisMaxHeightAuto(0.f)
-	, mXAxisHeightAuto(true)
-	, mXAxisHeight(0.f)
+	, mValueAxisMaxSizeAuto(0.f)
+	, mValueAxisSizeAuto(true)
+	, mValueAxisSize(0.f)
+	, mCategoryAxisMaxSizeAuto(0.f)
+	, mCategoryAxisSizeAuto(true)
+	, mCategoryAxisSize(0.f)
 	, mMargin(5.f)
-	, mXOffset(0.f)
-	, mXScale(1.f)
-	, mYScale(1.f)
+	, mCategoryAxisOffset(0.f)
+	, mCategoryAxisScale(1.f)
+	, mValueAxisScale(1.f)
 	, mAllCategoriesOnly(false)
 	, mCategorySpacing(0.f)
 	, mInvertAxis(false)
 	, mMaxValue(0)
-	, mBarWidth(0.)
-	, mBarHeightFactor(1.f)
-	, mAvailableHeight(0.f)
-	, mRealXAxisHeight(0.f)
+	, mBarThickness(0.)
+	, mBarLengthFactor(1.f)
+	, mRealCategoryAxisSize(0.f)
 	, mActualBarSpacing(0.)
 	, mValid(false)
 	, mDataHasChanged(false)
@@ -47,7 +46,7 @@ QPoint ESBarChartQuickItem::mapToValue(float pX)
 	if(!mValid || std::isnan(pX))
 		return QPoint(-1,-1);
 	QPointF lPLotAreaPos = mInvertAxis ? mapToPlotArea(0.f, pX) : mapToPlotArea(pX, 0.f);
-	float lX = (mInvertAxis ? lPLotAreaPos.y() : lPLotAreaPos.x()) - mXOffset;
+	float lX = (mInvertAxis ? lPLotAreaPos.y() : lPLotAreaPos.x()) - mCategoryAxisOffset;
 	float lChartFullWidth = getChartFullWidth();
 	if(lX < 0 || lX > lChartFullWidth)
 		return QPoint(-1, -1);
@@ -60,16 +59,16 @@ QPoint ESBarChartQuickItem::mapToValue(float pX)
 QPointF ESBarChartQuickItem::mapToPlotArea(float pX, float pY)
 {
 	if(mInvertAxis)
-		return QPointF(pX - mRealXAxisHeight - mMargin, pY - mMargin);
+		return QPointF(pX - mRealCategoryAxisSize - mMargin, pY - mMargin);
 	else
-		return QPointF(pX - mYAxisWidth - mMargin, pY - mMargin);
+		return QPointF(pX - mValueAxisSize - mMargin, pY - mMargin);
 }
 
 /********************************************************************************/
 
 float ESBarChartQuickItem::getChartFullWidth() const
 {
-	return float(mValues.size()) * (mBarWidth * mXScale + std::min(mBarSpacing, mActualBarSpacing * mXScale));
+	return float(mValues.size()) * (mBarThickness * mCategoryAxisScale + std::min(mBarSpacing, mActualBarSpacing * mCategoryAxisScale));
 }
 
 /********************************************************************************/
@@ -109,27 +108,27 @@ void InvertPos(T& pPos)
 
 		pPainter->save();
 		if (mInvertAxis)
-			pPainter->setClipRect(mMargin, mMargin, width() - 2.f * mMargin, height() - 2.f * mMargin - mYAxisWidth);
+			pPainter->setClipRect(mMargin, mMargin, width() - 2.f * mMargin, height() - 2.f * mMargin - mCategoryAxisSize);
 		else
-			pPainter->setClipRect(mMargin + mYAxisWidth, mMargin, width() - mMargin * 2.0 - mYAxisWidth, height() - mMargin * 2.0);
-		QPointF lPos(mXOffset, 0);
+			pPainter->setClipRect(mMargin + mValueAxisSize, mMargin, width() - mMargin * 2.0 - mValueAxisSize, height() - mMargin * 2.0);
+		QPointF lPos(mCategoryAxisOffset, 0);
 		if (mInvertAxis)
 			InvertPos(lPos);
 		pPainter->translate(lPos);
 
 		// Bars
-		float lLeft = mMargin + (mInvertAxis ? 0 : mYAxisWidth);
+		float lLeft = mMargin + (mInvertAxis ? 0 : mValueAxisSize);
 		float lTextHeight = pPainter->boundingRect(QRectF(), "CAT").height();
-		float lMaxBarHeight = mBarHeightFactor * mMaxValue;
-		float lActualBarWith = std::max(0.5f, mBarWidth * mXScale);
+		float lMaxBarHeight = mBarLengthFactor * mMaxValue;
+		float lActualBarWith = std::max(0.5f, mBarThickness * mCategoryAxisScale);
 		float lActualCategoriesTextHeight = lTextHeight * 0.7f;
 		bool lCanDisplayAllCategories = lActualCategoriesTextHeight + mCategorySpacing < lActualBarWith;
 		int lCategoriesToDisplayInterval = lCanDisplayAllCategories ? 1 : int(ceilf((lActualCategoriesTextHeight + mCategorySpacing) / lActualBarWith));
 		for (int i = 0 ; i < mValues.size() ; ++i)
 		{
 			int lValue = mValues[i];
-			float lBarHeight = std::max(0.001f, std::min(lMaxBarHeight, lValue * mBarHeightFactor * mYScale));
-			QRectF lBarRect(lLeft, (mInvertAxis ? mMargin + mRealXAxisHeight : height() - mMargin - lBarHeight - mRealXAxisHeight), lActualBarWith, lBarHeight);
+			float lBarHeight = std::max(0.001f, std::min(lMaxBarHeight, lValue * mBarLengthFactor * mValueAxisScale));
+			QRectF lBarRect(lLeft, (mInvertAxis ? mMargin + mRealCategoryAxisSize : height() - mMargin - lBarHeight - mRealCategoryAxisSize), lActualBarWith, lBarHeight);
 			if (mInvertAxis)
 				InvertRect(lBarRect);
 			if(pPainter->clipBoundingRect().intersects(lBarRect))
@@ -146,13 +145,13 @@ void InvertPos(T& pPos)
 						pPainter->setPen(lPalette->mForeground);
 						if (mInvertAxis)
 						{
-							QRectF lTextRect(mMargin, lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, mRealXAxisHeight - cMarkerTextSpacing, lTextHeight);
+							QRectF lTextRect(mMargin, lLeft + mBarThickness * mCategoryAxisScale / 2.f - lTextHeight / 2.f + 3, mRealCategoryAxisSize - cMarkerTextSpacing, lTextHeight);
 							QRectF lTextBoundingRect = pPainter->boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat);
 							pPainter->drawText(lTextRect, lTextBoundingRect.width() > lTextRect.width() ? 0 : Qt::AlignRight, lCat);
 						}
 						else
 						{
-							pPainter->translate(lLeft + mBarWidth * mXScale / 2.f - lTextHeight / 2.f + 3, mInvertAxis ? mMargin : height() - mRealXAxisHeight - mMargin + cMarkerTextSpacing);
+							pPainter->translate(lLeft + mBarThickness * mCategoryAxisScale / 2.f - lTextHeight / 2.f + 3, mInvertAxis ? mMargin : height() - mRealCategoryAxisSize - mMargin + cMarkerTextSpacing);
 							pPainter->rotate(90);
 							pPainter->drawText(0,0, lCat);
 						}
@@ -161,7 +160,7 @@ void InvertPos(T& pPos)
 				}
 			}
 
-			lLeft += mBarWidth * mXScale + std::min(mBarSpacing, mActualBarSpacing * mXScale);
+			lLeft += mBarThickness * mCategoryAxisScale + std::min(mBarSpacing, mActualBarSpacing * mCategoryAxisScale);
 		}
 
 		pPainter->restore();
@@ -171,7 +170,7 @@ void InvertPos(T& pPos)
 		pPainter->setBrush(Qt::NoBrush);
 
 		// Y
-		float lScaledMaxValue = float(mMaxValue) / mYScale;
+		float lScaledMaxValue = float(mMaxValue) / mValueAxisScale;
 
 		float lInterval = lScaledMaxValue / cNbYMarker;
 		float lMult = 1;
@@ -184,12 +183,12 @@ void InvertPos(T& pPos)
 		lInterval = lRounded == 0.f ? lMult / 10.f : lRounded * lMult;
 
 		int lNbMarker = ceil(float(lScaledMaxValue) / lInterval);
-		float lMarkerSpacing = ((mInvertAxis ? width() : height()) - mMargin * 2.f - mRealXAxisHeight) / lScaledMaxValue;
+		float lMarkerSpacing = ((mInvertAxis ? width() : height()) - mMargin * 2.f - mRealCategoryAxisSize) / lScaledMaxValue;
 
 		if (mInvertAxis)
-			pPainter->drawLine(QLineF(mMargin + mRealXAxisHeight, height() - mYAxisWidth - mMargin, width() - mMargin, height() - mYAxisWidth - mMargin));
+			pPainter->drawLine(QLineF(mMargin + mRealCategoryAxisSize, height() - mValueAxisSize - mMargin, width() - mMargin, height() - mValueAxisSize - mMargin));
 		else
-			pPainter->drawLine(QLineF(mYAxisWidth + mMargin, mMargin, mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin));
+			pPainter->drawLine(QLineF(mValueAxisSize + mMargin, mMargin, mValueAxisSize + mMargin, height() - mRealCategoryAxisSize - mMargin));
 
 		pPainter->save();
 		QPen lPen(lPalette->mForeground);
@@ -202,19 +201,19 @@ void InvertPos(T& pPos)
 			int lMarkerValue = lInterval * i;
 			float lMarkerY;
 			if (mInvertAxis)
-				lMarkerY = mRealXAxisHeight + mMargin + lMarkerSpacing * lMarkerValue;
+				lMarkerY = mRealCategoryAxisSize + mMargin + lMarkerSpacing * lMarkerValue;
 			else
-				lMarkerY = height() - mRealXAxisHeight - mMargin - lMarkerSpacing * lMarkerValue;
+				lMarkerY = height() - mRealCategoryAxisSize - mMargin - lMarkerSpacing * lMarkerValue;
 			if (mInvertAxis)
-				pPainter->drawLine(QLineF(lMarkerY, mMargin * 2.f, lMarkerY, height() - mYAxisWidth - cMarkerHalfWidth));
+				pPainter->drawLine(QLineF(lMarkerY, mMargin * 2.f, lMarkerY, height() - mValueAxisSize - cMarkerHalfWidth));
 			else
-				pPainter->drawLine(QLineF(mYAxisWidth + mMargin - cMarkerHalfWidth, lMarkerY, width() - mYAxisWidth - mMargin*2.f, lMarkerY));
+				pPainter->drawLine(QLineF(mValueAxisSize + mMargin - cMarkerHalfWidth, lMarkerY, width() - mValueAxisSize - mMargin*2.f, lMarkerY));
 
 			QString lMarkerText = QString::number(lMarkerValue);
 			if (mInvertAxis)
 			{
 				pPainter->save();
-				pPainter->translate(lMarkerY - lTextHeight / 2.f + 3, height() - mMargin - mYAxisWidth + cMarkerTextSpacing);
+				pPainter->translate(lMarkerY - lTextHeight / 2.f + 3, height() - mMargin - mValueAxisSize + cMarkerTextSpacing);
 				pPainter->rotate(90);
 				pPainter->drawText(0, 0, lMarkerText);
 				pPainter->restore();
@@ -222,16 +221,16 @@ void InvertPos(T& pPos)
 			else
 			{
 				QRectF lTextBoundingRect = pPainter->boundingRect(QRectF(), Qt::AlignVCenter, lMarkerText);
-				pPainter->drawText(mYAxisWidth + mMargin - lTextBoundingRect.width() - cMarkerTextSpacing, lMarkerY - lTextBoundingRect.y() - 3, lMarkerText); // why 3 no idea
+				pPainter->drawText(mValueAxisSize + mMargin - lTextBoundingRect.width() - cMarkerTextSpacing, lMarkerY - lTextBoundingRect.y() - 3, lMarkerText); // why 3 no idea
 			}
 		}
 		pPainter->restore();
 
 		// X
 		if (mInvertAxis)
-			pPainter->drawLine(QLineF(mRealXAxisHeight + mMargin, mMargin, mRealXAxisHeight + mMargin, height() - mYAxisWidth - mMargin));
+			pPainter->drawLine(QLineF(mRealCategoryAxisSize + mMargin, mMargin, mRealCategoryAxisSize + mMargin, height() - mValueAxisSize - mMargin));
 		else
-			pPainter->drawLine(QLineF(mYAxisWidth + mMargin, height() - mRealXAxisHeight - mMargin, width() - mMargin, height() - mRealXAxisHeight - mMargin));
+			pPainter->drawLine(QLineF(mValueAxisSize + mMargin, height() - mRealCategoryAxisSize - mMargin, width() - mMargin, height() - mRealCategoryAxisSize - mMargin));
 	}
 }
 
@@ -248,27 +247,27 @@ void ESBarChartQuickItem::updateInternal()
 	{
 		mMaxValue = mValues.size() == 0 ? 0 : *std::max_element(mValues.begin(), mValues.end());
 
-		if (mXAxisHeightAuto)
+		if (mCategoryAxisSizeAuto)
 		{
 			QPixmap lPixmap(10,10);
 			QPainter lPainter(&lPixmap);
-			mRealXAxisHeight = 0;
+			mRealCategoryAxisSize = 0;
 			for (const QString& lCat : mCategories)
-				mRealXAxisHeight = std::max(mRealXAxisHeight, lPainter.boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat).width());
+				mRealCategoryAxisSize = std::max(mRealCategoryAxisSize, lPainter.boundingRect(QRectF(), Qt::TextSingleLine & Qt::TextDontClip, lCat).width());
 
-			mRealXAxisHeight += mMargin + mMargin + cMarkerTextSpacing;
-			if(mXAxisMaxHeightAuto > 0.f)
-				mRealXAxisHeight = std::min<float>(mRealXAxisHeight, mXAxisMaxHeightAuto);
+			mRealCategoryAxisSize += mMargin + mMargin + cMarkerTextSpacing;
+			if(mCategoryAxisMaxSizeAuto > 0.f)
+				mRealCategoryAxisSize = std::min<float>(mRealCategoryAxisSize, mCategoryAxisMaxSizeAuto);
 		}
 		else
 		{
-			mRealXAxisHeight = mXAxisHeight;
+			mRealCategoryAxisSize = mCategoryAxisSize;
 		}
 	}
 	if (mGeometryHasChanged || mDataHasChanged)
 	{
-		float lContentWidth = (mInvertAxis ? height() : width()) - mYAxisWidth - 2.f * mMargin;
-		float lContentHeight = (mInvertAxis ? width() : height()) - mRealXAxisHeight - 2.f * mMargin;
+		float lContentWidth = (mInvertAxis ? height() : width()) - mValueAxisSize - 2.f * mMargin;
+		float lContentHeight = (mInvertAxis ? width() : height()) - mRealCategoryAxisSize - 2.f * mMargin;
 
 		float lBarSpacingSum = mBarSpacing * (mCategories.size() - 1);
 		if (lBarSpacingSum >= 0.5*lContentWidth) // Can't have at least 1px wide bars
@@ -280,8 +279,8 @@ void ESBarChartQuickItem::updateInternal()
 		{
 			mActualBarSpacing = mBarSpacing;
 		}
-		mBarWidth = (lContentWidth - lBarSpacingSum) / mCategories.size();
-		mBarHeightFactor = lContentHeight / mMaxValue;
+		mBarThickness = (lContentWidth - lBarSpacingSum) / mCategories.size();
+		mBarLengthFactor = lContentHeight / mMaxValue;
 	}
 
 	mDataHasChanged = false;

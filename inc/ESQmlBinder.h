@@ -164,6 +164,9 @@ public:
 	Q_INVOKABLE void clear();
 	Q_INVOKABLE bool isCtrlPressed() const;
 	Q_INVOKABLE bool isMobile() const;
+	Q_INVOKABLE bool hasPreviousCrash() const;
+	Q_INVOKABLE QString getPreviousCrashLogs() const;
+	Q_INVOKABLE void resetPreviousCrash() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
 	Q_INVOKABLE void setDatabaseFolder(const QUrl& pFolderPath);
 	Q_INVOKABLE void setTokenizerFolder(const QUrl& pFolderPath);

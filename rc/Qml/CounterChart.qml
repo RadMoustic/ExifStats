@@ -20,14 +20,16 @@ Pane
 	property var max: 1
 	property var totalHorizontalScroll: 0
 	
+	property var popupMenuFunction: function(pMouse) {}
+	
 	property alias barChartChild: barChartItem
 	
 	function resetView()
 	{
 		valueToltip.visible = false;
-		barChartItem.mXOffset = 0;
-		barChartItem.mXScale = 1.0;
-		barChartItem.mYScale = 1.0;
+		barChartItem.mCategoryAxisOffset = 0;
+		barChartItem.mCategoryAxisScale = 1.0;
+		barChartItem.mValueAxisScale = 1.0;
 	}
 	
 	ESBarChartQuickItem
@@ -51,10 +53,10 @@ Pane
 		}
 		
 		mInvertAxis: height > width
-		mXAxisHeight: 0
-		mXAxisHeightAuto: true
-		mXAxisMaxHeightAuto: 150
-		mYAxisWidth: 40
+		mCategoryAxisSize: 0
+		mCategoryAxisSizeAuto: true
+		mCategoryAxisMaxSizeAuto: 150
+		mValueAxisSize: 40
 		mMargin: 5
 		
 		mBarSpacing: 1
@@ -79,21 +81,22 @@ Pane
 			
 		WheelHandler
 		{
-			onWheel: (event)=>
+			onWheel: (pEvent)=>
 			{
 				valueToltip.visible = false;
-				var scale = event.angleDelta.y > 0 ? 1.1 : 0.9;
+				var scale = pEvent.angleDelta.y > 0 ? 1.1 : 0.9;
 				if(MainQmlBinder.isCtrlPressed())
 				{
-					barChartItem.mYScale *= scale;
+					barChartItem.mValueAxisScale *= scale;
 				}
 				else
 				{
-					var mouseX = barChartItem.mapToPlotArea(event.x, event.y).x;
+					var p = barChartItem.mapToPlotArea(pEvent.x, pEvent.y);
+					var mouseX = barChartItem.mInvertAxis ? p.y : p.x;
 					var oldChartFullWidth = barChartItem.getChartFullWidth();
-					barChartItem.mXScale *= scale;
+					barChartItem.mCategoryAxisScale *= scale;
 					var newChartFullWidth = barChartItem.getChartFullWidth();
-					barChartItem.mXOffset = (barChartItem.mXOffset - mouseX) * newChartFullWidth/oldChartFullWidth + mouseX;
+					barChartItem.mCategoryAxisOffset = (barChartItem.mCategoryAxisOffset - mouseX) * newChartFullWidth / oldChartFullWidth + mouseX;
 				}
 			}
 		}
@@ -109,91 +112,124 @@ Pane
 			property real startOffsetX: 0
 			property real pinchStartX: 0
 			property real oldFullWidth: 0
-
-			onPinchStarted: (pinch) =>
+			
+			onPinchStarted: (pPinch) =>
 			{
 				valueToltip.visible = false;
-				startDistX = Math.max(1, Math.abs(pinch.point1.x - pinch.point2.x));
-				startDistY = Math.max(1, Math.abs(pinch.point1.y - pinch.point2.y));
+				startDistX = Math.max(1, Math.abs(pPinch.point1.x - pPinch.point2.x));
+				startDistY = Math.max(1, Math.abs(pPinch.point1.y - pPinch.point2.y));
 				
-				startScaleX = barChartItem.mInvertAxis ? barChartItem.mYScale : barChartItem.mXScale;
-				startScaleY = barChartItem.mInvertAxis ? barChartItem.mXScale : barChartItem.mYScale;
-				startOffsetX = barChartItem.mXOffset;
+				if(barChartItem.mInvertAxis)
+				{
+					var tmp = startDistY;
+					startDistY = startDistX;
+					startDistX = tmp;
+				}
+				
+				startScaleX = barChartItem.mCategoryAxisScale;
+				startScaleY = barChartItem.mValueAxisScale;
+				startOffsetX = barChartItem.mCategoryAxisOffset;
 				oldFullWidth = barChartItem.getChartFullWidth();
 				
-				pinchStartX = barChartItem.mapToPlotArea(pinch.center.x, 0).x;
+				pinchStartX = barChartItem.mapToPlotArea(pPinch.center.x, 0).x;
 			}
 
-			onPinchUpdated: (pinch) =>
+			onPinchUpdated: (pPinch) =>
 			{
-				var currentDistX = Math.abs(pinch.point1.x - pinch.point2.x);
-				var currentDistY = Math.abs(pinch.point1.y - pinch.point2.y);
+				var currentDistX = Math.abs(pPinch.point1.x - pPinch.point2.x);
+				var currentDistY = Math.abs(pPinch.point1.y - pPinch.point2.y);
+				
+				if(barChartItem.mInvertAxis)
+				{
+					var tmp = currentDistY;
+					currentDistY = currentDistX;
+					currentDistX = tmp;
+				}
 				
 				if (startDistX > 20 && currentDistX > 20) 
 				{
 					var newScale = startScaleX * (currentDistX / startDistX);
-					if(barChartItem.mInvertAxis)
-						barChartItem.mYScale = newScale;
-					else
-						barChartItem.mXScale = newScale;
+					barChartItem.mCategoryAxisScale = newScale;
 					var newFullWidth = barChartItem.getChartFullWidth();
-					barChartItem.mXOffset = (startOffsetX - pinchStartX) * newFullWidth / oldFullWidth + pinchStartX;
+					barChartItem.mCategoryAxisOffset = (startOffsetX - pinchStartX) * newFullWidth / oldFullWidth + pinchStartX;
 				}
 				
 				if (startDistY > 50 && currentDistY > 50) 
 				{
 					var newScale = startScaleY * (currentDistY / startDistY);
-					if(barChartItem.mInvertAxis)
-						barChartItem.mXScale = newScale;
-					else
-						barChartItem.mYScale
+					barChartItem.mValueAxisScale = newScale;
 				}
 			}
 
 			MouseArea
 			{
 				anchors.fill: parent
+				
+				acceptedButtons: Qt.LeftButton | Qt.RightButton
+				
 				property real lastX: 0
 				property real lastY: 0
 				property real pressX: 0
 				property real pressY: 0
 				
-				onPressed: (mouse) =>
+				onPressed: (pMouse) =>
 				{
-					lastX = mouse.x;
-					lastY = mouse.y;
-					pressX = mouse.x;
-					pressY = mouse.y;
+					lastX = pMouse.x;
+					lastY = pMouse.y;
+					pressX = pMouse.x;
+					pressY = pMouse.y;
 				}
 				
-				onPositionChanged: (mouse) =>
+				onPositionChanged: (pMouse) =>
 				{
 					if (pressed) 
 					{
-						valueToltip.visible = false;
-						if(barChartItem.mInvertAxis)
-							barChartItem.mXOffset += (mouse.y - lastY);
-						else
-							barChartItem.mXOffset += (mouse.x - lastX);
-						lastX = mouse.x;
-						lastY = mouse.y;
+						if(pressedButtons & Qt.LeftButton)
+						{
+							valueToltip.visible = false;
+							if(barChartItem.mInvertAxis)
+								barChartItem.mCategoryAxisOffset += (pMouse.y - lastY);
+							else
+								barChartItem.mCategoryAxisOffset += (pMouse.x - lastX);
+							lastX = pMouse.x;
+							lastY = pMouse.y;
+						}
 					}
 				}
 				
-				onDoubleClicked: (mouse) =>
+				onDoubleClicked: (pMouse) =>
 				{
-					rootItem.resetView();
+					if(pMouse.button == Qt.LeftButton)
+						rootItem.resetView();
 				}
 				
-				onClicked: (mouse) =>
+				onClicked: (pMouse) =>
 				{
-					if (Math.abs(mouse.x - pressX) > 5 || Math.abs(mouse.y - pressY) > 5) return;
+					pMouse.accepted = false;
+					if (Math.abs(pMouse.x - pressX) > 5 || Math.abs(pMouse.y - pressY) > 5) return;
+					
+					if(pMouse.button == Qt.LeftButton)
+					{
+						pMouse.accepted = true;
+						var p = barChartItem.mapToValue(barChartItem.mInvertAxis ? pMouse.y : pMouse.x);
+						valueToltip.text = rootItem.categories[p.x] + " => " + p.y;
+						valueToltip.x = pMouse.x - valueToltip.width/2;
+						valueToltip.y = pMouse.y - valueToltip.height;
+						valueToltip.visible = true;
+					}
+					else if (pMouse.button == Qt.RightButton)
+					{
+						popupMenuFunction(pMouse);
+					}
+				}
 
-					var p = barChartItem.mapToValue(barChartItem.mInvertAxis ? mouse.y : mouse.x);
-					valueToltip.text = rootItem.categories[p.x] + " => " + p.y;
-					valueToltip.x = mouse.x - valueToltip.width/2;
-					valueToltip.y = mouse.y - valueToltip.height;
-					valueToltip.visible = true;
+				onPressAndHold: (pMouse)=>
+				{
+					pMouse.accepted = false;
+					if (Math.abs(pMouse.x - pressX) > 5 || Math.abs(pMouse.y - pressY) > 5) return;
+
+					if(MainQmlBinder.isMobile())
+						popupMenuFunction(pMouse);
 				}
 			}
 		}

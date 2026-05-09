@@ -60,6 +60,27 @@ Frame
 					setAllSelectedItems(false);
 				}
 			}
+			
+			TextField
+			{
+				id: searchField
+				Layout.fillWidth: true
+				implicitHeight: 40
+				placeholderText: "Search"
+			}
+			
+			RegularButton
+			{
+				text:"X"
+				
+				implicitWidth: 30
+				implicitHeight: 30
+
+				onReleased:
+				{
+					searchField.text = ""
+				}
+			}
 		}
 		
 		ListView
@@ -69,7 +90,7 @@ Frame
 			boundsBehavior: Flickable.StopAtBounds
 			clip: true
 			
-			model: rootItem.model
+			model: rootItem.model.filter(item => item.toLowerCase().includes(searchField.text.toLowerCase())).sort()
 			
 			Layout.fillWidth: true
 			Layout.fillHeight: true
@@ -82,7 +103,7 @@ Frame
 			
 			WheelHandler
 			{
-				onWheel: (event)=>{listView.flick(0, event.angleDelta.y*event.y*0.1)}
+				onWheel: (event)=>{listView.flick(0, event.angleDelta.y*5)}
 			}
 
 			delegate: Rectangle

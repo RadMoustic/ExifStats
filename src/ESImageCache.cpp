@@ -24,7 +24,7 @@
 static const char* CACHE_VERSION = "3";
 static const QString CACHE_IMAGE_FILE_EXTENSION = ".escache";
 #ifdef Q_OS_ANDROID
-static const int MAX_NUM_IMAGE_LOADED = 256;
+static const int MAX_NUM_IMAGE_LOADED = 128;
 #else
 static const int MAX_NUM_IMAGE_LOADED = 700;
 #endif

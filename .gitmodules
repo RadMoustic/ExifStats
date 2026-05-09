@@ -7,3 +7,6 @@
 [submodule "Externals/quazip"]
 	path = Externals/quazip
 	url = https://github.com/stachenov/quazip.git
+[submodule "Externals/backward-cpp"]
+	path = Externals/backward-cpp
+	url = https://github.com/bombela/backward-cpp.git

@@ -27,7 +27,7 @@ Pane
 		
 		property var theme
 		property var imageGridYOffset
-		property var imageGridImageSize
+		property var imageGridCol
     }
 			
 	function maxList(pList)
@@ -84,26 +84,36 @@ Pane
 		filtersPanel.displayData();
 	}
 	
+	Timer
+	{
+		id: loadDefaultFiltersTimer
+		interval: 0
+		repeat: false
+		onTriggered:
+		{
+			MainQmlBinder.loadDefaultFilters();
+			imageGrid.gridCol = settings.imageGridCol;
+			imageGrid.flickableChild.contentY = settings.imageGridYOffset;
+		}
+	}
+	
 	Component.onCompleted:
 	{
 		imageGrid.mFilteredFilesList = MainQmlBinder.getFilteredFilesList();
 		displayData();
 		MainQmlBinder.dataHasChanged.connect(displayData);
 		
-		mainWindow.Material.theme = settings.theme;
-		sidePanel.Material.theme = settings.theme;
+		mainWindow.Material.theme = settings.theme ? Material.Dark : Material.Light;
+		sidePanel.Material.theme = settings.theme ? Material.Dark : Material.Light;
 		
-		imageGrid.flickableChild.contentY = settings.imageGridYOffset;
-		imageGrid.mImageSize = settings.imageGridImageSize;
-		
-		MainQmlBinder.loadDefaultFilters();
+		loadDefaultFiltersTimer.start();
 	}
 	
 	Component.onDestruction:
 	{
-		settings.theme = mainWindow.Material.theme;
-		settings.imageGridYOffset = imageGrid.mYOffset;
-		settings.imageGridImageSize = imageGrid.mImageSize;
+		settings.theme = mainWindow.Material.theme === Material.Dark ? true : false;
+		settings.imageGridYOffset = imageGrid.flickableChild.contentY;
+		settings.imageGridCol = imageGrid.gridCol;
 		MainQmlBinder.saveDefaultFilters();
 	}
 	
@@ -451,5 +461,11 @@ Pane
 				MainQmlBinder.mFullScreen = false;
 			}
 		}
+	}
+	
+	PreviousCrashView
+	{
+		id: previousCrashView
+		anchors.fill: parent
 	}
 }

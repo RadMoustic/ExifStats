@@ -29,19 +29,20 @@ public:
 
 	ES_QML_PROPERTY(Categories, QVector<QString>, mDataHasChanged = true; update(); )
 	ES_QML_PROPERTY(Values, QVector<int>, mDataHasChanged = true; update();)
-	
+
+	ES_QML_PROPERTY(CategoryAxisMaxSizeAuto, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(CategoryAxisSizeAuto, bool, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(CategoryAxisSize, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(CategoryAxisOffset, float, mGeometryHasChanged = true; update();)
+	ES_QML_PROPERTY(CategoryAxisScale, float, mGeometryHasChanged = true; update();)
+
+	ES_QML_PROPERTY(ValueAxisMaxSizeAuto, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(ValueAxisSizeAuto, bool, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(ValueAxisSize, float, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(ValueAxisScale, float, mGeometryHasChanged = true; update();)
+
 	ES_QML_PROPERTY(Margin, float, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(XAxisMaxHeightAuto, float, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(XAxisHeightAuto, bool, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(XAxisHeight, float, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(YAxisMaxWidthAuto, float, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(YAxisWidthAuto, bool, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(YAxisWidth, float, mDataHasChanged = true; update();)
 	ES_QML_PROPERTY(BarSpacing, double, mDataHasChanged = true; update();)
-	
-	ES_QML_PROPERTY(XOffset, float, mGeometryHasChanged = true; update();)
-	ES_QML_PROPERTY(XScale, float, mGeometryHasChanged = true; update();)
-	ES_QML_PROPERTY(YScale, float, mGeometryHasChanged = true; update();)
 	
 	ES_QML_PROPERTY(AllCategoriesOnly, bool)
 	ES_QML_PROPERTY(CategorySpacing, float)
@@ -65,10 +66,9 @@ private:
 
 	QSizeF mPreviousSize;
 	int mMaxValue ;
-	float mBarWidth;
-	float mBarHeightFactor;
-	float mAvailableHeight;
-	qreal mRealXAxisHeight;
+	float mBarThickness;
+	float mBarLengthFactor;
+	qreal mRealCategoryAxisSize;
 	double mActualBarSpacing;
 
 	bool mValid;
