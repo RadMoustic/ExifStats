@@ -57,5 +57,6 @@ protected:
 	void onQuit();
 	void onQmlWarnings(const QList<QQmlError>& pWarnings);
 	void onQmlFileChanged(const QString& pFilePath);
+	void onSceneGraphError(QQuickWindow::SceneGraphError pError, const QString& pMessage);
 };
 

@@ -71,6 +71,8 @@ ESWindow::ESWindow()
 			else
 				showNormal();
 		});
+
+	(void)connect(this, &QQuickWindow::sceneGraphError, this,&ESWindow::onSceneGraphError);
 }
 
 /********************************************************************************/
@@ -125,6 +127,15 @@ void ESWindow::initializeQml()
 #else
 	true);
 #endif
+}
+
+/********************************************************************************/
+
+void ESWindow::onSceneGraphError(QQuickWindow::SceneGraphError pError, const QString& pMessage)
+{
+	Q_UNUSED(pError);
+	qWarning("GPU_CRASH_OR_SCENEGRAPH_ERROR: %s", pMessage.toStdString().c_str());
+	abort();
 }
 
 /********************************************************************************/

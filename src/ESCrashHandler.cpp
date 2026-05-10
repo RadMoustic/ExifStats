@@ -58,16 +58,35 @@ extern "C" {
 
 void ESCrashHandler::init()
 {
-	std::signal(SIGSEGV, ESCrashHandler::handleSignal);
-	std::signal(SIGABRT, ESCrashHandler::handleSignal);
-	std::signal(SIGFPE, ESCrashHandler::handleSignal);
-	std::signal(SIGILL, ESCrashHandler::handleSignal);
+#ifdef Q_OS_WIN
+    std::signal(SIGSEGV, ESCrashHandler::handleSignal);
+    std::signal(SIGABRT, ESCrashHandler::handleSignal);
+    std::signal(SIGFPE, ESCrashHandler::handleSignal);
+    std::signal(SIGILL, ESCrashHandler::handleSignal);
+#else
+    struct sigaction lAction;
+    lAction.sa_sigaction = ESCrashHandler::handleSignal;
+    lAction.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigemptyset(&lAction.sa_mask);
+    sigaction(SIGSEGV, &lAction, nullptr);
+    sigaction(SIGABRT, &lAction, nullptr);
+    sigaction(SIGFPE, &lAction, nullptr);
+    sigaction(SIGILL, &lAction, nullptr);
+    sigaction(SIGBUS, &lAction, nullptr);
+    sigaction(SIGTRAP, &lAction, nullptr);
+#endif
 }
 
 /********************************************************************************/
 
+#ifdef Q_OS_WIN
 void ESCrashHandler::handleSignal(int pSignal)
 {
+#else
+void ESCrashHandler::handleSignal(int pSignal, siginfo* pInfo, void* pContext)
+{
+Q_UNUSED(pInfo);
+#endif
 	qWarning("Application crashed with signal: %d", pSignal);
 
 	QString lAppDataPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
@@ -86,7 +105,11 @@ void ESCrashHandler::handleSignal(int pSignal)
 		lFileStream << ESLogger::get().getLoggedMessages().join("\n").toLocal8Bit().toStdString() << std::endl;
 
 		backward::StackTrace lStackTrace;
-		lStackTrace.load_here(32);
+#ifdef Q_OS_WIN
+        lStackTrace.load_here(32);
+#else
+        lStackTrace.load_from(pContext, 32);
+#endif
 #ifdef Q_OS_ANDROID
 		lStackTrace.skip_n_firsts(4);
 #else

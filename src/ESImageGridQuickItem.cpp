@@ -653,7 +653,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 						{
 							lTextureSlot = mFreeImageTextureSlots.back();
 							mFreeImageTextureSlots.pop_back();
-							const QImage& lImage = lImageWrapper->getImage();
+							std::shared_ptr<const QImage> lImage = lImageWrapper->getImage();
 							QImage lGLImage(mCurrentTextureSize, mCurrentTextureSize, QImage::Format_RGBA8888);
 							lGLImage.fill(Qt::transparent);
 							QPainter lPainter(&lGLImage);
@@ -676,7 +676,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 								lX = (mCurrentTextureSize - lWidth) / 2.f;
 								lY = 0.f;
 							}
-							lPainter.drawImage(QRectF(lX, lY, lWidth, lHeight), lImage);
+							lPainter.drawImage(QRectF(lX, lY, lWidth, lHeight), *lImage);
 							//mImageTextures->setData(0, lTextureSlot, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, lScaledImage.constBits()); checkOpengGLErrors();
 							glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0, lTextureSlot, mCurrentTextureSize, mCurrentTextureSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, lGLImage.constBits());  checkOpengGLErrors();
 							mImageToTextureSlot[lImageWrapper.get()] = { lTextureSlot, lIndex };

@@ -26,13 +26,15 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 
 	updateInternal();
 
-	if (mValid && mImage)
+	if (mValid && mImage && mImage->isLoaded())
 	{
+		std::shared_ptr<const QImage> lImage = mImage->getImage();
+		if(!lImage)
+			return;
 		float lW = width();
 		float lH = height();
-		const QImage& lImage = mImage->getImage();
 		pPainter->fillRect(pPainter->viewport(), Qt::black);
-		float lImageRatio = float(lImage.width()) / float(lImage.height());
+		float lImageRatio = float(lImage->width()) / float(lImage->height());
 		float lViewportRatio = lW / lH;
 		float lX, lY, lWidth, lHeight;
 		if (lImageRatio >= lViewportRatio)
@@ -50,7 +52,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 			lY = 0.f;
 		}
 		pPainter->setRenderHint(QPainter::SmoothPixmapTransform);
-		pPainter->drawImage(QRectF(lX, lY, lWidth, lHeight), lImage);
+		pPainter->drawImage(QRectF(lX, lY, lWidth, lHeight), *lImage);
 	}
 }
 

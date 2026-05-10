@@ -119,7 +119,7 @@ bool ESImage::isLoaded() const
 
 bool ESImage::isNull() const
 {
-	return mIsLoaded && mImage.isNull();
+	return mIsLoaded && !mImage;
 }
 
 /********************************************************************************/
@@ -139,7 +139,7 @@ void ESImage::unloadImage()
 {
 	if(mIsLoaded)
 	{
-		QImage().swap(mImage);
+		mImage.reset();
 		mIsLoaded = false;
 		mIsQueueForLoading = false;
 	}
@@ -151,7 +151,7 @@ void ESImage::unloadImage()
 
 /********************************************************************************/
 
-const QImage& ESImage::getImage() const
+std::shared_ptr<const QImage> ESImage::getImage() const
 {
 	return mImage;
 }
@@ -289,7 +289,7 @@ void ESImage::loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_i
 				mImageFileData.squeeze();
 				if(mCancelLoading)
 				{
-					mImage = QImage();
+					mImage.reset();
 				}
 				else
 				{
@@ -323,7 +323,8 @@ void ESImage::readImage(const QString& pImagePath, QSize pMaxSize)
 	{
 		QFile lImageFile(pImagePath);
 		QByteArray lImageData = lImageFile.readAll();
-		loadTurboJpeg(mImage, lImageData);
+		mImage.reset(new QImage());
+		loadTurboJpeg(*mImage.get(), lImageData);
 		return;
 	}
 #endif // TURBOJPEG_PLUGIN_ENABLED
@@ -353,7 +354,8 @@ void ESImage::readImage(QByteArray& pImageData, QSize pMaxSize)
 #ifdef TURBOJPEG_PLUGIN_ENABLED
 	if (hasCacheFile())
 	{
-		loadTurboJpeg(mImage, pImageData);
+		mImage.reset(new QImage());
+		loadTurboJpeg(*mImage.get(), pImageData);
 		return;
 	}
 #endif // TURBOJPEG_PLUGIN_ENABLED
@@ -369,13 +371,15 @@ void ESImage::readImage(QImageReader& pImageReader, QSize pMaxSize)
 	QImage lFullImage = pImageReader.read();
 	if (mCancelLoading)
 		return;
+
+	mImage.reset(new QImage());
 	if (mHasCacheFile)
 	{
-		mImage = std::move(lFullImage);
+		*mImage = std::move(lFullImage);
 	}
 	else
 	{
-		mImage = lFullImage.scaled(pMaxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		*mImage = lFullImage.scaled(pMaxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
 		// Manually rotate the image because the custom turbojpeg loader does not support auto rotate
 		// TODO: Extend the turbojpeg loader to support auto rotate and add back the "pImageReader.setAutoTransform(!mHasCacheFile);"
@@ -396,10 +400,10 @@ void ESImage::readImage(QImageReader& pImageReader, QSize pMaxSize)
 			default:
 				break;
 			}
-			mImage = mImage.transformed(lTransform, Qt::SmoothTransformation);
+			*mImage = mImage->transformed(lTransform, Qt::SmoothTransformation);
 		}
 
-		mImage.save(mImageCachePath, "JPG", CACHE_IMAGE_JPEG_COMPRESSION);
+		mImage->save(mImageCachePath, "JPG", CACHE_IMAGE_JPEG_COMPRESSION);
 	}
 
 	mDriveLetter = mImageCachePath[0];

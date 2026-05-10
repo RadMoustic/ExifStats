@@ -23,5 +23,9 @@ public:
 private:
 	/********************************* METHODS ***********************************/
 
-	static void handleSignal(int pSignal);
+#ifdef Q_OS_WIN
+    static void handleSignal(int pSignal);
+#else
+    static void handleSignal(int pSignal, siginfo* pInfo, void* pContext);
+#endif
 };

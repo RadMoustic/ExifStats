@@ -34,7 +34,7 @@ public:
 	bool isNull() const;
 
 	QChar getDriveLetter() const;
-	const QImage& getImage() const;
+	std::shared_ptr<const QImage> getImage() const;
 	ESStringId getImagePath() const;
 	const ESUsefullExif& getExif() const;
 	
@@ -61,7 +61,7 @@ private:
 	std::atomic_bool mIsLoading;
 	std::atomic_bool mIsLoaded;
 	std::atomic_bool mCancelLoading;
-	QImage mImage;
+	std::shared_ptr<QImage> mImage;
 	QByteArray mImageFileData;
 
 	ESUsefullExif mExif;
