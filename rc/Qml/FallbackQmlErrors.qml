@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Window
 
-Item
+Pane
 {
 	anchors.fill: parent
 
@@ -24,7 +24,7 @@ Item
 		model: DebugQmlBinder.mConsoleLines
 		anchors.fill: parent
 		clip: true
-		delegate: TextEdit
+		delegate: TextArea
 		{
 			anchors
 			{
@@ -35,8 +35,9 @@ Item
 			textFormat: Text.PlainText
 			wrapMode: Text.Wrap
 			font.pixelSize: 12
-			color: "black"
 			readOnly: true
+			background: null
+			padding: 0
 		}
 		onCountChanged:
 		{

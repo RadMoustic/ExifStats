@@ -144,6 +144,10 @@ public:
 	ES_QML_PROPERTY(HNSWIndexEnabled, bool)
 	ES_QML_PROPERTY(TokenizerEnabled, bool)
 
+	// Search Models Installation
+	ES_QML_PROPERTY(SearchModelsExtracting, bool)
+	ES_QML_PROPERTY(SearchModelsExtractingProgress, float)
+
 	/********************************* METHODS ***********************************/
 
 	ESQmlBinder();
@@ -168,8 +172,8 @@ public:
 	Q_INVOKABLE QString getPreviousCrashLogs() const;
 	Q_INVOKABLE void resetPreviousCrash() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
-	Q_INVOKABLE void setDatabaseFolder(const QUrl& pFolderPath);
-	Q_INVOKABLE void setTokenizerFolder(const QUrl& pFolderPath);
+	Q_INVOKABLE void setDatabaseArchive(const QUrl& pDatabaseArchive);
+	Q_INVOKABLE void installSearchModels(const QUrl& pFolderPath);
 	Q_INVOKABLE void themeHasChanged();
 
 	// Lens Model
@@ -289,6 +293,10 @@ private:
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
+
+#if defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+	bool extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
+#endif // defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)

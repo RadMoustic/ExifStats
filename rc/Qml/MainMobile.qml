@@ -125,18 +125,19 @@ Pane
 		
 		onAccepted:
 		{
-			MainQmlBinder.setDatabaseFolder(selectedFile);
+			MainQmlBinder.setDatabaseArchive(selectedFile);
 		}
 	}
 	
-	FolderDialog 
+	FileDialog 
 	{
-		id: tokenizerFolderDialog
-		title: "Select a folder with tokenizer models"
+		id: searchModelDialog
+		title: "Install the ExifStats Search Models"
+		nameFilters: ["ExifStats Search Models (*.essm)"]
 		
 		onAccepted:
 		{
-			MainQmlBinder.setTokenizerFolder(selectedFolder);
+			MainQmlBinder.installSearchModels(selectedFile);
 		}
 	}
 	
@@ -197,11 +198,22 @@ Pane
 					}
 					RegularButton
 					{
-						text:"Models"
+						text:"Search Models"
+						enabled: !MainQmlBinder.mSearchModelsExtracting
 						
 						onReleased:
 						{
-							tokenizerFolderDialog.open();
+							searchModelDialog.open();
+						}
+					}
+					RegularButton
+					{
+						text:"Logs"
+						
+						onReleased:
+						{
+							sidePanel.close();
+							logsViewer.visible = true;
 						}
 					}
 					Item
@@ -228,6 +240,16 @@ Pane
 							MainQmlBinder.themeHasChanged();
 						}
 					}
+				}
+				
+				ProgressBar
+				{
+					id: searchModelsInstallationProgressBar
+					Layout.preferredWidth: parent.width
+					Layout.preferredHeight: 10
+					value: MainQmlBinder.mSearchModelsExtractingProgress
+					opacity: MainQmlBinder.mSearchModelsExtracting ? 1.0 : 0.0
+					height: 10
 				}
 
 				Pane
@@ -467,5 +489,30 @@ Pane
 	{
 		id: previousCrashView
 		anchors.fill: parent
+	}
+	
+	FallbackQmlErrors
+	{
+		id: logsViewer
+		anchors.fill: parent
+		visible: false
+		
+		RoundButton
+		{
+			id: closeLogsButton
+			text: "X"
+			anchors.top: parent.top
+			anchors.right: parent.right
+			anchors.margins: 15
+			radius: 4
+			
+			implicitWidth: 40
+			implicitHeight: 40
+
+			onReleased:
+			{
+				logsViewer.visible = false;
+			}
+		}
 	}
 }

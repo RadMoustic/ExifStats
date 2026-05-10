@@ -16,6 +16,11 @@
 #include <QDir>
 #include <QJsonDocument>
 
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/JlCompress.h>
+#endif
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -36,6 +41,8 @@ ESQmlBinder::ESQmlBinder()
 	, mImageTaggerEnabled(false)
 	, mHNSWIndexEnabled(false)
 	, mTokenizerEnabled(false)
+	, mSearchModelsExtracting(false)
+	, mSearchModelsExtractingProgress(0.f)
 {
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
@@ -220,41 +227,143 @@ void ESQmlBinder::parseFolder(const QUrl& pFolderPath, bool pClearDB)
 
 /********************************************************************************/
 
-void ESQmlBinder::setDatabaseFolder(const QUrl& pFolderPath)
+void ESQmlBinder::setDatabaseArchive(const QUrl& pDatabaseArchive)
 {
-#ifdef EXIFSTATS_READONLY
+#if defined(EXIFSTATS_READONLY) && defined(Q_OS_ANDROID)
 	QSettings lSettings;
-#ifdef Q_OS_ANDROID
-	QString lFolderPathStr = pFolderPath.toString();
-#else
-	QString lFolderPathStr = pFolderPath.toLocalFile();
-	if (!lFolderPathStr.endsWith('/'))
-		lFolderPathStr += '/';
-#endif //Q_OS_ANDROID
-
+	QString lFolderPathStr = pDatabaseArchive.toString();
 	lSettings.setValue(ESDatabase::msReadOnlyDatabaseFolderSettingsKey, lFolderPathStr);
-
 	ESDatabase::getInstance().loadDatabase();
 	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
-#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-			ESImageTaggerManager::getInstance().initialize();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 		});
 #else // EXIFSTATS_READONLY
-	(void)pFolderPath;
+	(void)pDatabaseArchive;
 #endif // EXIFSTATS_READONLY
 }
 
 /********************************************************************************/
 
-void ESQmlBinder::setTokenizerFolder(const QUrl& pFolderPath)
+#if defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+bool ESQmlBinder::extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
 {
-#ifdef IMAGETAGGER_ENABLE
-	(void)QtConcurrent::run([this, pFolderPath]()
+	QFile lZipFile(pZipUrl.toString());
+	if (!lZipFile.open(QIODevice::ReadOnly))
+	{
+		return false;
+	}
+
+	QuaZip lZip(&lZipFile);
+	if (!lZip.open(QuaZip::mdUnzip))
+	{
+		return false;
+	}
+
+	qint64 lTotalUncompressedSize = 0;
+	for (bool lMore = lZip.goToFirstFile(); lMore; lMore = lZip.goToNextFile())
+	{
+		QuaZipFileInfo64 lInfo;
+		if (lZip.getCurrentFileInfo(&lInfo))
+		{
+			lTotalUncompressedSize += lInfo.uncompressedSize;
+		}
+	}
+
+	if (lTotalUncompressedSize == 0)
+	{
+		return false;
+	}
+
+	lZip.goToFirstFile();
+	QDir lBaseDir(pOutputDir);
+	qint64 lCurrentExtractedSize = 0;
+
+	for (bool lMore = lZip.goToFirstFile(); lMore; lMore = lZip.goToNextFile())
+	{
+		QString lFilePath = lZip.getCurrentFileName();
+		QString lAbsolutePath = lBaseDir.absoluteFilePath(lFilePath);
+
+		if (lFilePath.endsWith('/'))
+		{
+			if (!lBaseDir.mkpath(lFilePath))
+			{
+				return false;
+			}
+			continue;
+		}
+
+		QFileInfo lFileInfo(lAbsolutePath);
+		if (!lBaseDir.mkpath(lFileInfo.path()))
+		{
+			return false;
+		}
+
+		QuaZipFile lOutFile(&lZip);
+		if (!lOutFile.open(QIODevice::ReadOnly))
+		{
+			return false;
+		}
+
+		QFile lLocalFile(lAbsolutePath);
+		if (!lLocalFile.open(QIODevice::WriteOnly))
+		{
+			return false;
+		}
+
+		char lBuffer[4096];
+		qint64 lReadLen;
+		while ((lReadLen = lOutFile.read(lBuffer, sizeof(lBuffer))) > 0)
+		{
+			lCurrentExtractedSize += lReadLen;
+			float lProgress = static_cast<float>(lCurrentExtractedSize) / lTotalUncompressedSize;
+			pProgressCallback(lProgress);
+			lLocalFile.write(lBuffer, lReadLen);
+		}
+	}
+
+	pProgressCallback(1.f);
+
+	return true;
+}
+
+#endif // defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+
+/********************************************************************************/
+
+void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
+{
+#if defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+	(void)QtConcurrent::run([this, pSearchModelFile]()
 	{
 		QString lDestPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer";
+		QDir lDestDir(lDestPath);
+		if (lDestDir.exists())
+			lDestDir.removeRecursively();
+		lDestDir.mkpath(".");
+
+		setSearchModelsExtracting(true);
+
+		if (extractZip(pSearchModelFile, lDestPath, [this](float pProgress)
+			{
+				setSearchModelsExtractingProgress(pProgress);
+			}))
+		{
+			mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
+				{
+					setTokenizerEnabled(pTokenizerEnabled);
+					setHNSWIndexEnabled(pHNSWEnabled);
+				});
+		}
+		else
+		{
+			qWarning() << "Failed to extract Search Model files from" << pSearchModelFile.toLocalFile();
+		}
+
+		setSearchModelsExtracting(false);
+
+		/*
+		
 		QDir lDestDir(lDestPath);
 
 		if (lDestDir.exists())
@@ -262,7 +371,7 @@ void ESQmlBinder::setTokenizerFolder(const QUrl& pFolderPath)
 
 		lDestDir.mkpath(".");
 
-		QDir lSourceDir(pFolderPath.toString());
+		QDir lSourceDir(pSearchModelFile.toString());
 
 		// TODO: add a progress bar for that
 		for (const QFileInfo& lFile : lSourceDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot))
@@ -273,9 +382,10 @@ void ESQmlBinder::setTokenizerFolder(const QUrl& pFolderPath)
 				setTokenizerEnabled(pTokenizerEnabled);
 				setHNSWIndexEnabled(pHNSWEnabled);
 			});
+		*/
 	});
 #else
-	(void)pFolderPath;
+	(void)pSearchModelFile;
 #endif // IMAGETAGGER_ENABLE
 }
 
