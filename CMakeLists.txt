@@ -104,7 +104,12 @@ source_group("Resources" FILES ${QRC_LIST} ${RC_LIST})
 # Qt
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Scripts/CMake)
 include(Qt)
-ADD_QT6_PACKAGES("Core;Quick;Qml;QuickControls2;Concurrent;Widgets;Positioning")
+set(QT6_PACKAGES Core;Quick;Qml;QuickControls2;Concurrent;Widgets;Positioning)
+if(NOT ANDROID)
+	set(QT6_PACKAGES ${QT6_PACKAGES};ZlibPrivate)
+endif()
+message(STATUS "Qt6 Packages: ${QT6_PACKAGES}")
+ADD_QT6_PACKAGES("${QT6_PACKAGES}")
 
 # libheif
 set(HEIF_PLUGIN_LIB "")
@@ -170,11 +175,18 @@ endif()
 set(QUAZIP_LIBS "")
 if(ANDROID)
 	find_package(ZLIB REQUIRED)
-	set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "Disable QuaZip tests" FORCE)
-	set(QUAZIP_BZIP2 OFF CACHE BOOL "Disable BZip2" FORCE)
-	add_subdirectory(${EXTERNALS_DIR}/quazip)
-	set(QUAZIP_LIBS QuaZip::QuaZip)
 endif()
+set(QUAZIP_ENABLE_TESTS OFF CACHE BOOL "Disable QuaZip tests" FORCE)
+set(QUAZIP_BZIP2 OFF CACHE BOOL "Disable BZip2" FORCE)
+if(NOT ANDROID)
+	set(QUAZIP_QT_MAJOR_VERSION 6 CACHE STRING "" FORCE)
+	# set(QUAZIP_USE_QT_ZLIB ON CACHE BOOL "" FORCE)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+	list(APPEND QUAZIP_STATIC)
+endif()
+add_subdirectory(${EXTERNALS_DIR}/quazip)
+set(QUAZIP_LIBS QuaZip::QuaZip)
+
 
 # Backward-cpp
 set(Backward_DIR ${EXTERNALS_DIR}/backward-cpp)
@@ -206,7 +218,9 @@ endif()
 target_compile_definitions($ENV{SLN_NAME} PRIVATE ${CPP_DEFINES})
 
 # For Static build
-qt6_import_qml_plugins(${CMAKE_PROJECT_NAME})
+if(QT_STATIC)
+	qt6_import_qml_plugins(${CMAKE_PROJECT_NAME})
+endif()
 
 # Link
 if(HEIF_PLUGIN_ENABLE)
