@@ -204,6 +204,13 @@ bool ESImage::hasCacheFile() const
 
 /********************************************************************************/
 
+QString ESImage::getImageCachePath() const
+{
+	return mImageCachePath;
+}
+
+/********************************************************************************/
+
 QChar ESImage::getDriveLetter() const
 {
 	if(mDriveLetter.isNull())

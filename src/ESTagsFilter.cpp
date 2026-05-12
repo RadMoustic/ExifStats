@@ -510,6 +510,15 @@ bool ESTagsFilter::loadHnswIndex()
 
 /********************************************************************************/
 
+QString ESTagsFilter::getHNSWIndexFilePath() const
+{
+	QSettings lSettings;
+	QString lIndexPath = lSettings.value("HnswIndex").toString();
+	return lIndexPath;
+}
+
+/********************************************************************************/
+
 void ESTagsFilter::saveHnswIndex()
 {
 #ifndef EXIFSTATS_READONLY

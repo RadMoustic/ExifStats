@@ -36,6 +36,7 @@ public:
 	QChar getDriveLetter() const;
 	std::shared_ptr<const QImage> getImage() const;
 	ESStringId getImagePath() const;
+	QString getImageCachePath() const;
 	const ESUsefullExif& getExif() const;
 	
 	bool hasCacheFile() const;

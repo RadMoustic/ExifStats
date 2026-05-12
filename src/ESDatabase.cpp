@@ -492,6 +492,14 @@ void ESDatabase::saveDatabase()
 
 /********************************************************************************/
 
+QString ESDatabase::getDatabaseFilePath() const
+{
+	QSettings lSettings;
+	return lSettings.value("DataBasePath").toString();
+}
+
+/********************************************************************************/
+
 void ESDatabase::loadDatabase()
 {
 	// Clear

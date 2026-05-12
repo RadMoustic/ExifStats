@@ -65,6 +65,7 @@ public:
 
 	void saveDatabase();
 	void loadDatabase();
+	QString getDatabaseFilePath() const;
 
 	const QVector<QString>& getFolders() const;
 

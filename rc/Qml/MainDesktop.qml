@@ -127,6 +127,19 @@ Pane
 		}
 	}
 	
+	FileDialog
+	{
+		id: exportDialog
+		title: "Select an ExifStats archive"
+		nameFilters: ["ExifStats Archive (*.esar)"]
+		fileMode: FileDialog.SaveFile
+		
+		onAccepted:
+		{
+			MainQmlBinder.createDatabaseArchive(currentFile);
+		}
+	}
+	
 	Dialog
 	{
 		id: to35mmFocalFactorDialog
@@ -207,6 +220,17 @@ Pane
 							folderDialog.open();
 						}
 					}
+					RegularButton
+					{
+						text:"Export"
+						enabled: !MainQmlBinder.mExporting && !MainQmlBinder.Processing && !MainQmlBinder.mTagging && !MainQmlBinder.UpdatingHNSWIndex && !imageGrid.mLoading
+
+						onReleased:
+						{
+							exportDialog.open();
+						}
+					}
+					
 					RegularButton
 					{
 						text:"Refresh"
@@ -567,6 +591,52 @@ Pane
 					SplitView.preferredHeight: parent.height
 					SplitView.minimumWidth: 270
 				}
+			}
+		}
+	}
+	
+	Popup
+	{
+		id: exportProgressPopup
+		anchors.centerIn: Overlay.overlay
+		width: 300
+		height: 100
+		modal: true
+		focus: true
+		closePolicy: Popup.NoAutoClose
+		visible: MainQmlBinder.mExporting
+
+		Column
+		{
+			anchors.centerIn: parent
+			spacing: 15
+			width: parent.width - 40
+
+			RowLayout
+			{
+				width: parent.width
+				Text
+				{
+					text: "Exporting... "
+					font.pixelSize: 14
+					Layout.fillWidth: true
+				}
+				
+				Text
+				{
+					Layout.fillWidth: false
+					text: Math.floor(MainQmlBinder.mExportingProgress*100)+"%"
+					font.pixelSize: 14
+				}
+			}
+			
+			ProgressBar
+			{
+				id: progressBar
+				width: parent.width
+				from: 0
+				to: 100
+				value: MainQmlBinder.mExportingProgress*100
 			}
 		}
 	}

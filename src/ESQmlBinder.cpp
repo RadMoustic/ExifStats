@@ -17,9 +17,7 @@
 #include <QJsonDocument>
 
 // Quazip
-#ifdef Q_OS_ANDROID
 #include <quazip/JlCompress.h>
-#endif
 
 /********************************************************************************/
 /********************************************************************************/
@@ -43,6 +41,8 @@ ESQmlBinder::ESQmlBinder()
 	, mTokenizerEnabled(false)
 	, mSearchModelsExtracting(false)
 	, mSearchModelsExtractingProgress(0.f)
+	, mExporting(false)
+	, mExportingProgress(0.f)
 {
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
@@ -245,7 +245,6 @@ void ESQmlBinder::setDatabaseArchive(const QUrl& pDatabaseArchive)
 
 /********************************************************************************/
 
-#if defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
 bool ESQmlBinder::extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
 {
 	QFile lZipFile(pZipUrl.toString());
@@ -327,7 +326,105 @@ bool ESQmlBinder::extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std
 	return true;
 }
 
-#endif // defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+/********************************************************************************/
+
+void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
+{
+	if(getProcessing())
+	{
+		QMessageBox::warning(nullptr, tr("Export Database"), tr("Cannot export database while processing."));
+		return;
+	}
+
+	if(getTagging())
+	{
+		QMessageBox::warning(nullptr, tr("Export Database"), tr("Cannot export database while tagging."));
+		return;
+	}
+
+	if(ESImageCache::getInstance().isLoading())
+	{
+		QMessageBox::warning(nullptr, tr("Export Database"), tr("Cannot export database while image cache is working."));
+		return;
+	}
+
+#ifdef HNSWLIB_ENABLED
+	if(getUpdatingHNSWIndex())
+	{
+		QMessageBox::warning(nullptr, tr("Export Database"), tr("Cannot export database while the search index is being updated."));
+		return;
+	}
+#endif // HNSWLIB_ENABLED
+
+	QtConcurrent::run([this, pZipPath]()
+		{
+			const ESDatabase& lDB = ESDatabase::getInstance();
+			ESImageCache& lImageCache = ESImageCache::getInstance();
+
+			QuaZip lZip(pZipPath.toLocalFile());
+			if (!lZip.open(QuaZip::mdCreate))
+			{
+				QMessageBox::warning(nullptr, tr("Export Database"), tr("Failed to create zip archive."));
+				return;
+			}
+
+			setExporting(true);
+
+			std::vector<std::pair<QString,QString>> lFiles;
+
+			lFiles.emplace_back(lDB.getDatabaseFilePath(), "");
+#ifdef HNSWLIB_ENABLED
+			lFiles.emplace_back(mTagsFilter.getHNSWIndexFilePath(), "");
+#endif // HNSWLIB_ENABLED
+			for(const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
+				if (std::shared_ptr<ESImage> lImage = lImageCache.getImage(lFileInfo.mFilePath))
+					if(lImage->hasCacheFile())
+						lFiles.emplace_back(lImage->getImageCachePath(), "ImageCache");
+
+			setExportingProgress(0.f);
+			int lFileIndex = 0;
+			for (const auto& [lCurrentPath, lTargetDir] : lFiles)
+			{
+				QFile lSourceFile(lCurrentPath);
+				if (!lSourceFile.open(QIODevice::ReadOnly))
+				{
+					continue;
+				}
+
+				QFileInfo lFileInfo(lCurrentPath);
+
+				QString lInternalPath = lTargetDir;
+				if (!lInternalPath.isEmpty() && !lInternalPath.endsWith('/'))
+					lInternalPath += "/";
+				lInternalPath += lFileInfo.fileName();
+
+				QuaZipNewInfo lNewInfo(lInternalPath);
+
+				QuaZipFile lTargetFile(&lZip);
+				if (!lTargetFile.open(QIODevice::WriteOnly, lNewInfo, nullptr, 0, 0))
+				{
+					lSourceFile.close();
+					break;
+				}
+
+				char lBuffer[8192];
+				qint64 lBytesRead;
+				while ((lBytesRead = lSourceFile.read(lBuffer, sizeof(lBuffer))) > 0)
+				{
+					lTargetFile.write(lBuffer, lBytesRead);
+				}
+
+				lTargetFile.close();
+				lSourceFile.close();
+
+				setExportingProgress(static_cast<float>(++lFileIndex) / lFiles.size());
+			}
+
+			lZip.close();
+
+			setExporting(false);
+		});
+}
 
 /********************************************************************************/
 
@@ -361,28 +458,6 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 		}
 
 		setSearchModelsExtracting(false);
-
-		/*
-		
-		QDir lDestDir(lDestPath);
-
-		if (lDestDir.exists())
-			lDestDir.removeRecursively();
-
-		lDestDir.mkpath(".");
-
-		QDir lSourceDir(pSearchModelFile.toString());
-
-		// TODO: add a progress bar for that
-		for (const QFileInfo& lFile : lSourceDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot))
-			QFile::copy(lFile.absoluteFilePath(), lDestPath + "/" + lFile.fileName());
-
-		mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
-			{
-				setTokenizerEnabled(pTokenizerEnabled);
-				setHNSWIndexEnabled(pHNSWEnabled);
-			});
-		*/
 	});
 #else
 	(void)pSearchModelFile;

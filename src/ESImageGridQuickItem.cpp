@@ -542,9 +542,9 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 
 /********************************************************************************/
 
-/*virtual*/ void ESImageGridQuickItemRenderer::synchronize(QQuickFramebufferObject* pIem) /*override*/
+/*virtual*/ void ESImageGridQuickItemRenderer::synchronize(QQuickFramebufferObject* pItem) /*override*/
 {
-	ESImageGridQuickItem* lItem = static_cast<ESImageGridQuickItem*>(pIem);
+	ESImageGridQuickItem* lItem = static_cast<ESImageGridQuickItem*>(pItem);
 
 	lItem->mGeometryHasChanged |= lItem->mPreviousSize != lItem->size();
 	lItem->mPreviousSize = lItem->size();
@@ -704,6 +704,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		}
 		assert(mInstanceData.size() < cMaxDisplayedImages);
 		mImageTextures->release();
+		mImageTextures->generateMipMaps();
 	}
 }
 

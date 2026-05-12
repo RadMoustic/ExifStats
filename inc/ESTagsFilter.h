@@ -72,6 +72,7 @@ public:
 	bool isTokenizerEnabled() const;
 #ifdef HNSWLIB_ENABLED
 	void saveHnswIndex();
+	QString getHNSWIndexFilePath() const;
 #endif // HNSWLIB_ENABLED
 #endif // IMAGETAGGER_ENABLE
 
