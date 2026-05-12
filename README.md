@@ -38,17 +38,34 @@ Download and extract the CustomizeQML.zip into the same directory as ExifStats.e
     * Sources
     * Qt 5 Compatibility Module
     * Qt Debug Information Files
-    * Additional librairies:
+    * Additional Qt libs:
       * Qt Image Formats
       * Qt Location
-* Create a file **User.Setup.bat** at the root next to **CMakeLists.txt** with:
+#### Additional Libs with VCPKG
+Install VCPKG:
+```
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+bootstrap-vcpkg.bat
+```
+Install ZLib with VCPKG:
+```
+vcpkg install zlib:x64-windows
+vcpkg install zlib:x64-windows-static
+```
+#### User.Setup.bat
+Create a file **User.Setup.bat** at the root next to **CMakeLists.txt** with:
 ```
 set QT_ROOT_DIR=c:\Dev\Qt
 REM (optional) set QT_VERSION=6.6.2 => Project.Setup.bat already set a default value
 REM (optional) set QT_MSVC_DIR=msvc2019_64 => Project.Setup.bat already set a default value
-```
-* Use a bat in the Scripts folder:
 
+set VCPKG_ROOT_DIR=C:/Dev/vcpkg
+set VCPKG_TARGET_TRIPLET=x64-windows
+	or
+set VCPKG_TARGET_TRIPLET=x64-windows-static
+```
+#### Use a bat in the Scripts folder
 The binaries and all generated files are located in the **generated** folder
 
 | Script | Description | Requirements |
@@ -94,22 +111,15 @@ cargo install cargo-ndk
 Not supported. With a bit of work it should compile on all platforms supported by Qt.
 
 ### Heif / Turbojpeg plugins
-If you want to use the Heif and Turbojpeg plugins, you will need to setup vcpkg and install the libheif and turbojpeg libs:
+If you want to use the Heif and Turbojpeg plugins, you will need to install the libheif and turbojpeg libs with VCPKG:
 ```
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-bootstrap-vcpkg.bat
 vcpkg install libheif:x64-windows
 vcpkg install libheif:x64-windows-static
 vcpkg install libjpeg-turbo:x64-windows
 vcpkg install libjpeg-turbo:x64-windows-static
 ```
-Then set the some vcpkg var in the **User.Setup.bat**:
+Then you need to set the following env var in **User.Setup.bat**:
 ```
-set VCPKG_ROOT_DIR=C:/Dev/vcpkg
-set VCPKG_TARGET_TRIPLET=x64-windows
-	or
-set VCPKG_TARGET_TRIPLET=x64-windows-static
 set HEIF_PLUGIN_ENABLE=true
 set TURBOJPEG_PLUGIN_ENABLE=true
 ```
