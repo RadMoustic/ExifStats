@@ -1,8 +1,8 @@
 import QtQuick
-import Qt.labs.platform
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import QtLocation
 import QtCore
 
@@ -23,8 +23,8 @@ Pane
 	Settings
 	{
 		id: settings
-        property alias width: mainWindow.width
-        property alias height: mainWindow.height
+		property alias width: mainWindow.width
+		property alias height: mainWindow.height
 		property alias pathListVisible: foldersList.visible
 		property alias panel35mmVisible: focalLength35mmCounter.visible
 		property alias panelApertureVisible: apertureCounter.visible
@@ -39,7 +39,7 @@ Pane
 		property var centerPanelState
 		property var chartsPanelState
 		property var theme
-    }
+	}
 			
 	function maxList(pList)
 	{
@@ -118,7 +118,7 @@ Pane
 	FolderDialog
 	{
 		id: folderDialog
-		folder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
+		currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
 		property bool clearDB: true
 
 		onAccepted:
@@ -261,12 +261,22 @@ Pane
 					}
 					RegularButton
 					{
+						id: clearButton
 						text:"Clear"
 
 						onReleased:
 						{
 							MainQmlBinder.clear();
 						}
+					}
+					RoundButton
+					{
+						icon.source: "qrc:/Images/Settings.png"
+						display: AbstractButton.IconOnly
+						radius: 0
+						padding: 0
+
+						onReleased: settingsPopup.open()
 					}
 					ColumnLayout
 					{
@@ -637,6 +647,83 @@ Pane
 				from: 0
 				to: 100
 				value: MainQmlBinder.mExportingProgress*100
+			}
+		}
+	}
+	
+	Popup
+	{
+		id: settingsPopup
+		anchors.centerIn: Overlay.overlay
+		width: 300
+		height: 300
+		modal: true
+		focus: true
+		
+		FileDialog 
+		{
+			id: searchModelDialog
+			title: "Install the ExifStats Search Models"
+			nameFilters: ["ExifStats Search Models (*.essm)"]
+			
+			onAccepted:
+			{
+				MainQmlBinder.installSearchModels(selectedFile);
+			}
+		}
+		
+		FileDialog 
+		{
+			id: taggingModelDialog
+			title: "Install the ExifStats Tagging Models"
+			nameFilters: ["ExifStats Tagging Models (*.estm)"]
+			
+			onAccepted:
+			{
+				MainQmlBinder.installTaggingModels(selectedFile);
+			}
+		}
+
+		ColumnLayout
+		{
+			anchors.centerIn: parent
+			spacing: 15
+			width: parent.width - 40
+
+			RegularButton
+			{
+				text:"Install Search Models"
+				enabled: !MainQmlBinder.mSearchModelsExtracting
+				
+				onReleased:
+				{
+					searchModelDialog.open();
+				}
+			}
+			RegularButton
+			{
+				text:"Install Tagging Models"
+				enabled: !MainQmlBinder.mTaggingModelsExtracting
+				
+				onReleased:
+				{
+					taggingModelDialog.open();
+				}
+			}
+			
+			ProgressBar
+			{
+				id: searchModelsInstallationProgressBar
+				width: parent.width
+				value: MainQmlBinder.mSearchModelsExtractingProgress
+				opacity: MainQmlBinder.mSearchModelsExtracting ? 1.0 : 0.0
+			}
+			ProgressBar
+			{
+				id: taggingModelsInstallationProgressBar
+				width: parent.width
+				value: MainQmlBinder.mTaggingModelsExtractingProgress
+				opacity: MainQmlBinder.mTaggingModelsExtracting ? 1.0 : 0.0
 			}
 		}
 	}

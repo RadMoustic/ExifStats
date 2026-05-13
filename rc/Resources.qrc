@@ -16,6 +16,7 @@
 	<file>Qml/PreviousCrashView.qml</file>
 
 	<file>Images/Menu.png</file>
+	<file>Images/Settings.png</file>
 	<file>Images/DotQuantityLUT.png</file>
 	<file>Images/ExifStats.ico</file>
 </qresource>

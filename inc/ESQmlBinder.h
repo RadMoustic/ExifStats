@@ -144,9 +144,11 @@ public:
 	ES_QML_PROPERTY(HNSWIndexEnabled, bool)
 	ES_QML_PROPERTY(TokenizerEnabled, bool)
 
-	// Search Models Installation
+	// Models Installation
 	ES_QML_PROPERTY(SearchModelsExtracting, bool)
 	ES_QML_PROPERTY(SearchModelsExtractingProgress, float)
+	ES_QML_PROPERTY(TaggingModelsExtracting, bool)
+	ES_QML_PROPERTY(TaggingModelsExtractingProgress, float)
 
 	// Export
 	ES_QML_PROPERTY(Exporting, bool)
@@ -177,7 +179,8 @@ public:
 	Q_INVOKABLE void resetPreviousCrash() const;
 	Q_INVOKABLE void parseFolder(const QUrl& pFolderPath, bool pClearDB);
 	Q_INVOKABLE void setDatabaseArchive(const QUrl& pDatabaseArchive);
-	Q_INVOKABLE void installSearchModels(const QUrl& pFolderPath);
+	Q_INVOKABLE void installSearchModels(const QUrl& pSearchModelFile);
+	Q_INVOKABLE void installTaggingModels(const QUrl& pTaggingModelFile);
 	Q_INVOKABLE void createDatabaseArchive(const QUrl& pZipPath);
 	Q_INVOKABLE void themeHasChanged();
 
@@ -298,7 +301,7 @@ private:
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
-	bool extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
+	bool extractZip(const std::vector<QUrl>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)

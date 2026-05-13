@@ -6,6 +6,7 @@
 #include "ESImageTaggerManager.h"
 #include "ESMaterialPalette.h"
 #include "ESCrashHandler.h"
+#include "ESSplitZipFileDevice.h"
 
 // Qt
 #include <QApplication>
@@ -41,6 +42,8 @@ ESQmlBinder::ESQmlBinder()
 	, mTokenizerEnabled(false)
 	, mSearchModelsExtracting(false)
 	, mSearchModelsExtractingProgress(0.f)
+	, mTaggingModelsExtracting(false)
+	, mTaggingModelsExtractingProgress(0.f)
 	, mExporting(false)
 	, mExportingProgress(0.f)
 {
@@ -245,15 +248,15 @@ void ESQmlBinder::setDatabaseArchive(const QUrl& pDatabaseArchive)
 
 /********************************************************************************/
 
-bool ESQmlBinder::extractZip(const QUrl& pZipUrl, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
+bool ESQmlBinder::extractZip(const std::vector<QUrl>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
 {
-	QFile lZipFile(pZipUrl.toString());
-	if (!lZipFile.open(QIODevice::ReadOnly))
+	ESSplitZipFileDevice lZipDevice(pSplittedZipFiles);
+	if (!lZipDevice.open(QIODevice::ReadOnly))
 	{
 		return false;
 	}
 
-	QuaZip lZip(&lZipFile);
+	QuaZip lZip(&lZipDevice);
 	if (!lZip.open(QuaZip::mdUnzip))
 	{
 		return false;
@@ -430,7 +433,7 @@ void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
 
 void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 {
-#if defined(IMAGETAGGER_ENABLE) && defined(Q_OS_ANDROID)
+#if defined(IMAGETAGGER_ENABLE)
 	(void)QtConcurrent::run([this, pSearchModelFile]()
 	{
 		QString lDestPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer";
@@ -439,11 +442,26 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 			lDestDir.removeRecursively();
 		lDestDir.mkpath(".");
 
+		setTokenizerEnabled(false);
 		setSearchModelsExtracting(true);
 
-		if (extractZip(pSearchModelFile, lDestPath, [this](float pProgress)
+		std::vector<QUrl> lSearchModelFiles;
+		lSearchModelFiles.push_back(pSearchModelFile);
+
+		while(true)
+		{
+			QUrl lNextPart = pSearchModelFile;
+			lNextPart.setPath(lNextPart.path() + QString("%1").arg(lSearchModelFiles.size()));
+			if(QFile::exists(lNextPart.toLocalFile()))
+				lSearchModelFiles.push_back(lNextPart);
+			else
+				break;
+		}
+
+		if (extractZip(lSearchModelFiles, lDestPath, [this](float pProgress)
 			{
-				setSearchModelsExtractingProgress(pProgress);
+				if (abs(pProgress - getSearchModelsExtractingProgress()) >= 0.001)
+					setSearchModelsExtractingProgress(pProgress);
 			}))
 		{
 			mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
@@ -461,6 +479,57 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 	});
 #else
 	(void)pSearchModelFile;
+#endif // IMAGETAGGER_ENABLE
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::installTaggingModels(const QUrl& pTaggingModelFile)
+{
+#if defined(IMAGETAGGER_ENABLE)
+	(void)QtConcurrent::run([this, pTaggingModelFile]()
+	{
+		QString lDestPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/ImageTaggers";
+		QDir lDestDir(lDestPath);
+		if (lDestDir.exists())
+			lDestDir.removeRecursively();
+		lDestDir.mkpath(".");
+
+		setImageTaggerEnabled(false);
+		ESImageTaggerManager::getInstance().unloadTaggers();
+		setTaggingModelsExtracting(true);
+
+		std::vector<QUrl> lTaggingModelFiles;
+		lTaggingModelFiles.push_back(pTaggingModelFile);
+
+		while(true)
+		{
+			QUrl lNextPart = pTaggingModelFile;
+			lNextPart.setPath(lNextPart.path() + QString("%1").arg(lTaggingModelFiles.size()));
+			if(QFile::exists(lNextPart.toLocalFile()))
+				lTaggingModelFiles.push_back(lNextPart);
+			else
+				break;
+		}
+
+		if (extractZip(lTaggingModelFiles, lDestPath, [this](float pProgress)
+			{
+				if (abs(pProgress - getTaggingModelsExtractingProgress()) >= 0.001)
+					setTaggingModelsExtractingProgress(pProgress);
+			}))
+		{
+			ESImageTaggerManager::getInstance().loadTaggers();
+			setImageTaggerEnabled(ESImageTaggerManager::getInstance().isEnabled());
+		}
+		else
+		{
+			qWarning() << "Failed to extract Tagging Model files from" << pTaggingModelFile.toLocalFile();
+		}
+
+		setTaggingModelsExtracting(false);
+	});
+#else
+	(void)pTaggingModelFile;
 #endif // IMAGETAGGER_ENABLE
 }
 

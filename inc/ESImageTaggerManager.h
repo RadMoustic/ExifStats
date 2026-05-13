@@ -43,6 +43,9 @@ public:
 	void initialize();
 	void retag();
 
+	void unloadTaggers();
+	void loadTaggers();
+
 	void processImage(const QImage& pImage, std::vector<uint16_t>& pTagsOut, ESEmbeddings& pEmbeddingsOut);
 	QStringList getTagsLabels(const QVector<uint16_t>& pTags);
 

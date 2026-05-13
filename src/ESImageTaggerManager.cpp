@@ -35,7 +35,7 @@ ESImageTaggerManager::ESImageTaggerManager()
 {
 	mMaxAsyncTask = QThreadPool::globalInstance()->maxThreadCount();
 
-	mTaggerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/ImageTaggers");
+	mTaggerDirectoryPath = QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/ImageTaggers");
 	mEnabled = QDir(mTaggerDirectoryPath).exists();
 	if (!mEnabled)
 	{
@@ -76,6 +76,23 @@ void ESImageTaggerManager::initialize()
 
 /********************************************************************************/
 
+void ESImageTaggerManager::unloadTaggers()
+{
+	mTaggers.clear();
+	mEnabled = false;
+}
+
+/********************************************************************************/
+
+void ESImageTaggerManager::loadTaggers()
+{
+	loadTaggersFromDirectory(mTaggerDirectoryPath);
+	updateAllTagLabels();
+	updateDatabaseMissingTags();
+}
+
+/********************************************************************************/
+
 void ESImageTaggerManager::retag()
 {
 	ESDatabase& lDB = ESDatabase::getInstance();
@@ -109,6 +126,7 @@ void ESImageTaggerManager::loadTaggersFromDirectory(const QString& pDirectoryPat
 	{
 		addTagger(lDir.filePath(lTaggerFilePath));
 	}
+	mEnabled = !mTaggers.empty();
 }
 
 /********************************************************************************/

@@ -57,7 +57,7 @@ void ESTagsFilter::loadTokenizerAndHNSW(std::function<void(bool,bool)> pDoneCall
 #ifdef Q_OS_ANDROID
 	mTokenizerDirectoryPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer";
 #else
-	mTokenizerDirectoryPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/Tokenizer");
+	mTokenizerDirectoryPath = QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Tokenizer");
 #endif // Q_OS_ANDROID
 
 	if (QDir(mTokenizerDirectoryPath).exists())
