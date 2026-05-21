@@ -129,15 +129,14 @@ Pane
 		}
 	}
 	
-	FileDialog 
+	FolderDialog 
 	{
 		id: searchModelDialog
-		title: "Install the ExifStats Search Models"
-		nameFilters: ["ExifStats Search Models (*.essm)"]
+		title: "Select a folder containing the *.essm models files"
 		
 		onAccepted:
 		{
-			MainQmlBinder.installSearchModels(selectedFile);
+			MainQmlBinder.installSearchModels(selectedFolder);
 		}
 	}
 	

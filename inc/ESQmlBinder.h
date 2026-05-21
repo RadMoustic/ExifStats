@@ -301,7 +301,7 @@ private:
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
-	bool extractZip(const std::vector<QUrl>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
+	bool extractZip(const std::vector<QString>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)

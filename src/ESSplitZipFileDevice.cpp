@@ -6,12 +6,13 @@
 #include <QStringList>
 #include <QVector>
 #include <QUrl>
+#include <QDebug>
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-ESSplitZipFileDevice::ESSplitZipFileDevice(const std::vector<QUrl>& pFiles, QObject* pParent)
+ESSplitZipFileDevice::ESSplitZipFileDevice(const std::vector<QString>& pFiles, QObject* pParent)
 	: QIODevice(pParent)
 	, mFiles(pFiles)
 	, mCurrentIndex(0)
@@ -50,16 +51,14 @@ bool ESSplitZipFileDevice::open(OpenMode pMode) /*override*/
 	mSegments.clear();
 	mTotalSize = 0;
 
-	for (const QUrl& lUrl : mFiles)
+	for (const QString& lFilePath : mFiles)
 	{
-#ifdef Q_OS_ANDROID
-		QString lFilePath = lUrl.toString();
-#else
-		QString lFilePath = lUrl.toLocalFile();
-#endif
 		QFile lFile(lFilePath);
 		if (!lFile.open(ReadOnly))
+		{
+			qWarning() << "Failed to open file:" << lFilePath;
 			return false;
+		}
 
 		qint64 lHeaderSize = 0;
 		char lMagic[4];
@@ -85,7 +84,10 @@ bool ESSplitZipFileDevice::open(OpenMode pMode) /*override*/
 	mCurrentIndex = 0;
 	mCurrentFile.setFileName(mSegments[0].mFilePath);
 	if (!mCurrentFile.open(ReadOnly))
+	{
+		qWarning() << "Failed to open file:" << mSegments[0].mFilePath;
 		return false;
+	}
 	mCurrentFile.seek(mSegments[0].mHeaderSize);
 
 	return QIODevice::open(pMode);
@@ -191,6 +193,9 @@ bool ESSplitZipFileDevice::switchToFile(int pIndex)
 	mCurrentIndex = pIndex;
 	mCurrentFile.setFileName(mSegments[mCurrentIndex].mFilePath);
 	if (!mCurrentFile.open(ReadOnly))
+	{
+		qWarning() << "Failed to open file:" << mSegments[mCurrentIndex].mFilePath;
 		return false;
+	}
 	return true;
 }

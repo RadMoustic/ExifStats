@@ -16,6 +16,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QJsonDocument>
+#include <QtLogging>
 
 // Quazip
 #include <quazip/JlCompress.h>
@@ -236,7 +237,9 @@ void ESQmlBinder::setDatabaseArchive(const QUrl& pDatabaseArchive)
 	QSettings lSettings;
 	QString lFolderPathStr = pDatabaseArchive.toString();
 	lSettings.setValue(ESDatabase::msReadOnlyDatabaseFolderSettingsKey, lFolderPathStr);
+	ESImage::closeExifStatsArchive();
 	ESDatabase::getInstance().loadDatabase();
+	mTagsFilter.reloadHNSW();
 	(void)QtConcurrent::run([]()
 		{
 			ESImageCache::getInstance().initializeFromDatabase();
@@ -248,17 +251,19 @@ void ESQmlBinder::setDatabaseArchive(const QUrl& pDatabaseArchive)
 
 /********************************************************************************/
 
-bool ESQmlBinder::extractZip(const std::vector<QUrl>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
+bool ESQmlBinder::extractZip(const std::vector<QString>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback)
 {
 	ESSplitZipFileDevice lZipDevice(pSplittedZipFiles);
 	if (!lZipDevice.open(QIODevice::ReadOnly))
 	{
+		qWarning() << "Failed to open split zip files for extraction.";
 		return false;
 	}
 
 	QuaZip lZip(&lZipDevice);
 	if (!lZip.open(QuaZip::mdUnzip))
 	{
+		qWarning() << "Failed to open zip archive for extraction.";
 		return false;
 	}
 
@@ -274,6 +279,7 @@ bool ESQmlBinder::extractZip(const std::vector<QUrl>& pSplittedZipFiles, const Q
 
 	if (lTotalUncompressedSize == 0)
 	{
+		qWarning() << "No files to extract in the zip archive.";
 		return false;
 	}
 
@@ -290,6 +296,7 @@ bool ESQmlBinder::extractZip(const std::vector<QUrl>& pSplittedZipFiles, const Q
 		{
 			if (!lBaseDir.mkpath(lFilePath))
 			{
+				qWarning() << "Failed to create directory:" << lFilePath;
 				return false;
 			}
 			continue;
@@ -298,18 +305,21 @@ bool ESQmlBinder::extractZip(const std::vector<QUrl>& pSplittedZipFiles, const Q
 		QFileInfo lFileInfo(lAbsolutePath);
 		if (!lBaseDir.mkpath(lFileInfo.path()))
 		{
+			qWarning() << "Failed to create directory:" << lFileInfo.path();
 			return false;
 		}
 
 		QuaZipFile lOutFile(&lZip);
 		if (!lOutFile.open(QIODevice::ReadOnly))
 		{
+			qWarning() << "Failed to open file in zip archive:" << lFilePath;
 			return false;
 		}
 
 		QFile lLocalFile(lAbsolutePath);
 		if (!lLocalFile.open(QIODevice::WriteOnly))
 		{
+			qWarning() << "Failed to open local file for writing:" << lAbsolutePath;
 			return false;
 		}
 
@@ -363,6 +373,11 @@ void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
 		{
 			const ESDatabase& lDB = ESDatabase::getInstance();
 			ESImageCache& lImageCache = ESImageCache::getInstance();
+
+			lDB.saveDatabase();
+#ifdef HNSWLIB_ENABLED
+			mTagsFilter.saveHnswIndex();
+#endif // HNSWLIB_ENABLED
 
 			QuaZip lZip(pZipPath.toLocalFile());
 			if (!lZip.open(QuaZip::mdCreate))
@@ -431,6 +446,59 @@ void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
 
 /********************************************************************************/
 
+std::vector<QString> getEssmSequence(const QUrl& pFolderUrl)
+{
+	std::vector<QString> lResult;
+	QString lFolderPath = pFolderUrl.isLocalFile() ? pFolderUrl.toLocalFile() : pFolderUrl.toString();
+	QDir lDir(lFolderPath);
+	QStringList lFilters;
+	lFilters << "*.essm*";
+	QFileInfoList lFiles = lDir.entryInfoList(lFilters, QDir::Files, QDir::Name);
+	QFileInfo lFirstFile;
+	bool lFound = false;
+	for (const QFileInfo& lInfo : lFiles)
+	{
+		if (lInfo.fileName().endsWith(".essm"))
+		{
+			lFirstFile = lInfo;
+			lFound = true;
+			break;
+		}
+	}
+	if (!lFound)
+	{
+		return lResult;
+	}
+	lResult.push_back(lFirstFile.absoluteFilePath());
+	QString lBaseName = lFirstFile.fileName().left(lFirstFile.fileName().lastIndexOf(".essm"));
+	int lIndex = 1;
+	while (true)
+	{
+		QString lNextFileName = lBaseName + ".essm" + QString::number(lIndex);
+		bool lNextFound = false;
+		for (const QFileInfo& lInfo : lFiles)
+		{
+			if (lInfo.fileName() == lNextFileName)
+			{
+				lResult.push_back(lInfo.absoluteFilePath());
+				lNextFound = true;
+				break;
+			}
+		}
+		if (lNextFound)
+		{
+			lIndex++;
+		}
+		else
+		{
+			break;
+		}
+	}
+	return lResult;
+}
+
+/********************************************************************************/
+
 void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 {
 #if defined(IMAGETAGGER_ENABLE)
@@ -445,18 +513,24 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 		setTokenizerEnabled(false);
 		setSearchModelsExtracting(true);
 
-		std::vector<QUrl> lSearchModelFiles;
-		lSearchModelFiles.push_back(pSearchModelFile);
+		std::vector<QString> lSearchModelFiles;
+#ifdef Q_OS_ANDROID
+		lSearchModelFiles = getEssmSequence(pSearchModelFile);
+		qInfo() << "Search model files found:";
+		qInfo() << lSearchModelFiles;
+#else
+		lSearchModelFiles.push_back(pSearchModelFile.toLocalFile());
 
 		while(true)
 		{
 			QUrl lNextPart = pSearchModelFile;
 			lNextPart.setPath(lNextPart.path() + QString("%1").arg(lSearchModelFiles.size()));
 			if(QFile::exists(lNextPart.toLocalFile()))
-				lSearchModelFiles.push_back(lNextPart);
+				lSearchModelFiles.push_back(lNextPart.toLocalFile());
 			else
 				break;
 		}
+#endif // Q_OS_ANDROID
 
 		if (extractZip(lSearchModelFiles, lDestPath, [this](float pProgress)
 			{
@@ -472,7 +546,7 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 		}
 		else
 		{
-			qWarning() << "Failed to extract Search Model files from" << pSearchModelFile.toLocalFile();
+			qWarning() << "Failed to extract Search Model files from" << pSearchModelFile.toString();
 		}
 
 		setSearchModelsExtracting(false);
@@ -486,7 +560,7 @@ void ESQmlBinder::installSearchModels(const QUrl& pSearchModelFile)
 
 void ESQmlBinder::installTaggingModels(const QUrl& pTaggingModelFile)
 {
-#if defined(IMAGETAGGER_ENABLE)
+#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 	(void)QtConcurrent::run([this, pTaggingModelFile]()
 	{
 		QString lDestPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/ImageTaggers";
@@ -499,15 +573,15 @@ void ESQmlBinder::installTaggingModels(const QUrl& pTaggingModelFile)
 		ESImageTaggerManager::getInstance().unloadTaggers();
 		setTaggingModelsExtracting(true);
 
-		std::vector<QUrl> lTaggingModelFiles;
-		lTaggingModelFiles.push_back(pTaggingModelFile);
+		std::vector<QString> lTaggingModelFiles;
+		lTaggingModelFiles.push_back(pTaggingModelFile.toLocalFile());
 
 		while(true)
 		{
 			QUrl lNextPart = pTaggingModelFile;
 			lNextPart.setPath(lNextPart.path() + QString("%1").arg(lTaggingModelFiles.size()));
 			if(QFile::exists(lNextPart.toLocalFile()))
-				lTaggingModelFiles.push_back(lNextPart);
+				lTaggingModelFiles.push_back(lNextPart.toLocalFile());
 			else
 				break;
 		}

@@ -72,7 +72,6 @@ ESImageCache::ESImageCache()
 void ESImageCache::initializeFromDatabase()
 {
 	assert(!mIsUpdating);
-	assert(mImages.empty()); // Initialize only once at startup
 
 	mIsUpdating = true;
 
@@ -80,6 +79,7 @@ void ESImageCache::initializeFromDatabase()
 	{
 		std::lock_guard<std::shared_mutex> lLock(mImagesMutex);
 		const ESDatabase& lDatabase = ESDatabase::getInstance();
+		mImages.clear();
 		mImages.reserve(lDatabase.getFiles().size());
 		
 		for(const auto& [lFileInfoId, lFileInfo] : lDatabase.getFiles())

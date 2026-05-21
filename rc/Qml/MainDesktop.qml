@@ -220,16 +220,6 @@ Pane
 							folderDialog.open();
 						}
 					}
-					RegularButton
-					{
-						text:"Export"
-						enabled: !MainQmlBinder.mExporting && !MainQmlBinder.Processing && !MainQmlBinder.mTagging && !MainQmlBinder.UpdatingHNSWIndex && !imageGrid.mLoading
-
-						onReleased:
-						{
-							exportDialog.open();
-						}
-					}
 					
 					RegularButton
 					{
@@ -238,35 +228,6 @@ Pane
 						onReleased:
 						{
 							MainQmlBinder.refresh(false);
-						}
-					}
-					RegularButton
-					{
-						text:"Full Refresh"
-
-						onReleased:
-						{
-							MainQmlBinder.refresh(true);
-						}
-					}
-					RegularButton
-					{
-						text:"ReTag"
-						enabled: MainQmlBinder.mImageTaggerEnabled
-
-						onReleased:
-						{
-							MainQmlBinder.retag();
-						}
-					}
-					RegularButton
-					{
-						id: clearButton
-						text:"Clear"
-
-						onReleased:
-						{
-							MainQmlBinder.clear();
 						}
 					}
 					RoundButton
@@ -651,81 +612,9 @@ Pane
 		}
 	}
 	
-	Popup
+	DesktopSettings
 	{
 		id: settingsPopup
-		anchors.centerIn: Overlay.overlay
-		width: 300
-		height: 300
-		modal: true
-		focus: true
-		
-		FileDialog 
-		{
-			id: searchModelDialog
-			title: "Install the ExifStats Search Models"
-			nameFilters: ["ExifStats Search Models (*.essm)"]
-			
-			onAccepted:
-			{
-				MainQmlBinder.installSearchModels(selectedFile);
-			}
-		}
-		
-		FileDialog 
-		{
-			id: taggingModelDialog
-			title: "Install the ExifStats Tagging Models"
-			nameFilters: ["ExifStats Tagging Models (*.estm)"]
-			
-			onAccepted:
-			{
-				MainQmlBinder.installTaggingModels(selectedFile);
-			}
-		}
-
-		ColumnLayout
-		{
-			anchors.centerIn: parent
-			spacing: 15
-			width: parent.width - 40
-
-			RegularButton
-			{
-				text:"Install Search Models"
-				enabled: !MainQmlBinder.mSearchModelsExtracting
-				
-				onReleased:
-				{
-					searchModelDialog.open();
-				}
-			}
-			RegularButton
-			{
-				text:"Install Tagging Models"
-				enabled: !MainQmlBinder.mTaggingModelsExtracting
-				
-				onReleased:
-				{
-					taggingModelDialog.open();
-				}
-			}
-			
-			ProgressBar
-			{
-				id: searchModelsInstallationProgressBar
-				width: parent.width
-				value: MainQmlBinder.mSearchModelsExtractingProgress
-				opacity: MainQmlBinder.mSearchModelsExtracting ? 1.0 : 0.0
-			}
-			ProgressBar
-			{
-				id: taggingModelsInstallationProgressBar
-				width: parent.width
-				value: MainQmlBinder.mTaggingModelsExtractingProgress
-				opacity: MainQmlBinder.mTaggingModelsExtracting ? 1.0 : 0.0
-			}
-		}
 	}
 	
 	PreviousCrashView

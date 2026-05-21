@@ -21,24 +21,17 @@
 #endif
 
 /********************************************************************************/
+/********************************************************************************/
+/********************************************************************************/
 
 #ifdef Q_OS_ANDROID
-QuaZip* getExifStatsArchive()
-{
-	static thread_local QuaZip* lsZip = nullptr;
-	if(lsZip == nullptr)
-	{
-		QSettings lSettings;
-		lsZip = new QuaZip(lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString());
-		if (!lsZip->open(QuaZip::mdUnzip))
-		{
-			qWarning() << "Cannot open ExifStats archive file";
-		}
-	}
-	return lsZip;
-}
-#endif // Q_OS_ANDROID
+/*static*/ int ESImage::msCloseZipIdx = 0;
+/*static*/ thread_local int ESImage::mstZipIdx = 0;
+/*static*/ thread_local QuaZip* ESImage::mstZip = nullptr;
+#endif
 
+/********************************************************************************/
+/********************************************************************************/
 /********************************************************************************/
 
 #ifdef TURBOJPEG_PLUGIN_ENABLED
@@ -417,3 +410,39 @@ void ESImage::readImage(QImageReader& pImageReader, QSize pMaxSize)
 	mHasCacheFile = true;
 	mCacheFileChecked = true;
 }
+
+/********************************************************************************/
+
+#ifdef Q_OS_ANDROID
+
+/*static*/ void ESImage::closeExifStatsArchive()
+{
+	++msCloseZipIdx;
+}
+
+/********************************************************************************/
+
+/*static*/ QuaZip* ESImage::getExifStatsArchive()
+{
+	if(msCloseZipIdx > mstZipIdx)
+	{
+		if(mstZip)
+		{
+			mstZip->close();
+			mstZip = nullptr;
+		}
+		mstZipIdx = msCloseZipIdx;
+	}
+	if(mstZip == nullptr)
+	{
+		QSettings lSettings;
+		mstZip = new QuaZip(lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString());
+		if (!mstZip->open(QuaZip::mdUnzip))
+		{
+			qWarning() << "Cannot open ExifStats archive file";
+		}
+	}
+	return mstZip;
+}
+
+#endif // Q_OS_ANDROID

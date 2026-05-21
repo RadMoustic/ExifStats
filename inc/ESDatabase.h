@@ -63,7 +63,7 @@ public:
 	void addFolder(const QUrl& pFolderPath, bool pClearDB);
 	void updateDatabase(const QStringList& pFolders, bool pClearDB, bool pNewFilesOnly);
 
-	void saveDatabase();
+	void saveDatabase() const;
 	void loadDatabase();
 	QString getDatabaseFilePath() const;
 

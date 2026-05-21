@@ -38,5 +38,5 @@ struct ESMaterialPalette
 	static void clearCache();
 
 private:
-	static std::unordered_map<QObject*, std::shared_ptr<PaletteData>> mCache;
+	static std::unordered_map<QObject*, std::shared_ptr<PaletteData>> msCache;
 };

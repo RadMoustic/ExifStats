@@ -53,6 +53,9 @@ public:
 	virtual ~ESTagsFilter();
 
 #ifdef IMAGETAGGER_ENABLE
+#ifdef HNSWLIB_ENABLED
+	void reloadHNSW();
+#endif // HNSWLIB_ENABLED
 	void loadTokenizerAndHNSW(std::function<void(bool, bool)> pDoneCallback);
 #endif // IMAGETAGGER_ENABLE
 	virtual bool isEnabled() const override;

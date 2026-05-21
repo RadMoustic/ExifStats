@@ -98,7 +98,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 
 float ESImageGridQuickItem::getMinImageSize() const
 {
-	return cMinImageSize;
+	return msMinImageSize;
 }
 
 /********************************************************************************/

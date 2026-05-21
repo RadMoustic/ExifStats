@@ -16,7 +16,7 @@ class ESSplitZipFileDevice : public QIODevice
 public:
 	/********************************* METHODS **********************************/
 
-	ESSplitZipFileDevice(const std::vector<QUrl> &pFiles, QObject *pParent = nullptr);
+	ESSplitZipFileDevice(const std::vector<QString> &pFiles, QObject *pParent = nullptr);
 	~ESSplitZipFileDevice();
 
 	bool isSequential() const override;
@@ -44,7 +44,7 @@ private:
 
 	/******************************** ATTRIBUTES **********************************/
 
-	std::vector<QUrl> mFiles;
+	std::vector<QString> mFiles;
 	QVector<SegmentInfo> mSegments;
 	QFile mCurrentFile;
 	int mCurrentIndex;

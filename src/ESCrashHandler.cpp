@@ -58,23 +58,25 @@ extern "C" {
 
 void ESCrashHandler::init()
 {
+#ifndef QT_DEBUG
 #ifdef Q_OS_WIN
-    std::signal(SIGSEGV, ESCrashHandler::handleSignal);
-    std::signal(SIGABRT, ESCrashHandler::handleSignal);
-    std::signal(SIGFPE, ESCrashHandler::handleSignal);
-    std::signal(SIGILL, ESCrashHandler::handleSignal);
+	std::signal(SIGSEGV, ESCrashHandler::handleSignal);
+	std::signal(SIGABRT, ESCrashHandler::handleSignal);
+	std::signal(SIGFPE, ESCrashHandler::handleSignal);
+	std::signal(SIGILL, ESCrashHandler::handleSignal);
 #else
-    struct sigaction lAction;
-    lAction.sa_sigaction = ESCrashHandler::handleSignal;
-    lAction.sa_flags = SA_SIGINFO | SA_ONSTACK;
-    sigemptyset(&lAction.sa_mask);
-    sigaction(SIGSEGV, &lAction, nullptr);
-    sigaction(SIGABRT, &lAction, nullptr);
-    sigaction(SIGFPE, &lAction, nullptr);
-    sigaction(SIGILL, &lAction, nullptr);
-    sigaction(SIGBUS, &lAction, nullptr);
-    sigaction(SIGTRAP, &lAction, nullptr);
-#endif
+	struct sigaction lAction;
+	lAction.sa_sigaction = ESCrashHandler::handleSignal;
+	lAction.sa_flags = SA_SIGINFO | SA_ONSTACK;
+	sigemptyset(&lAction.sa_mask);
+	sigaction(SIGSEGV, &lAction, nullptr);
+	sigaction(SIGABRT, &lAction, nullptr);
+	sigaction(SIGFPE, &lAction, nullptr);
+	sigaction(SIGILL, &lAction, nullptr);
+	sigaction(SIGBUS, &lAction, nullptr);
+	sigaction(SIGTRAP, &lAction, nullptr);
+#endif // Q_OS_WIN
+#endif // QT_DEBUG
 }
 
 /********************************************************************************/
@@ -106,9 +108,9 @@ Q_UNUSED(pInfo);
 
 		backward::StackTrace lStackTrace;
 #ifdef Q_OS_WIN
-        lStackTrace.load_here(32);
+		lStackTrace.load_here(32);
 #else
-        lStackTrace.load_from(pContext, 32);
+		lStackTrace.load_from(pContext, 32);
 #endif
 #ifdef Q_OS_ANDROID
 		lStackTrace.skip_n_firsts(4);

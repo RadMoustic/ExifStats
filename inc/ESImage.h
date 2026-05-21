@@ -17,6 +17,12 @@
 /********************************************************************************/
 /********************************************************************************/
 
+class QuaZip;
+
+/********************************************************************************/
+/********************************************************************************/
+/********************************************************************************/
+
 class ESImage : public QObject, public std::enable_shared_from_this<ESImage>
 {
 	friend class ESImageCache;
@@ -44,6 +50,10 @@ public:
 	void updateLastUsed();
 	void loadImage();
 
+#ifdef Q_OS_ANDROID
+	static void closeExifStatsArchive();
+#endif
+
 signals:
 	/********************************** SIGNALS ***********************************/
 
@@ -67,6 +77,12 @@ private:
 
 	ESUsefullExif mExif;
 
+#ifdef Q_OS_ANDROID
+	static int msCloseZipIdx;
+	static thread_local int mstZipIdx;
+	static thread_local QuaZip* mstZip;
+#endif
+
 	/********************************* METHODS ***********************************/
 
 	explicit ESImage(const ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif* pImageExif);
@@ -78,4 +94,8 @@ private:
 
 	void cancelLoading();
 	void unloadImage();
+
+#ifdef Q_OS_ANDROID
+	static QuaZip* getExifStatsArchive();
+#endif
 };

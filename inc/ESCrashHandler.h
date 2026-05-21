@@ -24,8 +24,8 @@ private:
 	/********************************* METHODS ***********************************/
 
 #ifdef Q_OS_WIN
-    static void handleSignal(int pSignal);
+	static void handleSignal(int pSignal);
 #else
-    static void handleSignal(int pSignal, siginfo* pInfo, void* pContext);
+	static void handleSignal(int pSignal, siginfo* pInfo, void* pContext);
 #endif
 };

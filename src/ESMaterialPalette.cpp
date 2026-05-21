@@ -4,7 +4,7 @@
 /********************************************************************************/
 /********************************************************************************/
 
-/*static*/ std::unordered_map<QObject*, std::shared_ptr<ESMaterialPalette::PaletteData>> ESMaterialPalette::mCache;
+/*static*/ std::unordered_map<QObject*, std::shared_ptr<ESMaterialPalette::PaletteData>> ESMaterialPalette::msCache;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -38,14 +38,14 @@ void ESMaterialPalette::PaletteData::drawForegroundRect(QPainter* pPainter, cons
 
 /*static*/ void ESMaterialPalette::clearCache()
 {
-	mCache.clear();
+	msCache.clear();
 }
 
 /********************************************************************************/
 
 /*static*/ std::shared_ptr<ESMaterialPalette::PaletteData> ESMaterialPalette::getPalette(QObject* pItem)
 {
-	std::shared_ptr<ESMaterialPalette::PaletteData>& lResult = mCache[pItem];
+	std::shared_ptr<ESMaterialPalette::PaletteData>& lResult = msCache[pItem];
 
 	if (!lResult)
 	{

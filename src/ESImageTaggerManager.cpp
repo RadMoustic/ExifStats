@@ -61,9 +61,6 @@ bool ESImageTaggerManager::isEnabled() const
 
 void ESImageTaggerManager::initialize()
 {
-	if(!mEnabled)
-		return;
-
 	loadTaggersFromDirectory(mTaggerDirectoryPath);
 	updateAllTagLabels();
 
@@ -407,6 +404,9 @@ QStringList ESImageTaggerManager::getTagsLabels(const QVector<uint16_t>& pTags)
 
 void ESImageTaggerManager::updateDatabaseMissingTags()
 {
+	if (!mEnabled)
+		return;
+
 	if(ESImageCache::getInstance().isUpdating() || ESImageCache::getInstance().isLoading())
 		return;
 

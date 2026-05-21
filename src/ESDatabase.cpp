@@ -452,7 +452,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 /********************************************************************************/
 
-void ESDatabase::saveDatabase()
+void ESDatabase::saveDatabase() const
 {
 #ifndef EXIFSTATS_READONLY
 	std::shared_lock lLock(mFilesMutex);
@@ -469,7 +469,7 @@ void ESDatabase::saveDatabase()
 	}
 
 	ESSerializer<false> lSerializer(&lDataBaseFile);
-	if(!Serialize(lSerializer, lDataBasePath))
+	if(!const_cast<ESDatabase*>(this)->Serialize(lSerializer, lDataBasePath))
 		return;
 
 	lDataBaseFile.close();

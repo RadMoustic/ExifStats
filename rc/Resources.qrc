@@ -14,6 +14,7 @@
 	<file>Qml/MapPanel.qml</file>
 	<file>Qml/TimelineCounterChart.qml</file>
 	<file>Qml/PreviousCrashView.qml</file>
+	<file>Qml/DesktopSettings.qml</file>
 
 	<file>Images/Menu.png</file>
 	<file>Images/Settings.png</file>

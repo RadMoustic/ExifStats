@@ -52,6 +52,27 @@ ESTagsFilter::~ESTagsFilter() = default;
 /********************************************************************************/
 
 #ifdef IMAGETAGGER_ENABLE
+
+#ifdef HNSWLIB_ENABLED
+void ESTagsFilter::reloadHNSW()
+{
+	if(mTextEncoder)
+	{
+		const ESDatabase& lDB = ESDatabase::getInstance();
+		if (lDB.getEmbeddingsDimension() > 0)
+		{
+			std::shared_lock lLock(lDB.getFilesMutex());
+			mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
+			mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
+
+			loadHnswIndex();
+		}
+	}
+}
+#endif // HNSWLIB_ENABLED
+
+/********************************************************************************/
+
 void ESTagsFilter::loadTokenizerAndHNSW(std::function<void(bool,bool)> pDoneCallback)
 {
 #ifdef Q_OS_ANDROID
@@ -454,6 +475,11 @@ bool ESTagsFilter::loadHnswIndex()
 	if (mHnswIndex)
 	{
 #if defined(Q_OS_ANDROID) && defined(EXIFSTATS_READONLY)
+		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+		QString lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
+		if(QFile::exists(lIndexPath))
+			QFile::remove(lIndexPath);
+
 		QSettings lSettings;
 		QString lDataBasePath = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString();
 
@@ -477,8 +503,7 @@ bool ESTagsFilter::loadHnswIndex()
 			qWarning() << "Cannot open ExifStats archive HNSW Index file";
 			return false;
 		}
-		QString lIndexDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-		QString lIndexPath = lIndexDir + QDir::separator() + "hnswIndex.esti";
+		
 		QFile lLocalIndexFile(lIndexPath);
 		if (!lLocalIndexFile.open(QIODevice::WriteOnly))
 		{
@@ -488,8 +513,6 @@ bool ESTagsFilter::loadHnswIndex()
 		lLocalIndexFile.write(lHNSWIndexFile.readAll());
 		lLocalIndexFile.close();
 		lHNSWIndexFile.close();
-
-		lSettings.setValue("HnswIndex", lIndexPath);
 		mHnswIndex->loadIndex(lIndexPath.toStdString(), mHnswSpace.get());
 
 		return true;
