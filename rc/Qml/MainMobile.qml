@@ -92,7 +92,7 @@ Pane
 		onTriggered:
 		{
 			MainQmlBinder.loadDefaultFilters();
-			imageGrid.gridCol = settings.imageGridCol;
+			imageGrid.gridCol = Math.min(imageGrid.maxGridCol, settings.imageGridCol);
 			imageGrid.flickableChild.contentY = settings.imageGridYOffset;
 		}
 	}

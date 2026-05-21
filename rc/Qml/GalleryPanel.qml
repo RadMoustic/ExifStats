@@ -121,91 +121,81 @@ ESImageGridQuickItem
 			}
 		}
 		
-		PinchArea
+		TapHandler
 		{
-			anchors.fill: parent
+			acceptedButtons: Qt.LeftButton | Qt.RightButton
+							
+			function popupContextMenu(pEventPoint)
+			{
+				galleryMenu.selectedImage = imageGrid.getImageFileAtPos(pEventPoint.x, pEventPoint.y);
+				if(galleryMenu.selectedImage !== "")
+					galleryMenu.popup();
+			}
+				
+			onTapped: (pEventPoint, pButton) =>
+			{
+				if(MainQmlBinder.isMobile())
+				{
+					var selectedFile = imageGrid.getImageFileAtPos(pEventPoint.position.x, pEventPoint.position.y);
+					if(selectedFile !== "")
+					{
+						imageViewerItem.visible = true;
+						imageViewerItem.mImagePath = selectedFile;
+						MainQmlBinder.mFullScreen = true;
+					}
+				}
+				else if (pButton == Qt.RightButton)
+				{
+					popupContextMenu(pEventPoint.position);
+				}
+			}
 			
+			onDoubleTapped: (pEventPoint) =>
+			{
+				print(pEventPoint.position );
+				if(MainQmlBinder.isCtrlPressed())
+				{
+					imageGrid.imageScale = 1.0;
+				}
+				else
+				{
+					var selectedFile = imageGrid.getImageFileAtPos(pEventPoint.position.x, pEventPoint.position.y);
+					if(selectedFile !== "")
+					{
+						Qt.openUrlExternally("file:///" + selectedFile);
+					}
+				}
+			}
+			
+			onLongPressed:
+			{
+				if(MainQmlBinder.isMobile())
+					popupContextMenu(point.position);
+			}
+		}
+		
+		PinchHandler
+		{
+			target: null
 			property real initialGridCol: 1.0
+			property real currentScale: 1.0
 			property bool firstPinchFinished: false
 			
-			onPinchStarted: 
+			onActiveChanged: 
 			{
-				initialGridCol = imageGrid.gridCol;
+				if (active)
+				{
+					initialGridCol = imageGrid.gridCol;
+					currentScale = 1.0;
+				}
 			}
-			onPinchUpdated: (pPinch) => 
+			onScaleChanged: (pDelta) => 
 			{
+				currentScale *= pDelta;
+				print(currentScale);
 				flickable.ignoreNextContentYChanges = true;
-				imageGrid.mZoomCenter = parent.mapToItem(imageGrid, pPinch.center);
-				imageGrid.gridCol = Math.min(maxGridCol, Math.max(1, initialGridCol - Math.floor(Math.log2(pPinch.scale))));
-			}
-
-			MouseArea
-			{
-				anchors.fill: parent
-				preventStealing: false
-				
-				acceptedButtons: Qt.LeftButton | Qt.RightButton
-								
-				function popupContextMenu(pMouse)
-				{
-					pMouse.accepted = true;
-					galleryMenu.selectedImage = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
-					if(galleryMenu.selectedImage !== "")
-						galleryMenu.popup();
-				}
-				
-				property real pressX: 0
-				property real pressY: 0
-				
-				onPressed: (pMouse) =>
-				{
-					pressX = pMouse.x;
-					pressY = pMouse.y;
-				}
-				
-				onClicked: (pMouse) =>
-				{
-					pMouse.accepted = false;
-					if (Math.abs(pMouse.x - pressX) > 5 || Math.abs(pMouse.y - pressY) > 5)
-						return;
-					if(MainQmlBinder.isMobile())
-					{
-						pMouse.accepted = true;
-						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
-						if(selectedFile !== "")
-						{
-							imageViewerItem.visible = true;
-							imageViewerItem.mImagePath = selectedFile;
-							MainQmlBinder.mFullScreen = true;
-						}
-					}
-					else if (pMouse.button == Qt.RightButton)
-					{
-						popupContextMenu(pMouse);
-					}
-				}
-				
-				onDoubleClicked: (pMouse) =>
-				{
-					if(MainQmlBinder.isCtrlPressed())
-					{
-						imageGrid.imageScale = 1.0;
-					}
-					else
-					{
-						var selectedFile = imageGrid.getImageFileAtPos(pMouse.x, pMouse.y);
-						if(selectedFile !== "")
-						{
-							Qt.openUrlExternally("file:///" + selectedFile);
-						}
-					}
-				}
-				
-				onPressAndHold: (pMouse)=>
-				{
-					if(MainQmlBinder.isMobile())
-						popupContextMenu(pMouse);
-				}
+				imageGrid.mZoomCenter = parent.mapToItem(imageGrid, centroid.position);
+				imageGrid.gridCol = Math.min(maxGridCol, Math.max(1, initialGridCol - Math.floor(Math.log2(currentScale))));
 			}
 		}
 	}
