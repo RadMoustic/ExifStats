@@ -202,16 +202,6 @@ Pane
 					
 					RegularButton
 					{
-						text:"Open"
-
-						onReleased:
-						{
-							folderDialog.clearDB = true;
-							folderDialog.open();
-						}
-					}
-					RegularButton
-					{
 						text:"Add"
 
 						onReleased:
