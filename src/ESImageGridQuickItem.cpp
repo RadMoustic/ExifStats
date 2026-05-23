@@ -584,10 +584,10 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 			int lRowIndex = i / lItem->mNbColumns;
 			const float lYOffset = lItem->mImagesYOffsets[i] * lItem->mVisibleImageSize;
 			if(lYOffset > lTop && lStartDrawRow < 0)
-				lStartDrawRow = std::max(0, lRowIndex - 1);
+				lStartDrawRow = std::max(0, lRowIndex - 2);
 			if (lYOffset > lBottom)
 			{
-				lEndDrawRow = std::max(0, lRowIndex - 1);
+				lEndDrawRow = std::max(0, lRowIndex);
 				break;
 			}
 		}
