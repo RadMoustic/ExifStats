@@ -90,6 +90,7 @@ ESImageGridQuickItem
 		boundsBehavior: Flickable.StopAtBounds
 		
 		property bool ignoreNextContentYChanges: false
+		property bool blockScrollBarInteraction: false
 		
 		flickDeceleration: 1200
 		
@@ -100,7 +101,11 @@ ESImageGridQuickItem
 			ignoreNextContentYChanges = false;
 		}
 		
-		ScrollBar.vertical: ScrollBar { width: 30 }
+		ScrollBar.vertical: ScrollBar
+		{
+			width: 30
+			interactive: (contentItem ? (contentItem.opacity > 0.1) : false) && !flickable.blockScrollBarInteraction
+		}
 		
 		WheelHandler
 		{
@@ -131,6 +136,12 @@ ESImageGridQuickItem
 				if(galleryMenu.selectedImage !== "")
 					galleryMenu.popup();
 			}
+			
+			onPressedChanged:
+			{
+				if (pressed)
+					flickable.interactive = true;
+			}
 				
 			onTapped: (pEventPoint, pButton) =>
 			{
@@ -152,7 +163,6 @@ ESImageGridQuickItem
 			
 			onDoubleTapped: (pEventPoint) =>
 			{
-				print(pEventPoint.position );
 				if(MainQmlBinder.isCtrlPressed())
 				{
 					imageGrid.imageScale = 1.0;
@@ -177,6 +187,7 @@ ESImageGridQuickItem
 		PinchHandler
 		{
 			target: null
+			
 			property real initialGridCol: 1.0
 			property real currentScale: 1.0
 			property bool firstPinchFinished: false
@@ -187,14 +198,15 @@ ESImageGridQuickItem
 				{
 					initialGridCol = imageGrid.gridCol;
 					currentScale = 1.0;
+					imageGrid.mZoomCenter = parent.mapToItem(imageGrid, centroid.position);
+					flickable.ignoreNextContentYChanges = true;
 				}
 			}
 			onScaleChanged: (pDelta) => 
 			{
+				flickable.interactive = false;
 				currentScale *= pDelta;
-				print(currentScale);
 				flickable.ignoreNextContentYChanges = true;
-				imageGrid.mZoomCenter = parent.mapToItem(imageGrid, centroid.position);
 				imageGrid.gridCol = Math.min(maxGridCol, Math.max(1, initialGridCol - Math.floor(Math.log2(currentScale))));
 			}
 		}

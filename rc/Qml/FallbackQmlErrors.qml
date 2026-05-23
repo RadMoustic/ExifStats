@@ -26,11 +26,6 @@ Pane
 		clip: true
 		delegate: TextArea
 		{
-			anchors
-			{
-				left: parent.left
-				right: parent.right
-			}
 			text: display
 			textFormat: Text.PlainText
 			wrapMode: Text.Wrap

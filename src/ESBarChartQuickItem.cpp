@@ -36,7 +36,7 @@ ESBarChartQuickItem::ESBarChartQuickItem()
 	, mDataHasChanged(false)
 	, mGeometryHasChanged(false)
 {
-
+	setRenderTarget(QQuickPaintedItem::FramebufferObject);
 }
 
 /********************************************************************************/
@@ -47,10 +47,10 @@ QPoint ESBarChartQuickItem::mapToValue(float pX)
 		return QPoint(-1,-1);
 	QPointF lPLotAreaPos = mInvertAxis ? mapToPlotArea(0.f, pX) : mapToPlotArea(pX, 0.f);
 	float lX = (mInvertAxis ? lPLotAreaPos.y() : lPLotAreaPos.x()) - mCategoryAxisOffset;
-	float lChartFullWidth = getChartFullWidth();
-	if(lX < 0 || lX > lChartFullWidth)
+	float lChartFullSize = getChartFullSize();
+	if(lX < 0 || lX > lChartFullSize)
 		return QPoint(-1, -1);
-	int lCategory = int(lX * mCategories.size() / lChartFullWidth);
+	int lCategory = int(lX * mCategories.size() / lChartFullSize);
 	return QPoint(lCategory, mValues[lCategory]);
 }
 
@@ -66,7 +66,7 @@ QPointF ESBarChartQuickItem::mapToPlotArea(float pX, float pY)
 
 /********************************************************************************/
 
-float ESBarChartQuickItem::getChartFullWidth() const
+float ESBarChartQuickItem::getChartFullSize() const
 {
 	return float(mValues.size()) * (mBarThickness * mCategoryAxisScale + std::min(mBarSpacing, mActualBarSpacing * mCategoryAxisScale));
 }
@@ -120,15 +120,16 @@ void InvertPos(T& pPos)
 		float lLeft = mMargin + (mInvertAxis ? 0 : mValueAxisSize);
 		float lTextHeight = pPainter->boundingRect(QRectF(), "CAT").height();
 		float lMaxBarHeight = mBarLengthFactor * mMaxValue;
-		float lActualBarWith = std::max(0.5f, mBarThickness * mCategoryAxisScale);
+		float lScaledBarWidth = mBarThickness * mCategoryAxisScale;
+		float lActualBarWidth = std::max(0.5f, lScaledBarWidth);
 		float lActualCategoriesTextHeight = lTextHeight * 0.7f;
-		bool lCanDisplayAllCategories = lActualCategoriesTextHeight + mCategorySpacing < lActualBarWith;
-		int lCategoriesToDisplayInterval = lCanDisplayAllCategories ? 1 : int(ceilf((lActualCategoriesTextHeight + mCategorySpacing) / lActualBarWith));
+		bool lCanDisplayAllCategories = lActualCategoriesTextHeight + mCategorySpacing < lScaledBarWidth;
+		int lCategoriesToDisplayInterval = lCanDisplayAllCategories ? 1 : int(ceilf((lActualCategoriesTextHeight + mCategorySpacing) / lScaledBarWidth));
 		for (int i = 0 ; i < mValues.size() ; ++i)
 		{
 			int lValue = mValues[i];
 			float lBarHeight = std::max(0.001f, std::min(lMaxBarHeight, lValue * mBarLengthFactor * mValueAxisScale));
-			QRectF lBarRect(lLeft, (mInvertAxis ? mMargin + mRealCategoryAxisSize : height() - mMargin - lBarHeight - mRealCategoryAxisSize), lActualBarWith, lBarHeight);
+			QRectF lBarRect(lLeft, (mInvertAxis ? mMargin + mRealCategoryAxisSize : height() - mMargin - lBarHeight - mRealCategoryAxisSize), lActualBarWidth, lBarHeight);
 			if (mInvertAxis)
 				InvertRect(lBarRect);
 			if(pPainter->clipBoundingRect().intersects(lBarRect))
@@ -266,21 +267,21 @@ void ESBarChartQuickItem::updateInternal()
 	}
 	if (mGeometryHasChanged || mDataHasChanged)
 	{
-		float lContentWidth = (mInvertAxis ? height() : width()) - mValueAxisSize - 2.f * mMargin;
-		float lContentHeight = (mInvertAxis ? width() : height()) - mRealCategoryAxisSize - 2.f * mMargin;
+		float lContentCategorySize = (mInvertAxis ? height() : width()) - mValueAxisSize - 2.f * mMargin;
+		float lContentValuesSize = (mInvertAxis ? width() : height()) - mRealCategoryAxisSize - 2.f * mMargin;
 
 		float lBarSpacingSum = mBarSpacing * (mCategories.size() - 1);
-		if (lBarSpacingSum >= 0.5*lContentWidth) // Can't have at least 1px wide bars
+		if (lBarSpacingSum >= 0.5*lContentCategorySize) // Can't have at least 1px wide bars
 		{
-			mActualBarSpacing = 0.5 * lContentWidth / mCategories.size();
+			mActualBarSpacing = 0.5 * lContentCategorySize / mCategories.size();
 			lBarSpacingSum = mActualBarSpacing * (mCategories.size() - 1);
 		}
 		else
 		{
 			mActualBarSpacing = mBarSpacing;
 		}
-		mBarThickness = (lContentWidth - lBarSpacingSum) / mCategories.size();
-		mBarLengthFactor = lContentHeight / mMaxValue;
+		mBarThickness = (lContentCategorySize - lBarSpacingSum) / mCategories.size();
+		mBarLengthFactor = lContentValuesSize / mMaxValue;
 	}
 
 	mDataHasChanged = false;

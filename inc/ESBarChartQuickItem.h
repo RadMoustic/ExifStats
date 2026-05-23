@@ -51,7 +51,7 @@ public:
 
 	Q_INVOKABLE QPoint mapToValue(float pX);
 	Q_INVOKABLE QPointF mapToPlotArea(float pX, float pY);
-	Q_INVOKABLE float getChartFullWidth() const;
+	Q_INVOKABLE float getChartFullSize() const;
 
 	virtual void paint(QPainter* pPainter) override;
 

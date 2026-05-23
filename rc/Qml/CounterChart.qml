@@ -32,6 +32,11 @@ Pane
 		barChartItem.mValueAxisScale = 1.0;
 	}
 	
+	onVisibleChanged:
+	{
+		barChartItem.Material.theme = barChartItem.parent.parent.parent.Material.theme;
+	}
+	
 	ESBarChartQuickItem
 	{
 		id: barChartItem
@@ -93,10 +98,10 @@ Pane
 				{
 					var p = barChartItem.mapToPlotArea(pEvent.x, pEvent.y);
 					var mouseX = barChartItem.mInvertAxis ? p.y : p.x;
-					var oldChartFullWidth = barChartItem.getChartFullWidth();
+					var oldChartFullSize = barChartItem.getChartFullSize();
 					barChartItem.mCategoryAxisScale *= scale;
-					var newChartFullWidth = barChartItem.getChartFullWidth();
-					barChartItem.mCategoryAxisOffset = (barChartItem.mCategoryAxisOffset - mouseX) * newChartFullWidth / oldChartFullWidth + mouseX;
+					var newChartFullSize = barChartItem.getChartFullSize();
+					barChartItem.mCategoryAxisOffset = (barChartItem.mCategoryAxisOffset - mouseX) * newChartFullSize / oldChartFullSize + mouseX;
 				}
 			}
 		}
@@ -107,11 +112,11 @@ Pane
 			
 			property real startDistX: 0
 			property real startDistY: 0
-			property real startScaleX: 1.0
-			property real startScaleY: 1.0
-			property real startOffsetX: 0
-			property real pinchStartX: 0
-			property real oldFullWidth: 0
+			property real startScaleCategory: 1.0
+			property real startScaleValue: 1.0
+			property real startOffset: 0
+			property real pinchStart: 0
+			property real oldFullSize: 0
 			
 			onPinchStarted: (pPinch) =>
 			{
@@ -126,12 +131,16 @@ Pane
 					startDistX = tmp;
 				}
 				
-				startScaleX = barChartItem.mCategoryAxisScale;
-				startScaleY = barChartItem.mValueAxisScale;
-				startOffsetX = barChartItem.mCategoryAxisOffset;
-				oldFullWidth = barChartItem.getChartFullWidth();
+				startScaleCategory = barChartItem.mCategoryAxisScale;
+				startScaleValue = barChartItem.mValueAxisScale;
+				startOffset = barChartItem.mCategoryAxisOffset;
+				oldFullSize = barChartItem.getChartFullSize();
 				
-				pinchStartX = barChartItem.mapToPlotArea(pPinch.center.x, 0).x;
+				var pinchCenterInPlotArea = barChartItem.mapToPlotArea(pPinch.center.x, pPinch.center.y);
+				if(barChartItem.mInvertAxis)
+					pinchStart = pinchCenterInPlotArea.y;
+				else
+					pinchStart = pinchCenterInPlotArea.x;
 			}
 
 			onPinchUpdated: (pPinch) =>
@@ -148,15 +157,15 @@ Pane
 				
 				if (startDistX > 20 && currentDistX > 20) 
 				{
-					var newScale = startScaleX * (currentDistX / startDistX);
+					var newScale = startScaleCategory * (currentDistX / startDistX);
 					barChartItem.mCategoryAxisScale = newScale;
-					var newFullWidth = barChartItem.getChartFullWidth();
-					barChartItem.mCategoryAxisOffset = (startOffsetX - pinchStartX) * newFullWidth / oldFullWidth + pinchStartX;
+					var newFullSize = barChartItem.getChartFullSize();
+					barChartItem.mCategoryAxisOffset = (startOffset - pinchStart) * newFullSize / oldFullSize + pinchStart;
 				}
 				
 				if (startDistY > 50 && currentDistY > 50) 
 				{
-					var newScale = startScaleY * (currentDistY / startDistY);
+					var newScale = startScaleValue * (currentDistY / startDistY);
 					barChartItem.mValueAxisScale = newScale;
 				}
 			}
