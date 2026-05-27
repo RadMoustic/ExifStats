@@ -200,9 +200,12 @@ Pane
 				{	
 					Layout.preferredHeight: 50
 					
-					RegularButton
+					RoundButton
 					{
-						text:"Add"
+						icon.source: "qrc:/Images/Add.png"
+						display: AbstractButton.IconOnly
+						radius: 0
+						padding: 0
 
 						onReleased:
 						{
@@ -211,9 +214,12 @@ Pane
 						}
 					}
 					
-					RegularButton
+					RoundButton
 					{
-						text:"Refresh"
+						icon.source: "qrc:/Images/Refresh.png"
+						display: AbstractButton.IconOnly
+						radius: 0
+						padding: 0
 
 						onReleased:
 						{

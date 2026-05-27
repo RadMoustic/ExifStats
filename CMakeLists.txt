@@ -104,7 +104,7 @@ source_group("Resources" FILES ${QRC_LIST} ${RC_LIST})
 # Qt
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Scripts/CMake)
 include(Qt)
-set(QT6_PACKAGES Core;Quick;Qml;QuickControls2;Concurrent;Widgets;Positioning)
+set(QT6_PACKAGES Core;Quick;Qml;QuickControls2;Concurrent;Widgets;Location;Positioning)
 if(NOT ANDROID)
 	set(QT6_PACKAGES ${QT6_PACKAGES};ZlibPrivate)
 endif()

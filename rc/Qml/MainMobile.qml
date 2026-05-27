@@ -7,6 +7,7 @@ import QtQuick.Dialogs
 import QtLocation
 import QtCore
 import QtQuick.Effects
+import QtQuick.Window
 
 import ExifStats
 
@@ -272,6 +273,7 @@ Pane
 		id: mainLayout
 		
 		anchors.fill: parent
+		anchors.topMargin: mainWindow.Window.window.SafeArea.margins.top
 		
 		RowLayout
 		{

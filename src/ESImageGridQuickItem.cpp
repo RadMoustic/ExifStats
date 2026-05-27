@@ -16,9 +16,6 @@
 
 /********************************************************************************/
 
-constexpr float cMarkerTextSpacing = 5.f;
-constexpr int cNbYMarker = 5;
-constexpr float cMarkerHalfWidth = 2.f;
 #ifdef Q_OS_ANDROID
 constexpr int cMaxDisplayedImages = 256;
 #else

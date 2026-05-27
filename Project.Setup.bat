@@ -5,8 +5,8 @@ if "%QT_ROOT_DIR%" == "" (
 )
 
 set SLN_NAME=ExifStats
-set QT_VERSION=6.6.2
-set QT_MSVC_DIR=msvc2019_64
+set QT_VERSION=6.11.1
+set QT_MSVC_DIR=msvc2022_64
 set QT_STATIC_DIR=Src\BuildStatic
 set QML_DIR=%ROOT%\rc\Qml
 set QT_DEPLOY_PLUGINS=true

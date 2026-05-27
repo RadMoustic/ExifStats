@@ -208,7 +208,7 @@ void InvertPos(T& pPos)
 			if (mInvertAxis)
 				pPainter->drawLine(QLineF(lMarkerY, mMargin * 2.f, lMarkerY, height() - mValueAxisSize - cMarkerHalfWidth));
 			else
-				pPainter->drawLine(QLineF(mValueAxisSize + mMargin - cMarkerHalfWidth, lMarkerY, width() - mValueAxisSize - mMargin*2.f, lMarkerY));
+				pPainter->drawLine(QLineF(mValueAxisSize + mMargin - cMarkerHalfWidth, lMarkerY, width() - mMargin, lMarkerY));
 
 			QString lMarkerText = QString::number(lMarkerValue);
 			if (mInvertAxis)
