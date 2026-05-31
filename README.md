@@ -33,14 +33,15 @@ Download and extract the CustomizeQML.zip into the same directory as ExifStats.e
 * Requirements
   * Visual Studio 2022+
   * CMake 3.6.2+
-  * Download and install Qt6.6+ https://doc.qt.io/qt-6/get-and-install-qt.html
+  * Download and install Qt6.11.1+ https://doc.qt.io/qt-6/get-and-install-qt.html
     * MSVC 2019 64-bit
     * Sources
-    * Qt 5 Compatibility Module
     * Qt Debug Information Files
     * Additional Qt libs:
+      * Qt 5 Compatibility Module
       * Qt Image Formats
       * Qt Location
+      * Qt Positioning
 #### Additional Libs with VCPKG
 Install VCPKG:
 ```
@@ -157,7 +158,7 @@ set QT_STATIC=true
 ```
 
 ### Static Compilation Troubleshot
-* tokenizers_c.lib LNK2001 __imp_strcat_s 
+* tokenizers_c.lib LNK2001 __imp_strcat_s:
 Open/create the file "%USERPROFILE%\.cargo\config.toml" and add:
 ```
 [target.x86_64-pc-windows-msvc]
