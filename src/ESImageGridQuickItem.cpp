@@ -102,6 +102,7 @@ float ESImageGridQuickItem::getMinImageSize() const
 
 QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 {
+	QString lResult;
 	int lIndex = getImageIndexAtPos(pX, pY);
 	if (lIndex >= 0 && lIndex < mImages.size())
 	{
@@ -116,31 +117,75 @@ QString ESImageGridQuickItem::getImageFileAtPos(float pX, float pY) const
 
 		ESImageCache::getInstance().printImageDebugInfo(lImage);
 #endif //  defined(QT_DEBUG) && defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-		return lImage->getImagePath();
+		lResult = lImage->getImagePath();
 	}
-	else
-	{
-		return QString();
-	}
+	
+	return lResult;
 }
 
 /********************************************************************************/
 
-int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY) const
+QGeoCoordinate ESImageGridQuickItem::getImageGeoCoordinateAtPos(float pX, float pY) const
+{
+	QGeoCoordinate lResult;
+	int lIndex = getImageIndexAtPos(pX, pY);
+	if (lIndex >= 0 && lIndex < mImages.size())
+	{
+		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
+		const ESUsefullExif::GeoLocation& lGeoLoc = lImage->getExif().mGeoLocation;
+		if (lGeoLoc.mLatitude != 0 || lGeoLoc.mLongitude != 0)
+		{
+			lResult.setLatitude(lGeoLoc.mLatitude);
+			lResult.setLongitude(lGeoLoc.mLongitude);
+		}
+	}
+
+	return lResult;
+}
+
+/********************************************************************************/
+
+int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY, bool pGetClosestIfNotFound) const
 {
 	int lIndex = -1;
+
+	int lClosestImageIdx = -1;
+	float lCLosestImageVerticalDist = std::numeric_limits<float>::max();
 
 	for(int i = 0; i < mImagesYOffsets.size(); ++i)
 	{
 		int lImageCol = 1 + i % mNbColumns;
-		float lImageRightX = lImageCol == mNbColumns ? width() : lImageCol * mVisibleImageSize;
-		if(pY < mVisibleImageSize + mImagesYOffsets[i] * mVisibleImageSize && pX < lImageRightX)
+
+		float lOrientedRatio = mImages[i]->getExif().getOrientedRatio();
+		float lImageWidth = mNbColumns > 1 && lOrientedRatio < 1 ? mVisibleImageSize * lOrientedRatio : mVisibleImageSize;
+		float lImageHeight = mNbColumns == 1 || lOrientedRatio > 1 ? mVisibleImageSize / lOrientedRatio : mVisibleImageSize;
+		float lMarginX = (mVisibleImageSize - lImageWidth) / 2.f;
+		float lMarginY = std::max(0.f, (mVisibleImageSize - lImageHeight) / 2.f);
+
+		QRectF lImageRect;
+		lImageRect.setX((lImageCol-1) * mVisibleImageSize + lMarginX);
+		lImageRect.setY(mImagesYOffsets[i] * mVisibleImageSize + lMarginY);
+		lImageRect.setWidth(lImageWidth);
+		lImageRect.setHeight(lImageHeight);
+		
+		if(lImageRect.contains(pX,pY))
 		{
 			lIndex = i;
 			break;
 		}
-	}
 
+		if(pGetClosestIfNotFound && pX > lImageRect.left() && pX < lImageRect.right())
+		{
+			float lMinVertDist = std::min(abs(pY - lImageRect.top()), abs(pY - lImageRect.bottom()));
+			if (lMinVertDist < lCLosestImageVerticalDist)
+			{
+				lCLosestImageVerticalDist = lMinVertDist;
+				lClosestImageIdx = i;
+			}
+		}
+	}
+	if(lIndex == -1)
+		lIndex = lClosestImageIdx;
 	return lIndex;
 }
 
@@ -303,7 +348,7 @@ void ESImageGridQuickItem::updateInternal()
 		float lKeepInViewImageYOffset = 0.f;
 		if(mNbColumns > 0)
 		{
-			lImageAtZoomCenter = getImageIndexAtPos(mZoomCenter.x(), mZoomCenter.y() + mYOffset);
+			lImageAtZoomCenter = getImageIndexAtPos(mZoomCenter.x(), mZoomCenter.y() + mYOffset, true);
 			if(lImageAtZoomCenter == -1)
 				lImageAtZoomCenter = lNbImages - 1;
 			QVector2D lKeepInViewImagePos = getImagePos(lImageAtZoomCenter);

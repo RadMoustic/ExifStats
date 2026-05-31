@@ -358,6 +358,7 @@ Flickable
 				{
 					MainQmlBinder.FocalLengthFrom = MainQmlBinder.MinFocalLength35mm;
 					MainQmlBinder.FocalLengthTo = MainQmlBinder.MaxFocalLength35mm;
+					MainQmlBinder.FocalLengthFilterOutInvalid = false;
 				}
 			}
 			
@@ -378,6 +379,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.FocalLengthFrom = text;
+					MainQmlBinder.FocalLengthFilterOutInvalid = true;
 				}
 
 			}
@@ -398,6 +400,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.FocalLengthTo = text;
+					MainQmlBinder.FocalLengthFilterOutInvalid = true;
 				}
 			}
 			
@@ -426,6 +429,7 @@ Flickable
 				{
 					MainQmlBinder.ApertureFrom = MainQmlBinder.MinAperture;
 					MainQmlBinder.ApertureTo = MainQmlBinder.MaxAperture;
+					MainQmlBinder.ApertureFilterOutInvalid = false;
 				}
 			}
 			
@@ -446,6 +450,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.ApertureFrom = text;
+					MainQmlBinder.ApertureFilterOutInvalid = true;
 				}
 
 			}
@@ -466,6 +471,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.ApertureTo = text;
+					MainQmlBinder.ApertureFilterOutInvalid = true;
 				}
 			}
 			
@@ -485,6 +491,7 @@ Flickable
 			
 			RegularButton
 			{
+				id: dateResetButton
 				text:"X"
 				
 				implicitWidth: 30
@@ -494,6 +501,8 @@ Flickable
 				{
 					MainQmlBinder.TimeFrom = MainQmlBinder.MinTime;
 					MainQmlBinder.TimeTo = MainQmlBinder.MaxTime;
+					MainQmlBinder.TimeFilterOutInvalid = false;
+					
 				}
 			}
 			
@@ -541,6 +550,27 @@ Flickable
 			{
 				text: ""
 				Layout.fillWidth: true
+			}
+		}
+		
+		RowLayout
+		{
+			id: invalidTimestampFilter
+			
+			Item
+			{
+				width: dateResetButton.width
+			}
+			
+			CheckBox
+			{
+				id: invalidDateTimeFilterCheckbox
+				checked: !MainQmlBinder.TimeFilterOutInvalid
+				text: "No Date/Time"
+				onCheckedChanged:
+				{
+					MainQmlBinder.TimeFilterOutInvalid = !invalidDateTimeFilterCheckbox.checked;
+				}
 			}
 		}
 		
@@ -599,7 +629,7 @@ Flickable
 		{
 			id: cameraFilters
 			
-			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 650) / 2)
+			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 700) / 2)
 			Layout.fillWidth: true
 			
 			Menu

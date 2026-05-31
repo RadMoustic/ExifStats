@@ -10,6 +10,7 @@
 // Qt
 #include <QQuickPaintedItem>
 #include <QImage>
+#include <QGeoCoordinate>
 
 /********************************************************************************/
 /********************************************************************************/
@@ -34,6 +35,20 @@ public:
 	ESImageViewerQuickItem();
 	
 	ES_QML_PROPERTY(ImagePath, QString, mDataHasChanged = true; update();)
+	ES_QML_READ_PROPERTY(ImageRatio, float)
+	ES_QML_READ_PROPERTY(ImageWidth, float)
+	ES_QML_READ_PROPERTY(ImageHeight, float)
+
+	ES_QML_READ_PROPERTY(CameraModel, QString)
+	ES_QML_READ_PROPERTY(LensModel, QString)
+	ES_QML_READ_PROPERTY(DateTime, QString)
+	ES_QML_READ_PROPERTY(ShutterSpeedValue, float)
+	ES_QML_READ_PROPERTY(FNumber, float)
+	ES_QML_READ_PROPERTY(GeoLocation, QGeoCoordinate)
+	ES_QML_READ_PROPERTY(FocalLengthIn35mm, int)
+	ES_QML_READ_PROPERTY(FocalLength, int)
+	ES_QML_READ_PROPERTY(Orientation, int)
+	ES_QML_READ_PROPERTY(ISOSpeedRatings, int)
 
 	virtual void paint(QPainter* pPainter) override;
 

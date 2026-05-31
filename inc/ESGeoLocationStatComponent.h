@@ -26,9 +26,9 @@ public:
 
 	virtual void addFile(const ESFileInfo& pFile) override
 	{
-		if(pFile.mExif.mGeoLococation.mLatitude == 0 && pFile.mExif.mGeoLococation.mLongitude == 0)
+		if(pFile.mExif.mGeoLocation.mLatitude == 0 && pFile.mExif.mGeoLocation.mLongitude == 0)
 			return;
-		mGeoLocations.push_back(QPointF(pFile.mExif.mGeoLococation.mLatitude, pFile.mExif.mGeoLococation.mLongitude));
+		mGeoLocations.push_back(QPointF(pFile.mExif.mGeoLocation.mLatitude, pFile.mExif.mGeoLocation.mLongitude));
 		mGeoLocationsFiles.push_back(&pFile);
 	}
 

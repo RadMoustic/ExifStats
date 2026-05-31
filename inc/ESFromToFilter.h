@@ -23,29 +23,45 @@ public:
 	T mFilterFrom;
 	T mFilterTo;
 
+	bool mFilterOutInvalidValues;
+
 	ESFromToFilter()
 	 : mFilterFrom(std::numeric_limits<T>::min())
 	 , mFilterTo(std::numeric_limits<T>::max())
+	 , mInvalidValue(std::numeric_limits<T>::max())
+	 , mInvalidValueSet(false)
+	 , mFilterOutInvalidValues(false)
 	{
 
 	}
 
+	void setInvalidValue(T pValue)
+	{
+		mInvalidValue = pValue;
+		mInvalidValueSet = true;
+	}
+
 	virtual bool isEnabled() const override
 	{
-		return mFilterFrom != std::numeric_limits<T>::min() || mFilterTo != std::numeric_limits<T>::max();
+		return mFilterFrom != std::numeric_limits<T>::min() || mFilterTo != std::numeric_limits<T>::max() || (mInvalidValueSet && mFilterOutInvalidValues);
 	}
 
 	virtual void reset() override
 	{
 		mFilterFrom = std::numeric_limits<T>::min();
 		mFilterTo = std::numeric_limits<T>::max();
+		mFilterOutInvalidValues = false;
 	}
 
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		auto lFileValue = ExifStatType::getFileValue(pFile);
-		return		lFileValue < mFilterFrom
-				||	lFileValue > mFilterTo;
+		bool lIsInvalidValue = mInvalidValueSet && lFileValue == mInvalidValue;
+		return		(lIsInvalidValue && mFilterOutInvalidValues)
+				||	(	!lIsInvalidValue
+					&&	(	lFileValue < mFilterFrom
+						||	lFileValue > mFilterTo)
+					);
 	}
 
 	virtual QJsonObject serialize() const override
@@ -53,6 +69,7 @@ public:
 		QJsonObject lResult;
 		lResult["From"] = toJsonValue(mFilterFrom);
 		lResult["To"] = toJsonValue(mFilterTo);
+		lResult["FilterOutInvalidValues"] = mFilterOutInvalidValues;
 		return lResult;
 	}
 
@@ -60,7 +77,11 @@ public:
 	{
 		mFilterFrom = fromJsonValue<T>(pJson["From"]);
 		mFilterTo = fromJsonValue<T>(pJson["To"]);
-
+		mFilterOutInvalidValues = fromJsonValue<bool>(pJson["FilterOutInvalidValues"]);
 		return true;
 	}
+
+private:
+	T mInvalidValue;
+	bool mInvalidValueSet;
 };

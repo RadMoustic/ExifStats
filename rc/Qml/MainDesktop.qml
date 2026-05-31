@@ -554,6 +554,8 @@ Pane
 					
 					visible: false
 					
+					mapItem: mapRoot
+					
 					SplitView.preferredWidth: 200
 					SplitView.preferredHeight: parent.height
 					SplitView.minimumWidth: 270

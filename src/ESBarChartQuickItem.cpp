@@ -108,9 +108,9 @@ void InvertPos(T& pPos)
 
 		pPainter->save();
 		if (mInvertAxis)
-			pPainter->setClipRect(mMargin, mMargin, width() - 2.f * mMargin, height() - 2.f * mMargin - mCategoryAxisSize);
+			pPainter->setClipRect(mMargin + mCategoryAxisSize, mMargin, width() - 2.f * mMargin - mCategoryAxisSize, height() - 2.f * mMargin - mValueAxisSize);
 		else
-			pPainter->setClipRect(mMargin + mValueAxisSize, mMargin, width() - mMargin * 2.0 - mValueAxisSize, height() - mMargin * 2.0);
+			pPainter->setClipRect(mMargin + mValueAxisSize, mMargin, width() - mMargin * 2.f - mValueAxisSize, height() - mMargin * 2.f);
 		QPointF lPos(mCategoryAxisOffset, 0);
 		if (mInvertAxis)
 			InvertPos(lPos);
@@ -206,7 +206,7 @@ void InvertPos(T& pPos)
 			else
 				lMarkerY = height() - mRealCategoryAxisSize - mMargin - lMarkerSpacing * lMarkerValue;
 			if (mInvertAxis)
-				pPainter->drawLine(QLineF(lMarkerY, mMargin * 2.f, lMarkerY, height() - mValueAxisSize - cMarkerHalfWidth));
+				pPainter->drawLine(QLineF(lMarkerY, mMargin, lMarkerY, height() - mValueAxisSize - mMargin + cMarkerHalfWidth));
 			else
 				pPainter->drawLine(QLineF(mValueAxisSize + mMargin - cMarkerHalfWidth, lMarkerY, width() - mMargin, lMarkerY));
 

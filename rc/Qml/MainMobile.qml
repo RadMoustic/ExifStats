@@ -6,7 +6,6 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtLocation
 import QtCore
-import QtQuick.Effects
 import QtQuick.Window
 
 import ExifStats
@@ -107,7 +106,7 @@ Pane
 		mainWindow.Material.theme = settings.theme ? Material.Dark : Material.Light;
 		sidePanel.Material.theme = settings.theme ? Material.Dark : Material.Light;
 		
-		loadDefaultFiltersTimer.start();
+		//loadDefaultFiltersTimer.start();
 	}
 	
 	Component.onDestruction:
@@ -273,7 +272,7 @@ Pane
 		id: mainLayout
 		
 		anchors.fill: parent
-		anchors.topMargin: mainWindow.Window.window.SafeArea.margins.top
+		anchors.topMargin: mainWindow.Window.window ? mainWindow.Window.window.SafeArea.margins.top : 0
 		
 		RowLayout
 		{
@@ -322,7 +321,9 @@ Pane
 			GalleryPanel
 			{
 				id: imageGrid
-				imageViewerItem: imageViewer
+				imageViewerItem: imageViewerRoot
+				mapItem: mapRoot
+				mapShowAndFocusFunction: function() { tabBar.currentIndex = 1; }
 			}
 			
 			MapPanel
@@ -392,98 +393,11 @@ Pane
 		}
 	}
 	
-	ESImageViewerQuickItem
+	ImageViewer
 	{
-		id: imageViewer
+		id: imageViewerRoot
 		visible: false
 		anchors.fill: parent
-
-		MouseArea
-		{
-			anchors.fill: parent
-			
-			property int swipeThreshold: 50
-			property int startX: 0
-
-			onPressed: (pMouse) =>
-			{
-				startX = pMouse.x
-			}
-
-			onReleased: (pMouse) =>
-			{
-				var diffX = pMouse.x - startX
-
-				if (Math.abs(diffX) > swipeThreshold)
-				{
-					var newImage = "";
-					if (diffX < 0)
-					{
-						newImage = imageGrid.getNextImage(imageViewer.mImagePath, 5);
-					}
-					else
-					{
-						newImage = imageGrid.getPreviousImage(imageViewer.mImagePath, 5);
-					}
-					if(newImage != "")
-					{
-						imageViewer.mImagePath = newImage;
-					}
-				}
-			}
-		}
-		
-		RoundButton
-		{
-			id: closeButton
-			text: "X"
-			anchors.top: parent.top
-			anchors.right: parent.right
-			anchors.margins: 15
-			radius: 4
-			
-			implicitWidth: 40
-			implicitHeight: 40
-
-			contentItem: Text
-			{
-				text: closeButton.text
-				font.pixelSize: 15
-				font.bold: true
-				color: "#666666"
-				horizontalAlignment: Text.AlignHCenter
-				verticalAlignment: Text.AlignVCenter
-			}
-
-			background: Item
-			{
-				Rectangle
-				{
-					id: bgRect
-					anchors.fill: parent
-					color: closeButton.down ? "#222222" : "#111111"
-					border.color: "#666666"
-					border.width: 2
-					radius: closeButton.radius
-					visible: false
-				}
-
-				MultiEffect
-				{
-					source: bgRect
-					anchors.fill: parent
-					shadowEnabled: true
-					shadowColor: "#CC000000"
-					shadowBlur: 1.0
-				}
-			}
-			
-			onReleased:
-			{
-				imageViewer.visible = false;
-				MainQmlBinder.mFullScreen = false;
-			}
-		}
 	}
 	
 	PreviousCrashView

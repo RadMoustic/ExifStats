@@ -15,6 +15,8 @@
 	<file>Qml/TimelineCounterChart.qml</file>
 	<file>Qml/PreviousCrashView.qml</file>
 	<file>Qml/DesktopSettings.qml</file>
+	<file>Qml/ImageViewer.qml</file>
+	<file>Qml/ContrastedButton.qml</file>
 
 	<file>Images/Menu.png</file>
 	<file>Images/Add.png</file>

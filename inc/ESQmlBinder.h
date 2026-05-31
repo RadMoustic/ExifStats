@@ -108,6 +108,7 @@ public:
 
 	Q_PROPERTY(QString TimeFrom READ getTimeFrom WRITE setTimeFrom NOTIFY timeFromChanged)
 	Q_PROPERTY(QString TimeTo READ getTimeTo WRITE setTimeTo NOTIFY timeToChanged)
+	B_QML_PROPERTY(TimeFilterOutInvalid, mDateTimeFilter.mFilterOutInvalidValues, bool)
 
 	Q_PROPERTY(int MinFocalLength35mm READ getMinFocalLength35mm)
 	Q_PROPERTY(int MaxFocalLength35mm READ getMaxFocalLength35mm)
@@ -132,8 +133,10 @@ public:
 	B_QML_PROPERTY(TimelineStatic, mDateTimeStat.mCountComp.mAddFileCategories, bool)
 	B_QML_PROPERTY(FocalLengthFrom, m35mmFilter.mFilterFrom, int)
 	B_QML_PROPERTY(FocalLengthTo, m35mmFilter.mFilterTo, int)
+	B_QML_PROPERTY(FocalLengthFilterOutInvalid, m35mmFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
+	B_QML_PROPERTY(ApertureFilterOutInvalid, mApertureFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
 	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)

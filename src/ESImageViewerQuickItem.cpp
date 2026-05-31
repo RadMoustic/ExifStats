@@ -13,6 +13,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 	: mValid(false)
 	, mDataHasChanged(false)
 	, mGeometryHasChanged(false)
+	, mImageRatio(1.f)
 {
 
 }
@@ -70,6 +71,22 @@ void ESImageViewerQuickItem::updateInternal()
 		if(mImage)
 			disconnect(mImageLoadedConnection);
 		mImage = ESImageCache::getInstance().getImage(mImagePath);
+
+		const ESUsefullExif& lExif = mImage->getExif();
+		setImageWidth(lExif.getOrientedWidth());
+		setImageHeight(lExif.getOrientedHeight());
+		setImageRatio(lExif.getOrientedRatio());
+		setCameraModel(lExif.mCameraModel.getString());
+		setLensModel(lExif.mLensModel.getString());
+		setDateTime(QDateTime::fromSecsSinceEpoch(lExif.mDateTime).toString("yyyy/MM/dd hh:mm:ss"));
+		setShutterSpeedValue(lExif.mShutterSpeedValue);
+		setFNumber(lExif.mFNumber);
+		setGeoLocation(QGeoCoordinate(lExif.mGeoLocation.mLatitude, lExif.mGeoLocation.mLongitude));
+		setFocalLengthIn35mm(lExif.mFocalLengthIn35mm);
+		setFocalLength(lExif.mFocalLength);
+		setOrientation(lExif.mOrientation);
+		setISOSpeedRatings(lExif.mISOSpeedRatings);
+
 		mImage->updateLastUsed();
 		if (!mImage->isLoaded() && !mImage->isLoading())
 			mImage->loadImage();

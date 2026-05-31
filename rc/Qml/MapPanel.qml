@@ -9,6 +9,7 @@ Item
 {
 	id: mapRoot
 	
+	property alias mapChild: map
 	property alias mapDotsChild: mapDots
 	property alias panEnabled: drag.enabled
 	

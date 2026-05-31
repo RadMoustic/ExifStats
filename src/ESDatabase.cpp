@@ -333,8 +333,8 @@ ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& pFullEx
 	if(!lExifDateTime.isValid())
 		lExifDateTime = QDateTime::fromString(QString(pFullExif.DateTime.c_str()), "yyyy:MM:dd hh:mm:ss");
 	lResult.mDateTime = lExifDateTime.toSecsSinceEpoch();
-	lResult.mGeoLococation.mLatitude = static_cast<float>(pFullExif.GeoLocation.Latitude);
-	lResult.mGeoLococation.mLongitude = static_cast<float>(pFullExif.GeoLocation.Longitude);
+	lResult.mGeoLocation.mLatitude = static_cast<float>(pFullExif.GeoLocation.Latitude);
+	lResult.mGeoLocation.mLongitude = static_cast<float>(pFullExif.GeoLocation.Longitude);
 	lResult.mFocalLength = pFullExif.FocalLength;
 	lResult.mFocalLengthIn35mm = pFullExif.FocalLengthIn35mm;
 	lResult.mOrientation = ESExifOrientation(pFullExif.Orientation);
@@ -399,8 +399,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mExif.mFNumber);
 			pSerializer.Serialize(pFileInfo.mExif.mFocalLength);
 			pSerializer.Serialize(pFileInfo.mExif.mFocalLengthIn35mm);
-			pSerializer.Serialize(pFileInfo.mExif.mGeoLococation.mLatitude);
-			pSerializer.Serialize(pFileInfo.mExif.mGeoLococation.mLongitude);
+			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLatitude);
+			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLongitude);
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
 			if(lDatabaseVersion >= 5)
 				pSerializer.Serialize(pFileInfo.mExif.mOrientation);

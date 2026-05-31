@@ -39,9 +39,9 @@ public:
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
 	{
 		return		mGeoShapeFilter.isValid()
-				&&	(	(	pFile.mExif.mGeoLococation.mLatitude == 0
-						&&	pFile.mExif.mGeoLococation.mLongitude == 0)
-					||	!mGeoShapeFilter.contains(QGeoCoordinate(pFile.mExif.mGeoLococation.mLatitude, pFile.mExif.mGeoLococation.mLongitude)));
+				&&	(	(	pFile.mExif.mGeoLocation.mLatitude == 0
+						&&	pFile.mExif.mGeoLocation.mLongitude == 0)
+					||	!mGeoShapeFilter.contains(QGeoCoordinate(pFile.mExif.mGeoLocation.mLatitude, pFile.mExif.mGeoLocation.mLongitude)));
 	}
 
 	QJsonObject serializeGeoCoordinates(const QGeoCoordinate& pGeoCoordinate) const

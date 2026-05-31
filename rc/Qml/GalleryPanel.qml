@@ -8,20 +8,23 @@ ESImageGridQuickItem
 	id: imageGrid
 	
 	property var imageViewerItem
+	property var mapItem
+	property var mapShowAndFocusFunction: function() {}
+	
 	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : Math.min(10, Math.floor(width / getMinImageSize()))
 	property real gridCol: MainQmlBinder.isMobile() ? 1 : Math.floor(width / 250)
 	property alias flickableChild: flickable
 	property bool orientation: width > height
 
-	mTargetImageSize: imageGrid.width / Math.floor(gridCol)
+	mTargetImageSize: imageGrid.width / Math.min(maxGridCol, Math.floor(gridCol))
 	mImageSize: mTargetImageSize
-	
+		
 	onOrientationChanged:
 	{
 		if(MainQmlBinder.isMobile())
 		{
 			var gridColRatio = orientation ? 2 : 0.5;
-			gridCol = Math.min(width > height ? 8 : 4, Math.max(1, Math.round(gridCol * gridColRatio)));
+			gridCol = Math.min(maxGridCol, Math.max(1, Math.round(gridCol * gridColRatio)));
 		}
 	}
 	
@@ -67,16 +70,52 @@ ESImageGridQuickItem
 		id: galleryMenu
 		width: 350
 		property var selectedImage
-
+		property var selectedImageGeoCoord
+		
 		MenuItem
 		{
-			id: storeImage
 			text: "Reset and Scroll"
 			onTriggered:
 			{
 				scrollToImageTimer.imageToScrollTo = galleryMenu.selectedImage;
 				scrollToImageTimer.start();
 				MainQmlBinder.resetFilters();
+			}
+		}
+		MenuItem
+		{
+			id: centerInMapMenuItem
+			text: "Center in Map"
+			onTriggered:
+			{
+				mapItem.mapChild.center = galleryMenu.selectedImageGeoCoord;
+				mapItem.mapChild.zoomLevel = 14;
+				mapItem.mapDotsChild.refresh();
+				imageGrid.mapShowAndFocusFunction();
+			}
+		}
+		
+		MenuItem
+		{
+			text: "Center in Map (Keep Zoom)"
+			enabled: centerInMapMenuItem.enabled
+			onTriggered:
+			{
+				mapItem.mapChild.center = galleryMenu.selectedImageGeoCoord;
+				mapItem.mapDotsChild.refresh();
+				imageGrid.mapShowAndFocusFunction();
+			}
+		}
+		
+		MenuItem
+		{
+			text: "Open in Google Maps"
+			enabled: centerInMapMenuItem.enabled
+			onTriggered:
+			{
+				var lat = galleryMenu.selectedImageGeoCoord.latitude;
+				var lng = galleryMenu.selectedImageGeoCoord.longitude;
+				Qt.openUrlExternally("https://www.google.com/maps/@?api=1&map_action=map&center=" + lat + "," + lng + "&zoom=20");
 			}
 		}
 	}
@@ -134,7 +173,11 @@ ESImageGridQuickItem
 			{
 				galleryMenu.selectedImage = imageGrid.getImageFileAtPos(pEventPoint.x, pEventPoint.y);
 				if(galleryMenu.selectedImage !== "")
+				{
+					galleryMenu.selectedImageGeoCoord = imageGrid.getImageGeoCoordinateAtPos(pEventPoint.x, pEventPoint.y);
+					centerInMapMenuItem.enabled = galleryMenu.selectedImageGeoCoord.isValid;
 					galleryMenu.popup();
+				}
 			}
 			
 			onPressedChanged:
@@ -151,7 +194,7 @@ ESImageGridQuickItem
 					if(selectedFile !== "")
 					{
 						imageViewerItem.visible = true;
-						imageViewerItem.mImagePath = selectedFile;
+						imageViewerItem.imageViewerChild.mImagePath = selectedFile;
 						MainQmlBinder.mFullScreen = true;
 					}
 				}

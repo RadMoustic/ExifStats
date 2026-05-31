@@ -63,11 +63,11 @@ struct ESUsefullExif
 	quint64 mDateTime;
 	float mShutterSpeedValue;
 	float mFNumber;
-	struct
+	struct GeoLocation
 	{
 		float mLatitude;
 		float mLongitude;
-	} mGeoLococation;
+	} mGeoLocation;
 	quint16 mFocalLengthIn35mm;
 	quint16 mFocalLength;
 	ESExifOrientation mOrientation;

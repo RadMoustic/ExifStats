@@ -78,6 +78,10 @@ ESQmlBinder::ESQmlBinder()
 	mLensModelFilter.mKeepCategory = true;
 	mDateTimeFilter.mFilterFrom = mDateTimeStat.mMinMaxComp.mValidMinValue;
 	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.mValidMaxValue;
+	
+	m35mmFilter.setInvalidValue(0);
+	mApertureFilter.setInvalidValue(0.f);
+	mDateTimeFilter.setInvalidValue(18446744073709548016);
 
 	m35mmFilter.mName = "35mm";
 	mApertureFilter.mName = "Aperture";
@@ -902,13 +906,14 @@ void ESQmlBinder::setTimeFrom(QString pFrom)
 
 void ESQmlBinder::setTimeTo(QString pTo)
 {
+	constexpr uint64_t c24Hours = 24*60*60-1;
 	static uint64_t lsMaxTo = QDateTime::currentDateTime().toSecsSinceEpoch();
 	uint64_t lOldTimeEnd = mDateTimeFilter.mFilterTo;
 	QDateTime lToDate = QDateTime::fromString(pTo, "yyyy/MM/dd");
 	if (lToDate.isValid())
 	{
 		qint64 lSecs = lToDate.toSecsSinceEpoch();
-		mDateTimeFilter.mFilterTo = lSecs > 0 ? lSecs : 0;
+		mDateTimeFilter.mFilterTo = lSecs > 0 ? lSecs + c24Hours : 0;
 		if (mDateTimeFilter.mFilterTo > lsMaxTo)
 			mDateTimeFilter.mFilterTo = std::numeric_limits<uint64_t>::max();
 	}
@@ -1038,6 +1043,9 @@ void ESQmlBinder::resetFilters()
 	emit propertyTagsSearchStringChanged();
 	emit propertyOrientationFilterModeChanged();
 	emit propertyTagsMinSimilarityScoreChanged();
+	emit propertyFocalLengthFilterOutInvalidChanged();
+	emit propertyApertureFilterOutInvalidChanged();
+	emit propertyTimeFilterOutInvalidChanged();
 }
 
 /********************************************************************************/

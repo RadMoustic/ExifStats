@@ -116,6 +116,7 @@ public:
 
 	Q_INVOKABLE float getMinImageSize() const;
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
+	Q_INVOKABLE QGeoCoordinate getImageGeoCoordinateAtPos(float pX, float pY) const;
 	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
 	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
 
@@ -149,6 +150,6 @@ private:
 	void onImageCachingProgress(int pLoadedCount, int pLoadingCount);
 	void sort();
 	void preloadImagesAround(int pImageIdx, int pPreloadCountAround) const;
-	int getImageIndexAtPos(float pX, float pY) const;
+	int getImageIndexAtPos(float pX, float pY, bool pGetClosestIfNotFound = false) const;
 	QVector2D getImagePos(int pIndex) const;
 };
