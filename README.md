@@ -4,7 +4,7 @@ Exif statistics of your JPEG and HEIF library
 ![](ExifStats.png)
 
 ## Usage
-* **Open** or **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data. Then it will create thumbnails for all images. Then it will analyse all images with a machine learning model and then it will index all the images to speed up the search.
+* **Add** a folder containing **JPEG** or **HEIF** images. It will read all files (including sub folders) and extract the EXIF data. Then it will create thumbnails for all images. Then it will analyse all images with a machine learning model and then it will index all the images to speed up the search.
 * You can filter images by date, path or any visible exif value
 * You can search images with text using the Immich (or any other compatible) visual and text AI models
 * You can use the **Refresh** button to find new files without reparsing all the files already there or the **Full Refresh** to reparse all files.
