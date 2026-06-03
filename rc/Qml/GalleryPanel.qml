@@ -23,8 +23,10 @@ ESImageGridQuickItem
 	{
 		if(MainQmlBinder.isMobile())
 		{
+			var newMaxGridCol = orientation ? 8 : 4;
 			var gridColRatio = orientation ? 2 : 0.5;
-			gridCol = Math.min(maxGridCol, Math.max(1, Math.round(gridCol * gridColRatio)));
+			imageGrid.mZoomCenter = Qt.point(-1,-1);
+			gridCol = Math.min(newMaxGridCol, Math.max(1, Math.round(gridCol * gridColRatio)));
 		}
 	}
 	
@@ -77,6 +79,7 @@ ESImageGridQuickItem
 			text: "Reset and Scroll"
 			onTriggered:
 			{
+				imageGrid.mImageFiles = [];
 				scrollToImageTimer.imageToScrollTo = galleryMenu.selectedImage;
 				scrollToImageTimer.start();
 				MainQmlBinder.resetFilters();

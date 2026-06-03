@@ -181,6 +181,11 @@ Pane
 			
 			SplitView.preferredWidth: 200
 			SplitView.preferredHeight: parent.height
+			
+			onFiltersResetted:
+			{
+				imageGrid.mImageFiles = [];
+			}
 		}
 		
 		ColumnLayout

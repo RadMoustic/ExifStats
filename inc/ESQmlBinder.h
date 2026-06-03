@@ -141,6 +141,7 @@ public:
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
 	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
+	B_QML_PROPERTY(GeoShapeFilter, mGeoLocationFilter.mGeoShapeFilter, QGeoShape)
 
 	// Features
 	ES_QML_PROPERTY(ImageTaggerEnabled, bool)
@@ -202,7 +203,6 @@ public:
 	// Geo Location
 	Q_INVOKABLE QVector<QPointF> getAllGeoLocations() const;
 	Q_INVOKABLE QVector<QString> getFilesAtLocation(const QPointF& pGeoLoc, float pMaxDist) const;
-	Q_INVOKABLE void setGeoShapeFilter(QGeoShape pGeoShape);
 
 	// Timeline
 	Q_INVOKABLE QString getTimeFrom() const;

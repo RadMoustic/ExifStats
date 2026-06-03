@@ -261,6 +261,11 @@ Pane
 						id: filtersPanel
 						clip: true
 						anchors.fill: parent
+						
+						onFiltersResetted:
+						{
+							imageGrid.mImageFiles = [];
+						}
 					}
 				}
 			}

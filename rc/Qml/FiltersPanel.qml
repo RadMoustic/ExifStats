@@ -12,6 +12,8 @@ Flickable
 	contentWidth: width
 	boundsBehavior: Flickable.StopAtBounds
 	
+	signal filtersResetted
+	
 	flickDeceleration: 1200
 	
 	ScrollBar.vertical: ScrollBar
@@ -232,6 +234,7 @@ Flickable
 			{
 				MainQmlBinder.resetFilters();
 				actualSearchedTags.text = ""
+				rootItem.filtersResetted();
 			}
 		}
 		

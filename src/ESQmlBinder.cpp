@@ -744,14 +744,6 @@ void ESQmlBinder::setLensModelsFilter(const QVariantMap& pSelectedLens)
 
 /********************************************************************************/
 
-void ESQmlBinder::setGeoShapeFilter(QGeoShape pGeoShape)
-{
-	mGeoLocationFilter.mGeoShapeFilter = pGeoShape;
-	updateStats(false);
-}
-
-/********************************************************************************/
-
 QVector<QString> ESQmlBinder::getCameraModels() const
 {
 	return mCameraModelStat.mCountComp.getLabels();
@@ -1046,6 +1038,7 @@ void ESQmlBinder::resetFilters()
 	emit propertyFocalLengthFilterOutInvalidChanged();
 	emit propertyApertureFilterOutInvalidChanged();
 	emit propertyTimeFilterOutInvalidChanged();
+	emit propertyGeoShapeFilterChanged();
 }
 
 /********************************************************************************/
@@ -1151,8 +1144,15 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	emit propertyFocalLengthToChanged();
 	emit timeFromChanged();
 	emit timeToChanged();
+
 	emit propertyPathInclusiveFiltersChanged();
+	emit propertyTagsSearchStringChanged();
 	emit propertyOrientationFilterModeChanged();
+	emit propertyTagsMinSimilarityScoreChanged();
+	emit propertyFocalLengthFilterOutInvalidChanged();
+	emit propertyApertureFilterOutInvalidChanged();
+	emit propertyTimeFilterOutInvalidChanged();
+	emit propertyGeoShapeFilterChanged();
 
 	return true;
 }

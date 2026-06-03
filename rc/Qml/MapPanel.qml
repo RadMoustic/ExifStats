@@ -153,18 +153,11 @@ Item
 		CheckBox
 		{
 			id: restrictToViewCheckbox
-			checked: false
+			checked: MainQmlBinder.GeoShapeFilter.isValid
 			text: "Restrict to view"
 			onCheckedChanged:
 			{
-				if(restrictToViewCheckbox.checked)
-				{
-					MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
-				}
-				else
-				{
-					MainQmlBinder.setGeoShapeFilter(QtPositioning.shape());
-				}
+				MainQmlBinder.GeoShapeFilter = restrictToViewCheckbox.checked ? map.visibleRegion : QtPositioning.shape();
 			}
 		}
 	}

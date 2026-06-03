@@ -40,7 +40,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	, mDataHasChanged(false)
 	, mGeometryHasChanged(false)
 	, mFilteredFilesListComponent(nullptr)
-	, mZoomCenter(0,0)
+	, mZoomCenter(-1,-1)
 {
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
@@ -174,12 +174,14 @@ int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY, bool pGetCloses
 			break;
 		}
 
-		if(pGetClosestIfNotFound && pX > lImageRect.left() && pX < lImageRect.right())
+		if(pGetClosestIfNotFound)
 		{
-			float lMinVertDist = std::min(abs(pY - lImageRect.top()), abs(pY - lImageRect.bottom()));
-			if (lMinVertDist < lCLosestImageVerticalDist)
+			float lMinHDist = std::min(abs(pX - lImageRect.left()), abs(pX - lImageRect.right()));
+			float lMinVDist = std::min(abs(pY - lImageRect.top()), abs(pY - lImageRect.bottom()));
+			float lMaxMinDist = std::max(lMinHDist, lMinVDist);
+			if (lMaxMinDist < lCLosestImageVerticalDist)
 			{
-				lCLosestImageVerticalDist = lMinVertDist;
+				lCLosestImageVerticalDist = lMaxMinDist;
 				lClosestImageIdx = i;
 			}
 		}
@@ -299,6 +301,8 @@ void ESImageGridQuickItem::preloadImagesAround(int pImageIdx, int pPreloadCountA
 
 /********************************************************************************/
 
+#define ESClamp(v,low,high) std::max<float>(low, std::min<float>(high, v))
+
 void ESImageGridQuickItem::updateInternal()
 {
 	mValid = !ESImageCache::getInstance().isUpdating();
@@ -348,7 +352,8 @@ void ESImageGridQuickItem::updateInternal()
 		float lKeepInViewImageYOffset = 0.f;
 		if(mNbColumns > 0)
 		{
-			lImageAtZoomCenter = getImageIndexAtPos(mZoomCenter.x(), mZoomCenter.y() + mYOffset, true);
+			QVector2D lZoomCenter = mZoomCenter.x() >= 0 && mZoomCenter.y() >= 0 ? mZoomCenter : QVector2D(width()/2.f, height()/2.f);
+			lImageAtZoomCenter = getImageIndexAtPos(ESClamp(mZoomCenter.x(), 0, width()), ESClamp(mZoomCenter.y(), 0, height()) + mYOffset, true);
 			if(lImageAtZoomCenter == -1)
 				lImageAtZoomCenter = lNbImages - 1;
 			QVector2D lKeepInViewImagePos = getImagePos(lImageAtZoomCenter);
