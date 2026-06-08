@@ -113,6 +113,27 @@ public:
 		}
 	}
 
+	template<typename A>
+	void Skip(std::vector<float, A>& pList)
+	{
+		SkipRaw<float>(pList);
+	}
+
+	template<typename T, typename A>
+	void SkipRaw(std::vector<T, A>& pList)
+	{
+		if constexpr (READ)
+		{
+			quint64 lNbItem = 0;
+			mDataStream >> lNbItem;
+			mDataStream.skipRawData(int(lNbItem * sizeof(T)));
+		}
+		else
+		{
+			assert(false);
+		}
+	}
+
 	template<typename KEY, typename VALUE>
 	void Serialize(std::map<KEY, VALUE>& pMap)
 	{

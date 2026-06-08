@@ -246,22 +246,20 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 #ifdef IMAGETAGGER_ENABLE
 	if(mTextEncoder)
 	{
-		if (pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbeddings.size())
-		{
+		
 #ifdef HNSWLIB_ENABLED
-			if (!mHnswIndexUpdating && mHnswIndex)
-			{
-				return mHnswSearchResults.find(pFile.mId) == mHnswSearchResults.end();
-			}
-			else
-#endif // HNSWLIB_ENABLED
-			{
-				float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
-				ESImageCache::getInstance().getImage(pFile.mFilePath)->mCurrentSearchSimilarity = lSimilarityScore;
-				return lSimilarityScore < mMinSimilarityScore;
-			}
+		if (!mHnswIndexUpdating && mHnswIndex)
+		{
+			return mHnswSearchResults.find(pFile.mId) == mHnswSearchResults.end();
 		}
-
+		else if (pFile.mEmbeddings.size() == mSearchTagsEmbeddings.mEmbeddings.size())
+#endif // HNSWLIB_ENABLED
+		{
+			float lSimilarityScore = mSearchTagsEmbeddings.computeSimilarityScore(pFile.mEmbeddings);
+			ESImageCache::getInstance().getImage(pFile.mFilePath)->mCurrentSearchSimilarity = lSimilarityScore;
+			return lSimilarityScore < mMinSimilarityScore;
+		}
+		
 		if(mSearchTagsEmbeddings.mEmbeddings.size() > 0)
 			return true;
 

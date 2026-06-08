@@ -415,7 +415,16 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 				pSerializer.Serialize(pFileInfo.mTagsGenerated);
 				pSerializer.Serialize(pFileInfo.mTagIndexes);
 				if (lDatabaseVersion >= 7)
+				{
+#if defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED)
+					if (mEmbeddingsDimension == 0)
+						pSerializer.Serialize(pFileInfo.mEmbeddings);
+					else
+						pSerializer.Skip(pFileInfo.mEmbeddings);
+#else
 					pSerializer.Serialize(pFileInfo.mEmbeddings);
+#endif // defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED)
+				}
 			}
 
 			if constexpr (SERIALIZER::msIsReading)
