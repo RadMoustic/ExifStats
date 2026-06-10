@@ -20,6 +20,13 @@ Rectangle
 		imageViewer.y = 0
 	}
 	
+	function closeView()
+	{
+		imageViewerRoot.visible = false;
+		MainQmlBinder.mFullScreen = false;
+		imageInfo.display = false;
+	}
+	
 	function getMinMax(pSize, pScale, pOffset)
 	{
 		let scaledSize = pSize * pScale;
@@ -143,8 +150,7 @@ Rectangle
 				}
 				else if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20)
 				{
-					imageViewerRoot.visible = false;
-					MainQmlBinder.mFullScreen = false;
+					closeView();
 				}
 			}
 		}
@@ -225,8 +231,7 @@ Rectangle
 		
 		onReleased:
 		{
-			imageViewerRoot.visible = false;
-			MainQmlBinder.mFullScreen = false;
+			closeView();
 		}
 	}
 	
