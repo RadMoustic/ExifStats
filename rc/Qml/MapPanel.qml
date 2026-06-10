@@ -82,7 +82,7 @@ Item
 			{
 				if(restrictToViewCheckbox.checked)
 				{
-					MainQmlBinder.setGeoShapeFilter(map.visibleRegion);
+					MainQmlBinder.GeoShapeFilter = map.visibleRegion;
 				}
 			}
 		}
