@@ -255,6 +255,7 @@ Flickable
 
 				onReleased:
 				{
+					MainQmlBinder.TagsSearchSimilarImage = "";
 					MainQmlBinder.TagsSearchString = "";
 					actualSearchedTags.text = ""
 				}
@@ -265,11 +266,12 @@ Flickable
 				id: searchText
 				Layout.fillWidth: true
 				implicitHeight: 40
-				text: MainQmlBinder.TagsSearchString
+				text: MainQmlBinder.TagsSearchSimilarImage !== "" ? MainQmlBinder.TagsSearchSimilarImage : MainQmlBinder.TagsSearchString
 				placeholderText: "Search"
 
 				onEditingFinished:
 				{
+					MainQmlBinder.TagsSearchSimilarImage = "";
 					MainQmlBinder.TagsSearchString = text.trim();
 					actualSearchedTags.text = MainQmlBinder.getTagsFound().join(", ");
 				}

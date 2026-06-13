@@ -386,6 +386,52 @@ void ESTagsFilter::setSearchString(const QString& pSearchString)
 
 /********************************************************************************/
 
+QString ESTagsFilter::getSearchSimilarImage() const
+{
+	return mSearchSimilarImage;
+}
+
+/********************************************************************************/
+
+void ESTagsFilter::setSearchSimilarImage(const QString& pImagePath)
+{
+#ifdef IMAGETAGGER_ENABLE
+	if (!mDatabaseTagsEmbeddingCacheMutex.tryLock())
+		return;
+#endif // IMAGETAGGER_ENABLE
+
+	mSearchSimilarImage = pImagePath;
+
+#ifdef IMAGETAGGER_ENABLE
+	if (mTextEncoder)
+	{
+		mSearchTagIndices.clear();
+		mSearchTags.clear();
+		ESImageCache::getInstance().resetSearchSimilarityScores();
+
+		const ESFileInfo* lImageFileInfo = ESDatabase::getInstance().getFileInfo(mSearchSimilarImage);
+
+		if(lImageFileInfo)
+		{
+			mSearchTagsEmbeddings.mEmbeddings = lImageFileInfo->mEmbeddings;
+
+#ifdef HNSWLIB_ENABLED
+			updateHnswSearchResults();
+#endif // HNSWLIB_ENABLED
+		}
+		else
+		{
+			qWarning() << "Search similar image not found: " << pImagePath;
+			mSearchTagsEmbeddings.mEmbeddings.clear();
+		}
+
+		mDatabaseTagsEmbeddingCacheMutex.unlock();
+	}
+#endif // IMAGETAGGER_ENABLE
+}
+
+/********************************************************************************/
+
 #ifdef HNSWLIB_ENABLED
 void ESTagsFilter::updateHnswSearchResults()
 {

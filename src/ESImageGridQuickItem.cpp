@@ -156,7 +156,7 @@ int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY, bool pGetCloses
 	{
 		int lImageCol = 1 + i % mNbColumns;
 
-		float lOrientedRatio = mImages[i]->getExif().getOrientedRatio();
+		float lOrientedRatio = mImagesRatios[i];
 		float lImageWidth = mNbColumns > 1 && lOrientedRatio < 1 ? mVisibleImageSize * lOrientedRatio : mVisibleImageSize;
 		float lImageHeight = mNbColumns == 1 || lOrientedRatio > 1 ? mVisibleImageSize / lOrientedRatio : mVisibleImageSize;
 		float lMarginX = (mVisibleImageSize - lImageWidth) / 2.f;
@@ -369,12 +369,16 @@ void ESImageGridQuickItem::updateInternal()
 		float lNewContentHeight = 1;
 
 		if(mDataHasChanged || lPreviousNbColumns != mNbColumns)
+		{
 			mImagesYOffsets.clear();
+			mImagesRatios.clear();
+		}
 		if(lNbImages)
 		{
 			if(mImagesYOffsets.size() == 0)
 			{
 				mImagesYOffsets.reserve(lNbImages);
+				mImagesRatios.reserve(lNbImages);
 
 				float lYOffset = 0.f;
 				for(int i = 0; i < mNbRows; ++i)
@@ -399,6 +403,7 @@ void ESImageGridQuickItem::updateInternal()
 						{
 							mImagesYOffsets.push_back(lYOffset);
 						}
+						mImagesRatios.push_back(lRatio);
 					}
 					lYOffset += lRowHeight;
 				}

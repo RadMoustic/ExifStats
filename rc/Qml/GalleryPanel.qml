@@ -87,6 +87,14 @@ ESImageGridQuickItem
 		}
 		MenuItem
 		{
+			text: "Search Similar"
+			onTriggered:
+			{
+				MainQmlBinder.TagsSearchSimilarImage = galleryMenu.selectedImage;
+			}
+		}
+		MenuItem
+		{
 			id: centerInMapMenuItem
 			text: "Center in Map"
 			onTriggered:

@@ -67,6 +67,8 @@ public:
 	QStringList getTagsFound() const;
 	QString getSearchString() const;
 	void setSearchString(const QString& pSearchString);
+	QString getSearchSimilarImage() const;
+	void setSearchSimilarImage(const QString& pImagePath);
 
 	float getMinSimilarityScore() const;
 	void setMinSimilarityScore(float pMinSimilarityScore);
@@ -83,6 +85,7 @@ private:
 	/******************************** ATTRIBUTES **********************************/
 
 	QString mSearchString;
+	QString mSearchSimilarImage;
 	float mMinSimilarityScore;
 
 #ifdef IMAGETAGGER_ENABLE

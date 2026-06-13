@@ -139,6 +139,7 @@ public:
 	B_QML_PROPERTY(ApertureFilterOutInvalid, mApertureFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
+	B_QML_PROPERTY_GETSET(TagsSearchSimilarImage, QString, mTagsFilter.getSearchSimilarImage, mTagsFilter.setSearchSimilarImage)
 	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 	B_QML_PROPERTY(GeoShapeFilter, mGeoLocationFilter.mGeoShapeFilter, QGeoShape)

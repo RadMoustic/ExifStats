@@ -142,6 +142,7 @@ private:
 
 	std::vector<std::shared_ptr<ESImage>> mImages;
 	std::vector<float> mImagesYOffsets;
+	std::vector<float> mImagesRatios;
 	const ESListFilesStatComponent* mFilteredFilesListComponent;
 
 	/********************************* METHODS ***********************************/
