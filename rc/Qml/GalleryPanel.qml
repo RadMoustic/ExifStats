@@ -88,6 +88,7 @@ ESImageGridQuickItem
 		MenuItem
 		{
 			text: "Search Similar"
+			enabled: MainQmlBinder.mTokenizerEnabled
 			onTriggered:
 			{
 				MainQmlBinder.TagsSearchSimilarImage = galleryMenu.selectedImage;

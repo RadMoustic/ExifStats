@@ -139,6 +139,7 @@ void ESTagsFilter::loadTokenizerAndHNSW(std::function<void(bool,bool)> pDoneCall
 /*virtual*/ void ESTagsFilter::reset() /*override*/
 {
 	mSearchString = "";
+	mSearchSimilarImage = "";
 	mMinSimilarityScore = 0.3f;
 	ESImageCache::getInstance().resetSearchSimilarityScores();
 }

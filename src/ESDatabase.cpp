@@ -416,7 +416,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 				pSerializer.Serialize(pFileInfo.mTagIndexes);
 				if (lDatabaseVersion >= 7)
 				{
-#if defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED)
+#if defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED) && false // Disabled because we need them for similar image search feature
 					if (mEmbeddingsDimension == 0)
 						pSerializer.Serialize(pFileInfo.mEmbeddings);
 					else

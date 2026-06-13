@@ -1033,6 +1033,7 @@ void ESQmlBinder::resetFilters()
 
 	emit propertyPathInclusiveFiltersChanged();
 	emit propertyTagsSearchStringChanged();
+	emit propertyTagsSearchSimilarImageChanged();
 	emit propertyOrientationFilterModeChanged();
 	emit propertyTagsMinSimilarityScoreChanged();
 	emit propertyFocalLengthFilterOutInvalidChanged();
