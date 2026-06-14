@@ -202,7 +202,7 @@ Rectangle
 			Label {	text: "Camera: " + imageViewer.mCameraModel }
 			Label {	text: "Lens: " + imageViewer.mLensModel }
 			Label {	text: "Date/Time: " + imageViewer.mDateTime }
-			Label {	text: "Shutter Speed: " + imageViewer.mShutterSpeedValue }
+			Label {	text: "Shutter Speed: " + (imageViewer.mShutterSpeedValue < 1.0 ? (1/imageViewer.mShutterSpeedValue).toFixed(0) : "1/" + imageViewer.mShutterSpeedValue) + "s" }
 			Label {	text: "Aperture: " + imageViewer.mFNumber.toFixed(2) }
 			Label {	text: "GeoLocation: " + imageViewer.mGeoLocation }
 			Label {	text: "Focal Length: " + imageViewer.mFocalLength }

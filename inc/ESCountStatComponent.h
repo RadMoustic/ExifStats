@@ -21,11 +21,15 @@ template<typename T, class Derived>
 class ESCountStatComponent : public ESCounterStatComponentInterface
 {
 public:
+	bool mIgnoreEmptyCategories = true;
 
 	virtual void addFileCategory(const ESFileInfo& pFile) override
 	{
-		T lFileValue = Derived::getFileValue(pFile);
-		mValueCounters[lFileValue] += 0;
+		if(!mIgnoreEmptyCategories)
+		{
+			T lFileValue = Derived::getFileValue(pFile);
+			mValueCounters[lFileValue] += 0;
+		}
 	}
 
 	virtual void addFile(const ESFileInfo& pFile) override
@@ -39,10 +43,12 @@ public:
 		mValueCounters.clear();
 		mCounterLabels.clear();
 		mCounters.clear();
+		mValues.clear();
 	}
 
 	virtual void onAllFilesAdded() override
 	{
+		mValues.resize(mValueCounters.size());
 		mCounters.resize(mValueCounters.size());
 		mCounterLabels.resize(mValueCounters.size());
 
@@ -56,6 +62,7 @@ public:
 		int i = 0;
 		for (const auto& lValueCount : lSortedValues)
 		{
+			mValues[i] = std::get<0>(lValueCount);
 			mCounters[i] = std::get<1>(lValueCount);
 			mCounterLabels[i] = std::get<2>(lValueCount);
 			++i;
@@ -65,10 +72,12 @@ public:
 
 	virtual const QVector<int>& getCounters() const override { return mCounters; }
 	virtual const QVector<QString>& getLabels() const override { return mCounterLabels; }
+	virtual const QVector<T>& getValues() const { return mValues; }
 
 protected:
 
 	std::unordered_map<T, int> mValueCounters;
 	QVector<QString> mCounterLabels;
 	QVector<int> mCounters;
+	QVector<T> mValues;
 };

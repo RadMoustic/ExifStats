@@ -489,6 +489,158 @@ Flickable
 		
 		RowLayout
 		{
+			id: isoSpeedFilters
+			
+			SplitView.fillWidth: true
+			SplitView.preferredHeight: parent.height / parent.children.length
+			
+			RegularButton
+			{
+				text:"X"
+				
+				implicitWidth: 30
+				implicitHeight: 30
+
+				onReleased:
+				{
+					MainQmlBinder.ISOSpeedFrom = MainQmlBinder.MinISOSpeed;
+					MainQmlBinder.ISOSpeedTo = MainQmlBinder.MaxISOSpeed;
+					MainQmlBinder.ISOSpeedFilterOutInvalid = false;
+				}
+			}
+			
+			Label
+			{
+				text: "ISO: "
+				Layout.fillWidth: false
+			}
+
+			TextField
+			{
+				x: 0
+				Layout.fillWidth: false
+				text: MainQmlBinder.ISOSpeedFrom
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.ISOSpeedFrom = text;
+					MainQmlBinder.ISOSpeedFilterOutInvalid = true;
+				}
+
+			}
+			
+			Label
+			{
+				text: " to "
+				Layout.fillWidth: false
+			}
+			
+			TextField
+			{
+				Layout.fillWidth: false
+				text: MainQmlBinder.ISOSpeedTo
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.ISOSpeedTo = text;
+					MainQmlBinder.ISOSpeedFilterOutInvalid = true;
+				}
+			}
+			
+			Text
+			{
+				text: ""
+				Layout.fillWidth: true
+			}
+		}
+		
+		RowLayout
+		{
+			id: shutterSpeedFilters
+			
+			SplitView.fillWidth: true
+			SplitView.preferredHeight: parent.height / parent.children.length
+			
+			RegularButton
+			{
+				text:"X"
+				
+				implicitWidth: 30
+				implicitHeight: 30
+
+				onReleased:
+				{
+					MainQmlBinder.ShutterSpeedFrom = MainQmlBinder.MinShutterSpeed;
+					MainQmlBinder.ShutterSpeedTo = MainQmlBinder.MaxShutterSpeed;
+					MainQmlBinder.ShutterSpeedFilterOutInvalid = false;
+				}
+			}
+			
+			Label
+			{
+				text: "Shutter Speed: "
+				Layout.fillWidth: false
+			}
+			
+			function invertValue(pText)
+			{
+				var value = parseFloat(pText.startsWith("1/") ? pText.substring(2) : pText);
+				
+				if (pText.startsWith("1/"))
+					return value;
+				else
+					return 1.0 / value;
+			}
+
+			TextField
+			{
+				x: 0
+				Layout.fillWidth: false
+				text: MainQmlBinder.ShutterSpeedFrom < 1 ? (1.0 / MainQmlBinder.ShutterSpeedFrom).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedFrom
+				validator: RegularExpressionValidator { regularExpression: /^(?:[1-9]\d{0,3}|0|1\/[1-9]\d{0,3}|1\/0)$/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.ShutterSpeedFrom = shutterSpeedFilters.invertValue(text);
+					MainQmlBinder.ShutterSpeedFilterOutInvalid = true;
+				}
+
+			}
+			
+			Label
+			{
+				text: " to "
+				Layout.fillWidth: false
+			}
+			
+			TextField
+			{
+				Layout.fillWidth: false
+				text: MainQmlBinder.ShutterSpeedTo < 1 ? (1.0 / MainQmlBinder.ShutterSpeedTo).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedTo
+				validator: RegularExpressionValidator { regularExpression: /^(?:[1-9]\d{0,3}|0|1\/[1-9]\d{0,3}|1\/0)$/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.ShutterSpeedTo = shutterSpeedFilters.invertValue(text);
+					MainQmlBinder.ShutterSpeedFilterOutInvalid = true;
+				}
+			}
+			
+			Text
+			{
+				text: ""
+				Layout.fillWidth: true
+			}
+		}
+		
+		RowLayout
+		{
 			id: dateFilters
 			
 			SplitView.fillWidth: true
@@ -513,7 +665,7 @@ Flickable
 			
 			Label
 			{
-				text: ""
+				text: "Date"
 				Layout.fillWidth: false
 			}
 
@@ -634,7 +786,7 @@ Flickable
 		{
 			id: cameraFilters
 			
-			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 700) / 2)
+			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 800) / 2)
 			Layout.fillWidth: true
 			
 			Menu

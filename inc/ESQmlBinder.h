@@ -23,6 +23,8 @@
 #include "ESGeoLocationStat.h"
 #include "ESListFilesStat.h"
 #include "ESOrientationStat.h"
+#include "ESISOSpeedStat.h"
+#include "ESShutterSpeedStat.h"
 #include "ESFilter.h"
 #include "ESFromToFilter.h"
 #include "ESListFilter.h"
@@ -116,6 +118,12 @@ public:
 	Q_PROPERTY(float MinAperture READ getMinAperture)
 	Q_PROPERTY(float MaxAperture READ getMaxAperture)
 
+	Q_PROPERTY(float MinISOSpeed READ getMinISOSpeed)
+	Q_PROPERTY(float MaxISOSpeed READ getMaxISOSpeed)
+
+	Q_PROPERTY(float MinShutterSpeed READ getMinShutterSpeed)
+	Q_PROPERTY(float MaxShutterSpeed READ getMaxShutterSpeed)
+
 	Q_PROPERTY(QString MinTime READ getMinTime)
 	Q_PROPERTY(QString MaxTime READ getMaxTime)
 
@@ -136,6 +144,12 @@ public:
 	B_QML_PROPERTY(FocalLengthFilterOutInvalid, m35mmFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
+	B_QML_PROPERTY(ISOSpeedFrom, mISOSpeedFilter.mFilterFrom, int)
+	B_QML_PROPERTY(ISOSpeedTo, mISOSpeedFilter.mFilterTo, int)
+	B_QML_PROPERTY(ISOSpeedFilterOutInvalid, mISOSpeedFilter.mFilterOutInvalidValues, bool)
+	B_QML_PROPERTY(ShutterSpeedFrom, mShutterSpeedFilter.mFilterFrom, float)
+	B_QML_PROPERTY(ShutterSpeedTo, mShutterSpeedFilter.mFilterTo, float)
+	B_QML_PROPERTY(ShutterSpeedFilterOutInvalid, mShutterSpeedFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ApertureFilterOutInvalid, mApertureFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
@@ -229,6 +243,19 @@ public:
 	Q_INVOKABLE float getMinAperture() const;
 	Q_INVOKABLE float getMaxAperture() const;
 
+	// ISO Speed
+	Q_INVOKABLE QVector<int> getISOSpeedCounts() const;
+	Q_INVOKABLE QVector<QString> getISOSpeedLabels() const;
+	Q_INVOKABLE int getMinISOSpeed() const;
+	Q_INVOKABLE int getMaxISOSpeed() const;
+
+	// Shutter Speed
+	Q_INVOKABLE QVector<int> getShutterSpeedCounts() const;
+	Q_INVOKABLE QVector<QString> getShutterSpeedLabels() const;
+	Q_INVOKABLE QVector<float> getShutterSpeedValues() const;
+	Q_INVOKABLE float getMinShutterSpeed() const;
+	Q_INVOKABLE float getMaxShutterSpeed() const;
+
 	// List Files
 	Q_INVOKABLE const ESListFilesStat* getFilteredFilesList() const;
 
@@ -275,6 +302,8 @@ private:
 	ESGeoLocationStat mGeoLocationStat;
 	ESListFilesStat mListFilesStat;
 	ESOrientationStat mOrientationStat;
+	ESISOSpeedStat mISOSpeedStat;
+	ESShutterSpeedStat mShutterSpeedStat;
 
 	ESFromToFilter<int, ESFocalLengthIn35mmStat> m35mmFilter;
 	ESFromToFilter<float, ESApertureStat> mApertureFilter;
@@ -285,7 +314,8 @@ private:
 	ESPathFilter mPathFilter;
 	ESTagsFilter mTagsFilter;
 	ESOrientationFilter mOrientationFilter;
-
+	ESFromToFilter<unsigned short, ESISOSpeedStat> mISOSpeedFilter;
+	ESFromToFilter<float, ESShutterSpeedStat> mShutterSpeedFilter;
 	std::vector<ESStat*> mStats;
 	std::vector<ESFilter*> mFilters;
 
@@ -294,6 +324,12 @@ private:
 
 	int m35mmMin;
 	int m35mmMax;
+
+	int mISOSpeedMin;
+	int mISOSpeedMax;
+
+	float mShutterSpeedMin;
+	float mShutterSpeedMax;
 
 	uint64_t mDateTimeMin;
 	uint64_t mDateTimeMax;

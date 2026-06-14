@@ -55,7 +55,7 @@ enum ESExifOrientation : unsigned short
 	Undefined = 9
 };
 
-constexpr uint USEFULLEXIF_VERSION = 3;
+constexpr uint USEFULLEXIF_VERSION = 5;
 struct ESUsefullExif
 {
 	ESStringId mCameraModel;

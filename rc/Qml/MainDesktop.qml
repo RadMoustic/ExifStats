@@ -65,6 +65,19 @@ Pane
 		
 		apertureCounter.max = maxList(apertureCounter.values);
 		apertureCounter.resetView();
+		
+		isoSpeedCounter.categories = MainQmlBinder.getISOSpeedLabels();
+		isoSpeedCounter.values = MainQmlBinder.getISOSpeedCounts();
+		
+		isoSpeedCounter.max = maxList(isoSpeedCounter.values);
+		isoSpeedCounter.resetView();
+		
+		shutterSpeedCounter.categories = MainQmlBinder.getShutterSpeedLabels();
+		shutterSpeedCounter.categoriesRealValues = MainQmlBinder.getShutterSpeedValues();
+		shutterSpeedCounter.values = MainQmlBinder.getShutterSpeedCounts();
+		
+		shutterSpeedCounter.max = maxList(shutterSpeedCounter.values);
+		shutterSpeedCounter.resetView();
 	
 		lensModelsCounter.categories = MainQmlBinder.getLensModels();
 		lensModelsCounter.values = MainQmlBinder.getLensModelsCount();
@@ -308,6 +321,28 @@ Pane
 					}
 					RegularButton
 					{
+						text:"ISO"
+						highlighted: isoSpeedCounter.visible
+						
+						onReleased:
+						{
+							isoSpeedCounter.visible = !isoSpeedCounter.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					RegularButton
+					{
+						text:"Shutter Speed"
+						highlighted: shutterSpeedCounter.visible
+						
+						onReleased:
+						{
+							shutterSpeedCounter.visible = !shutterSpeedCounter.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					RegularButton
+					{
 						text:"Lens"
 						highlighted: lensModelsCounter.visible
 						
@@ -509,6 +544,32 @@ Pane
 						toPropertyName: "ApertureTo"
 						minPropertyName: "MinAperture"
 						maxPropertyName: "MaxAperture"
+					}
+					
+					CounterChartFromTo
+					{
+						id: isoSpeedCounter
+						title: "ISO Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						fromPropertyName: "ISOSpeedFrom"
+						toPropertyName: "ISOSpeedTo"
+						minPropertyName: "MinISOSpeed"
+						maxPropertyName: "MaxISOSpeed"
+					}
+					
+					CounterChartFromTo
+					{
+						id: shutterSpeedCounter
+						title: "Shutter Speed Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						
+						fromPropertyName: "ShutterSpeedFrom"
+						toPropertyName: "ShutterSpeedTo"
+						minPropertyName: "MinShutterSpeed"
+						maxPropertyName: "MaxShutterSpeed"
 					}
 
 					CounterChart

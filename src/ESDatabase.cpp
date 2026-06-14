@@ -338,7 +338,7 @@ ESUsefullExif ESDatabase::convertToUsefullExif(const easyexif::EXIFInfo& pFullEx
 	lResult.mFocalLength = pFullExif.FocalLength;
 	lResult.mFocalLengthIn35mm = pFullExif.FocalLengthIn35mm;
 	lResult.mOrientation = ESExifOrientation(pFullExif.Orientation);
-	lResult.mShutterSpeedValue = pFullExif.ShutterSpeedValue;
+	lResult.mShutterSpeedValue = pFullExif.ExposureTime > 0 ? 1.0 / pFullExif.ExposureTime : 0;
 	lResult.mISOSpeedRatings = pFullExif.ISOSpeedRatings;
 	lResult.mWidth = pFullExif.ImageWidth > std::numeric_limits<decltype(lResult.mWidth)>::max() ? 0 : pFullExif.ImageWidth;
 	lResult.mHeight = pFullExif.ImageHeight > std::numeric_limits<decltype(lResult.mHeight)>::max() ? 0 : pFullExif.ImageHeight;

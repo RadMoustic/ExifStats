@@ -54,6 +54,19 @@ Pane
 		
 		apertureCounter.max = maxList(apertureCounter.values);
 		apertureCounter.resetView();
+		
+		isoSpeedCounter.categories = MainQmlBinder.getISOSpeedLabels();
+		isoSpeedCounter.values = MainQmlBinder.getISOSpeedCounts();
+		
+		isoSpeedCounter.max = maxList(isoSpeedCounter.values);
+		isoSpeedCounter.resetView();
+		
+		shutterSpeedCounter.categories = MainQmlBinder.getShutterSpeedLabels();
+		shutterSpeedCounter.categoriesRealValues = MainQmlBinder.getShutterSpeedValues();
+		shutterSpeedCounter.values = MainQmlBinder.getShutterSpeedCounts();
+		
+		shutterSpeedCounter.max = maxList(shutterSpeedCounter.values);
+		shutterSpeedCounter.resetView();
 	
 		lensModelsCounter.categories = MainQmlBinder.getLensModels();
 		lensModelsCounter.values = MainQmlBinder.getLensModelsCount();
@@ -86,14 +99,14 @@ Pane
 	
 	Timer
 	{
-		id: loadDefaultFiltersTimer
+		id: loadSettingsTimer
 		interval: 0
 		repeat: false
 		onTriggered:
 		{
-			MainQmlBinder.loadDefaultFilters();
+			//MainQmlBinder.loadDefaultFilters();
 			imageGrid.gridCol = Math.min(imageGrid.maxGridCol, settings.imageGridCol);
-			imageGrid.flickableChild.contentY = settings.imageGridYOffset;
+			//imageGrid.flickableChild.contentY = settings.imageGridYOffset;
 		}
 	}
 	
@@ -106,7 +119,7 @@ Pane
 		mainWindow.Material.theme = settings.theme ? Material.Dark : Material.Light;
 		sidePanel.Material.theme = settings.theme ? Material.Dark : Material.Light;
 		
-		//loadDefaultFiltersTimer.start();
+		loadSettingsTimer.start();
 	}
 	
 	Component.onDestruction:
@@ -303,7 +316,7 @@ Pane
 				Repeater
 				{
 				
-					model: ["Gallery", "Map", "35mm", "Aperture", "Lens", "Camera", "Timeline", "Orientation", "Folders"]
+					model: ["Gallery", "Map", "35mm", "Aperture", "Lens", "Camera", "Timeline", "ISO", "Shutter Speed", "Orientation", "Folders"]
 					TabButton
 					{
 						text: modelData
@@ -375,6 +388,28 @@ Pane
 			TimelineCounterChart
 			{
 				id: timelineCounter
+			}
+			
+			CounterChartFromTo
+			{
+				id: isoSpeedCounter
+				title: "ISO Stats"
+				
+				fromPropertyName: "ISOSpeedFrom"
+				toPropertyName: "ISOSpeedTo"
+				minPropertyName: "MinISOSpeed"
+				maxPropertyName: "MaxISOSpeed"
+			}
+			
+			CounterChartFromTo
+			{
+				id: shutterSpeedCounter
+				title: "Shutter Speed Stats"
+				
+				fromPropertyName: "ShutterSpeedFrom"
+				toPropertyName: "ShutterSpeedTo"
+				minPropertyName: "MinShutterSpeed"
+				maxPropertyName: "MaxShutterSpeed"
 			}
 			
 			CounterChart

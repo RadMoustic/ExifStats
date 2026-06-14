@@ -143,7 +143,8 @@ ESImageGridQuickItem
 		property bool ignoreNextContentYChanges: false
 		property bool blockScrollBarInteraction: false
 		
-		flickDeceleration: 1200
+		flickDeceleration: 2400
+		maximumFlickVelocity: 8000
 		
 		onContentYChanged:
 		{

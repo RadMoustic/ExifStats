@@ -73,12 +73,19 @@ ESQmlBinder::ESQmlBinder()
 	mStats.push_back(&mGeoLocationStat);
 	mStats.push_back(&mListFilesStat);
 	mStats.push_back(&mOrientationStat);
+	mStats.push_back(&mISOSpeedStat);
+	mStats.push_back(&mShutterSpeedStat);
+
+	mCameraModelStat.mCountComp.mIgnoreEmptyCategories = false;
+	mLensModelStat.mCountComp.mIgnoreEmptyCategories = false;
 
 	mCameraModelFilter.mKeepCategory = true;
 	mLensModelFilter.mKeepCategory = true;
 	mDateTimeFilter.mFilterFrom = mDateTimeStat.mMinMaxComp.mValidMinValue;
 	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.mValidMaxValue;
 	
+	mISOSpeedFilter.setInvalidValue(0);
+	mShutterSpeedFilter.setInvalidValue(0);
 	m35mmFilter.setInvalidValue(0);
 	mApertureFilter.setInvalidValue(0.f);
 	mDateTimeFilter.setInvalidValue(18446744073709548016);
@@ -92,6 +99,8 @@ ESQmlBinder::ESQmlBinder()
 	mPathFilter.mName = "Path";
 	mTagsFilter.mName = "Tags";
 	mOrientationFilter.mName = "Orientation";
+	mISOSpeedFilter.mName = "ISOSpeed";
+	mShutterSpeedFilter.mName = "ShutterSpeed";
 
 	mFilters.push_back(&m35mmFilter);
 	mFilters.push_back(&mApertureFilter);
@@ -102,6 +111,8 @@ ESQmlBinder::ESQmlBinder()
 	mFilters.push_back(&mPathFilter);
 	mFilters.push_back(&mTagsFilter);
 	mFilters.push_back(&mOrientationFilter);
+	mFilters.push_back(&mISOSpeedFilter);
+	mFilters.push_back(&mShutterSpeedFilter);
 
 #ifdef IMAGETAGGER_ENABLE
 	setImageTaggerEnabled(true);
@@ -638,9 +649,21 @@ void ESQmlBinder::updateFiltersFromData()
 	mApertureMax = mApertureFilter.mFilterTo;
 	emit propertyApertureToChanged();
 
-	mDateTimeFilter.mFilterFrom = mDateTimeStat.mMinMaxComp.getMinValue();
-	mDateTimeMin = mDateTimeFilter.mFilterFrom;
-	emit timeFromChanged();
+	mISOSpeedFilter.mFilterFrom = mISOSpeedStat.mMinMaxComp.getMinValue();
+	mISOSpeedMin = mISOSpeedFilter.mFilterFrom;
+	emit propertyISOSpeedFromChanged();
+
+	mISOSpeedFilter.mFilterTo = mISOSpeedStat.mMinMaxComp.getMaxValue();
+	mISOSpeedMax = mISOSpeedFilter.mFilterTo;
+	emit propertyISOSpeedToChanged();
+
+	mShutterSpeedFilter.mFilterFrom = mShutterSpeedStat.mMinMaxComp.getMinValue();
+	mShutterSpeedMin = mShutterSpeedFilter.mFilterFrom;
+	emit propertyShutterSpeedFromChanged();
+
+	mShutterSpeedFilter.mFilterTo = mShutterSpeedStat.mMinMaxComp.getMaxValue();
+	mShutterSpeedMax = mShutterSpeedFilter.mFilterTo;
+	emit propertyShutterSpeedToChanged();
 
 	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.getMaxValue();
 	mDateTimeMax = mDateTimeFilter.mFilterTo;
@@ -831,6 +854,69 @@ float ESQmlBinder::getMinAperture() const
 float ESQmlBinder::getMaxAperture() const
 {
 	return mApertureMax;
+}
+
+/********************************************************************************/
+
+QVector<int> ESQmlBinder::getISOSpeedCounts() const
+{
+	return mISOSpeedStat.mCountComp.getCounters();
+}
+
+/********************************************************************************/
+
+QVector<QString> ESQmlBinder::getISOSpeedLabels() const
+{
+	return mISOSpeedStat.mCountComp.getLabels();
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getMinISOSpeed() const
+{
+	return mISOSpeedMin;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getMaxISOSpeed() const
+{
+	return mISOSpeedMax;
+}
+
+/********************************************************************************/
+
+QVector<int> ESQmlBinder::getShutterSpeedCounts() const
+{
+	return mShutterSpeedStat.mCountComp.getCounters();
+}
+
+/********************************************************************************/
+
+QVector<QString> ESQmlBinder::getShutterSpeedLabels() const
+{
+	return mShutterSpeedStat.mCountComp.getLabels();
+}
+
+/********************************************************************************/
+
+QVector<float> ESQmlBinder::getShutterSpeedValues() const
+{
+	return mShutterSpeedStat.mCountComp.getValues();
+}
+
+/********************************************************************************/
+
+float ESQmlBinder::getMinShutterSpeed() const
+{
+	return mShutterSpeedMin;
+}
+
+/********************************************************************************/
+
+float ESQmlBinder::getMaxShutterSpeed() const
+{
+	return mShutterSpeedMax;
 }
 
 /********************************************************************************/
