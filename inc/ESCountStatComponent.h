@@ -22,6 +22,7 @@ class ESCountStatComponent : public ESCounterStatComponentInterface
 {
 public:
 	bool mIgnoreEmptyCategories = true;
+	int mMinCountCategory = -1;
 
 	virtual void addFileCategory(const ESFileInfo& pFile) override
 	{
@@ -48,16 +49,18 @@ public:
 
 	virtual void onAllFilesAdded() override
 	{
-		mValues.resize(mValueCounters.size());
-		mCounters.resize(mValueCounters.size());
-		mCounterLabels.resize(mValueCounters.size());
-
 		std::vector<std::tuple<T, int, QString>> lSortedValues;
+		lSortedValues.reserve(mValueCounters.size());
 
 		for (const auto& lValueCount : mValueCounters)
-			lSortedValues.emplace_back(lValueCount.first, lValueCount.second, Derived::getValueLabel(lValueCount.first));
+			if(mMinCountCategory < 0 || lValueCount.second >= mMinCountCategory)
+				lSortedValues.emplace_back(lValueCount.first, lValueCount.second, Derived::getValueLabel(lValueCount.first));
 
 		std::sort(lSortedValues.begin(), lSortedValues.end(), [](const auto& a, const auto& b) { return std::get<0>(a) < std::get<0>(b); });
+
+		mValues.resize(lSortedValues.size());
+		mCounters.resize(lSortedValues.size());
+		mCounterLabels.resize(lSortedValues.size());
 
 		int i = 0;
 		for (const auto& lValueCount : lSortedValues)

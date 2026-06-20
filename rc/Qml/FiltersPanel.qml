@@ -641,6 +641,130 @@ Flickable
 		
 		RowLayout
 		{
+			id: widthFilters
+			
+			SplitView.fillWidth: true
+			SplitView.preferredHeight: parent.height / parent.children.length
+			
+			RegularButton
+			{
+				text:"X"
+				
+				implicitWidth: 30
+				implicitHeight: 30
+
+				onReleased:
+				{
+					MainQmlBinder.WidthFrom = MainQmlBinder.MinWidth;
+					MainQmlBinder.WidthTo = MainQmlBinder.MaxWidth;
+				}
+			}
+			
+			Label
+			{
+				text: "Width: "
+				Layout.fillWidth: false
+			}
+
+			TextField
+			{
+				x: 0
+				Layout.fillWidth: false
+				text: MainQmlBinder.WidthFrom
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.WidthFrom = text;
+				}
+
+			}
+			
+			Label
+			{
+				text: " to "
+				Layout.fillWidth: false
+			}
+			
+			TextField
+			{
+				Layout.fillWidth: false
+				text: MainQmlBinder.WidthTo
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.WidthTo = text;
+				}
+			}
+		}
+		
+		RowLayout
+		{
+			id: heightFilters
+			
+			SplitView.fillWidth: true
+			SplitView.preferredHeight: parent.height / parent.children.length
+			
+			RegularButton
+			{
+				text:"X"
+				
+				implicitWidth: 30
+				implicitHeight: 30
+
+				onReleased:
+				{
+					MainQmlBinder.HeightFrom = MainQmlBinder.MinHeight;
+					MainQmlBinder.HeightTo = MainQmlBinder.MaxHeight;
+				}
+			}
+			
+			Label
+			{
+				text: "Height: "
+				Layout.fillWidth: false
+			}
+
+			TextField
+			{
+				x: 0
+				Layout.fillWidth: false
+				text: MainQmlBinder.HeightFrom
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.HeightFrom = text;
+				}
+
+			}
+			
+			Label
+			{
+				text: " to "
+				Layout.fillWidth: false
+			}
+			
+			TextField
+			{
+				Layout.fillWidth: false
+				text: MainQmlBinder.HeightTo
+				validator: RegularExpressionValidator { regularExpression: /\d{1,5}/ }
+				font.bold: true
+				background: null
+				onEditingFinished:
+				{
+					MainQmlBinder.HeightTo = text;
+				}
+			}
+		}
+		
+		RowLayout
+		{
 			id: dateFilters
 			
 			SplitView.fillWidth: true

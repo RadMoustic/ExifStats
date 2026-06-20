@@ -79,6 +79,12 @@ Pane
 		
 		cameraModelsCounter.max = maxList(cameraModelsCounter.values)
 		cameraModelsCounter.resetView();
+		
+		resolutionsCounter.categories = MainQmlBinder.getResolutions();
+		resolutionsCounter.values = MainQmlBinder.getResolutionsCount();
+		
+		resolutionsCounter.max = maxList(resolutionsCounter.values)
+		resolutionsCounter.resetView();
 
 		orientationsCounter.categories = MainQmlBinder.getOrientations();
 		orientationsCounter.values = MainQmlBinder.getOrientationsCount();
@@ -316,7 +322,7 @@ Pane
 				Repeater
 				{
 				
-					model: ["Gallery", "Map", "35mm", "Aperture", "Lens", "Camera", "Timeline", "ISO", "Shutter Speed", "Orientation", "Folders"]
+					model: ["Gallery", "Map", "Timeline", "Camera", "Lens", "35mm", "Aperture", "ISO", "Shutter Speed", "Resolution", "Orientation", "Folders"]
 					TabButton
 					{
 						text: modelData
@@ -348,7 +354,26 @@ Pane
 			{
 				id: mapRoot
 			}
-						
+			
+			TimelineCounterChart
+			{
+				id: timelineCounter
+			}
+			
+			CounterChart
+			{
+				id: cameraModelsCounter
+				title: "Camera Models Stats"
+				barChartChild.mAllCategoriesOnly: true
+			}
+			
+			CounterChart
+			{
+				id: lensModelsCounter
+				title: "Lens Models Stats"
+				barChartChild.mAllCategoriesOnly: true
+			}
+			
 			CounterChartFromTo
 			{
 				id: focalLength35mmCounter
@@ -370,26 +395,7 @@ Pane
 				minPropertyName: "MinAperture"
 				maxPropertyName: "MaxAperture"
 			}
-
-			CounterChart
-			{
-				id: lensModelsCounter
-				title: "Lens Models Stats"
-				barChartChild.mAllCategoriesOnly: true
-			}
-			
-			CounterChart
-			{
-				id: cameraModelsCounter
-				title: "Camera Models Stats"
-				barChartChild.mAllCategoriesOnly: true
-			}
-			
-			TimelineCounterChart
-			{
-				id: timelineCounter
-			}
-			
+					
 			CounterChartFromTo
 			{
 				id: isoSpeedCounter
@@ -410,6 +416,15 @@ Pane
 				toPropertyName: "ShutterSpeedTo"
 				minPropertyName: "MinShutterSpeed"
 				maxPropertyName: "MaxShutterSpeed"
+			}
+					
+			CounterChart
+			{
+				id: resolutionsCounter
+				title: "Resolutions Stats"
+				SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+				SplitView.preferredWidth: parent.width
+				barChartChild.mAllCategoriesOnly: true
 			}
 			
 			CounterChart

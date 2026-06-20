@@ -25,6 +25,7 @@
 #include "ESOrientationStat.h"
 #include "ESISOSpeedStat.h"
 #include "ESShutterSpeedStat.h"
+#include "ESResolutionStat.h"
 #include "ESFilter.h"
 #include "ESFromToFilter.h"
 #include "ESListFilter.h"
@@ -124,6 +125,12 @@ public:
 	Q_PROPERTY(float MinShutterSpeed READ getMinShutterSpeed)
 	Q_PROPERTY(float MaxShutterSpeed READ getMaxShutterSpeed)
 
+	Q_PROPERTY(int MinWidth READ getMinWidth)
+	Q_PROPERTY(int MaxWidth READ getMaxWidth)
+
+	Q_PROPERTY(int MinHeight READ getMinHeight)
+	Q_PROPERTY(int MaxHeight READ getMaxHeight)
+
 	Q_PROPERTY(QString MinTime READ getMinTime)
 	Q_PROPERTY(QString MaxTime READ getMaxTime)
 
@@ -144,13 +151,17 @@ public:
 	B_QML_PROPERTY(FocalLengthFilterOutInvalid, m35mmFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ApertureFrom, mApertureFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ApertureTo, mApertureFilter.mFilterTo, float)
+	B_QML_PROPERTY(ApertureFilterOutInvalid, mApertureFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ISOSpeedFrom, mISOSpeedFilter.mFilterFrom, int)
 	B_QML_PROPERTY(ISOSpeedTo, mISOSpeedFilter.mFilterTo, int)
 	B_QML_PROPERTY(ISOSpeedFilterOutInvalid, mISOSpeedFilter.mFilterOutInvalidValues, bool)
 	B_QML_PROPERTY(ShutterSpeedFrom, mShutterSpeedFilter.mFilterFrom, float)
 	B_QML_PROPERTY(ShutterSpeedTo, mShutterSpeedFilter.mFilterTo, float)
 	B_QML_PROPERTY(ShutterSpeedFilterOutInvalid, mShutterSpeedFilter.mFilterOutInvalidValues, bool)
-	B_QML_PROPERTY(ApertureFilterOutInvalid, mApertureFilter.mFilterOutInvalidValues, bool)
+	B_QML_PROPERTY(WidthFrom, mWidthFilter.mFilterFrom, int)
+	B_QML_PROPERTY(WidthTo, mWidthFilter.mFilterTo, int)
+	B_QML_PROPERTY(HeightFrom, mHeightFilter.mFilterFrom, int)
+	B_QML_PROPERTY(HeightTo, mHeightFilter.mFilterTo, int)
 	B_QML_PROPERTY(PathInclusiveFilters, mPathFilter.mPathInclusiveFilters, QStringList)
 	B_QML_PROPERTY_GETSET(TagsSearchString, QString, mTagsFilter.getSearchString, mTagsFilter.setSearchString)
 	B_QML_PROPERTY_GETSET(TagsSearchSimilarImage, QString, mTagsFilter.getSearchSimilarImage, mTagsFilter.setSearchSimilarImage)
@@ -256,12 +267,22 @@ public:
 	Q_INVOKABLE float getMinShutterSpeed() const;
 	Q_INVOKABLE float getMaxShutterSpeed() const;
 
+	//Resolution
+	Q_INVOKABLE int getMinWidth() const;
+	Q_INVOKABLE int getMaxWidth() const;
+	Q_INVOKABLE int getMinHeight() const;
+	Q_INVOKABLE int getMaxHeight() const;
+
 	// List Files
 	Q_INVOKABLE const ESListFilesStat* getFilteredFilesList() const;
 
 	// Orientation
 	Q_INVOKABLE QVector<QString> getOrientations() const;
 	Q_INVOKABLE QVector<int> getOrientationsCount() const;
+
+	// Resolution
+	Q_INVOKABLE QVector<QString> getResolutions() const;
+	Q_INVOKABLE QVector<int> getResolutionsCount() const;
 
 	// Filter Presets
 	Q_INVOKABLE void resetFilters();
@@ -304,6 +325,7 @@ private:
 	ESOrientationStat mOrientationStat;
 	ESISOSpeedStat mISOSpeedStat;
 	ESShutterSpeedStat mShutterSpeedStat;
+	ESResolutionStat mResolutionStat;
 
 	ESFromToFilter<int, ESFocalLengthIn35mmStat> m35mmFilter;
 	ESFromToFilter<float, ESApertureStat> mApertureFilter;
@@ -316,6 +338,8 @@ private:
 	ESOrientationFilter mOrientationFilter;
 	ESFromToFilter<unsigned short, ESISOSpeedStat> mISOSpeedFilter;
 	ESFromToFilter<float, ESShutterSpeedStat> mShutterSpeedFilter;
+	ESFromToFilter<unsigned short, ESResolutionStat::ESWidthStat> mWidthFilter;
+	ESFromToFilter<unsigned short, ESResolutionStat::ESHeightStat> mHeightFilter;
 	std::vector<ESStat*> mStats;
 	std::vector<ESFilter*> mFilters;
 
@@ -330,6 +354,12 @@ private:
 
 	float mShutterSpeedMin;
 	float mShutterSpeedMax;
+
+	int mWidthMin;
+	int mWidthMax;
+
+	int mHeightMin;
+	int mHeightMax;
 
 	uint64_t mDateTimeMin;
 	uint64_t mDateTimeMax;

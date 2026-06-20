@@ -101,6 +101,7 @@ struct ESFileInfo
 	ESUsefullExif mExif;
 	uint8_t mCameraModelIdx = std::numeric_limits<uint8_t>::max();
 	uint8_t mLensModelIdx = std::numeric_limits<uint8_t>::max();
+	ESStringId mResolutionStr;
 	ESReadExifFileResult mReadResult = eNone;
 	std::vector<uint16_t> mTagIndexes;
 	ESEmbeddings mEmbeddings;

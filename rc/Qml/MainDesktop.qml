@@ -90,6 +90,12 @@ Pane
 		
 		cameraModelsCounter.max = maxList(cameraModelsCounter.values)
 		cameraModelsCounter.resetView();
+		
+		resolutionsCounter.categories = MainQmlBinder.getResolutions();
+		resolutionsCounter.values = MainQmlBinder.getResolutionsCount();
+		
+		resolutionsCounter.max = maxList(resolutionsCounter.values)
+		resolutionsCounter.resetView();
 
 		orientationsCounter.categories = MainQmlBinder.getOrientations();
 		orientationsCounter.values = MainQmlBinder.getOrientationsCount();
@@ -286,6 +292,7 @@ Pane
 					{
 						width: 100
 					}
+					
 					RegularButton
 					{
 						text:"Folders"
@@ -294,6 +301,39 @@ Pane
 						onReleased:
 						{
 							foldersList.visible = !foldersList.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					RegularButton
+					{
+						text:"Timeline"
+						highlighted: timelineCounter.visible
+						
+						onReleased:
+						{
+							timelineCounter.visible = !timelineCounter.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					RegularButton
+					{
+						text:"Camera"
+						highlighted: cameraModelsCounter.visible
+						
+						onReleased:
+						{
+							cameraModelsCounter.visible = !cameraModelsCounter.visible;
+							chartsPanel.updateVisibleChartsCount();
+						}
+					}
+					RegularButton
+					{
+						text:"Lens"
+						highlighted: lensModelsCounter.visible
+						
+						onReleased:
+						{
+							lensModelsCounter.visible = !lensModelsCounter.visible;
 							chartsPanel.updateVisibleChartsCount();
 						}
 					}
@@ -340,42 +380,18 @@ Pane
 							shutterSpeedCounter.visible = !shutterSpeedCounter.visible;
 							chartsPanel.updateVisibleChartsCount();
 						}
-					}
+					}				
 					RegularButton
 					{
-						text:"Lens"
-						highlighted: lensModelsCounter.visible
+						text:"Resolution"
+						highlighted: resolutionsCounter.visible
 						
 						onReleased:
 						{
-							lensModelsCounter.visible = !lensModelsCounter.visible;
+							resolutionsCounter.visible = !resolutionsCounter.visible;
 							chartsPanel.updateVisibleChartsCount();
 						}
 					}
-					RegularButton
-					{
-						text:"Camera"
-						highlighted: cameraModelsCounter.visible
-						
-						onReleased:
-						{
-							cameraModelsCounter.visible = !cameraModelsCounter.visible;
-							chartsPanel.updateVisibleChartsCount();
-						}
-					}
-					
-					RegularButton
-					{
-						text:"Timeline"
-						highlighted: timelineCounter.visible
-						
-						onReleased:
-						{
-							timelineCounter.visible = !timelineCounter.visible;
-							chartsPanel.updateVisibleChartsCount();
-						}
-					}
-					
 					RegularButton
 					{
 						text:"Orientation"
@@ -387,7 +403,7 @@ Pane
 							chartsPanel.updateVisibleChartsCount();
 						}
 					}
-					
+										
 					RegularButton
 					{
 						text:"Map"
@@ -520,6 +536,31 @@ Pane
 						}
 					}
 					
+					TimelineCounterChart
+					{
+						id: timelineCounter
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+					}
+					
+					CounterChart
+					{
+						id: cameraModelsCounter
+						title: "Camera Models Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						barChartChild.mAllCategoriesOnly: true
+					}
+					
+					CounterChart
+					{
+						id: lensModelsCounter
+						title: "Lens Models Stats"
+						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
+						SplitView.preferredWidth: parent.width
+						barChartChild.mAllCategoriesOnly: true
+					}
+										
 					CounterChartFromTo
 					{
 						id: focalLength35mmCounter
@@ -571,30 +612,14 @@ Pane
 						minPropertyName: "MinShutterSpeed"
 						maxPropertyName: "MaxShutterSpeed"
 					}
-
+										
 					CounterChart
 					{
-						id: lensModelsCounter
-						title: "Lens Models Stats"
+						id: resolutionsCounter
+						title: "Resolutions Stats"
 						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
 						SplitView.preferredWidth: parent.width
 						barChartChild.mAllCategoriesOnly: true
-					}
-					
-					CounterChart
-					{
-						id: cameraModelsCounter
-						title: "Camera Models Stats"
-						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-						SplitView.preferredWidth: parent.width
-						barChartChild.mAllCategoriesOnly: true
-					}
-					
-					TimelineCounterChart
-					{
-						id: timelineCounter
-						SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-						SplitView.preferredWidth: parent.width
 					}
 					
 					CounterChart

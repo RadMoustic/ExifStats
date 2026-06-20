@@ -441,6 +441,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 				if (pFileInfo.mLensModelIdx != std::numeric_limits<decltype(pFileInfo.mLensModelIdx)>::max())
 					pFileInfo.mExif.mLensModel = mAllLensModels[pFileInfo.mLensModelIdx];
 
+				pFileInfo.mResolutionStr = ESStringId(QString::number(pFileInfo.mExif.mWidth) + " x " + QString::number(pFileInfo.mExif.mHeight));
+
 				if (pFileInfo.mEmbeddings.size() > 0)
 				{
 					if(mEmbeddingsDimension == 0)

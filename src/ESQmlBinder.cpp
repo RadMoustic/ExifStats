@@ -75,9 +75,11 @@ ESQmlBinder::ESQmlBinder()
 	mStats.push_back(&mOrientationStat);
 	mStats.push_back(&mISOSpeedStat);
 	mStats.push_back(&mShutterSpeedStat);
+	mStats.push_back(&mResolutionStat);
 
 	mCameraModelStat.mCountComp.mIgnoreEmptyCategories = false;
 	mLensModelStat.mCountComp.mIgnoreEmptyCategories = false;
+	mResolutionStat.mCountComp.mMinCountCategory = 2;
 
 	mCameraModelFilter.mKeepCategory = true;
 	mLensModelFilter.mKeepCategory = true;
@@ -101,6 +103,8 @@ ESQmlBinder::ESQmlBinder()
 	mOrientationFilter.mName = "Orientation";
 	mISOSpeedFilter.mName = "ISOSpeed";
 	mShutterSpeedFilter.mName = "ShutterSpeed";
+	mWidthFilter.mName = "Width";
+	mHeightFilter.mName = "Height";
 
 	mFilters.push_back(&m35mmFilter);
 	mFilters.push_back(&mApertureFilter);
@@ -113,6 +117,8 @@ ESQmlBinder::ESQmlBinder()
 	mFilters.push_back(&mOrientationFilter);
 	mFilters.push_back(&mISOSpeedFilter);
 	mFilters.push_back(&mShutterSpeedFilter);
+	mFilters.push_back(&mWidthFilter);
+	mFilters.push_back(&mHeightFilter);
 
 #ifdef IMAGETAGGER_ENABLE
 	setImageTaggerEnabled(true);
@@ -665,6 +671,22 @@ void ESQmlBinder::updateFiltersFromData()
 	mShutterSpeedMax = mShutterSpeedFilter.mFilterTo;
 	emit propertyShutterSpeedToChanged();
 
+	mWidthFilter.mFilterFrom = mResolutionStat.mMinMaxWidthComp.getMinValue();
+	mWidthMin = mWidthFilter.mFilterFrom;
+	emit propertyWidthFromChanged();
+
+	mWidthFilter.mFilterTo = mResolutionStat.mMinMaxWidthComp.getMaxValue();
+	mWidthMax = mWidthFilter.mFilterTo;
+	emit propertyWidthToChanged();
+
+	mHeightFilter.mFilterFrom = mResolutionStat.mMinMaxHeightComp.getMinValue();
+	mHeightMin = mHeightFilter.mFilterFrom;
+	emit propertyHeightFromChanged();
+
+	mHeightFilter.mFilterTo = mResolutionStat.mMinMaxHeightComp.getMaxValue();
+	mHeightMax = mHeightFilter.mFilterTo;
+	emit propertyHeightToChanged();
+
 	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.getMaxValue();
 	mDateTimeMax = mDateTimeFilter.mFilterTo;
 	emit timeToChanged();
@@ -921,6 +943,34 @@ float ESQmlBinder::getMaxShutterSpeed() const
 
 /********************************************************************************/
 
+int ESQmlBinder::getMinWidth() const
+{
+	return mWidthMin;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getMaxWidth() const
+{
+	return mWidthMax;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getMinHeight() const
+{
+	return mHeightMin;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getMaxHeight() const
+{
+	return mHeightMax;
+}
+
+/********************************************************************************/
+
 QVector<QPointF> ESQmlBinder::getAllGeoLocations() const
 {
 	return mGeoLocationStat.mGeoLocComp.mGeoLocations;
@@ -1106,6 +1156,20 @@ QVector<QString> ESQmlBinder::getOrientations() const
 QVector<int> ESQmlBinder::getOrientationsCount() const
 {
 	return mOrientationStat.mCountComp.getCounters();
+}
+
+/********************************************************************************/
+
+QVector<QString> ESQmlBinder::getResolutions() const
+{
+	return mResolutionStat.mCountComp.getLabels();
+}
+
+/********************************************************************************/
+
+QVector<int> ESQmlBinder::getResolutionsCount() const
+{
+	return mResolutionStat.mCountComp.getCounters();
 }
 
 /********************************************************************************/
