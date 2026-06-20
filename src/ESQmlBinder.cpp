@@ -82,7 +82,9 @@ ESQmlBinder::ESQmlBinder()
 	mResolutionStat.mCountComp.mMinCountCategory = 2;
 
 	mCameraModelFilter.mKeepCategory = true;
+	mCameraModelFilter.mDeserializeGetAllValuesCallback = []() -> const QVector<QString>& { return ESDatabase::getInstance().getAllCameraModels(); };
 	mLensModelFilter.mKeepCategory = true;
+	mLensModelFilter.mDeserializeGetAllValuesCallback = []() -> const QVector<QString>& { return ESDatabase::getInstance().getAllLensModels(); };
 	mDateTimeFilter.mFilterFrom = mDateTimeStat.mMinMaxComp.mValidMinValue;
 	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.mValidMaxValue;
 	
@@ -90,7 +92,8 @@ ESQmlBinder::ESQmlBinder()
 	mShutterSpeedFilter.setInvalidValue(0);
 	m35mmFilter.setInvalidValue(0);
 	mApertureFilter.setInvalidValue(0.f);
-	mDateTimeFilter.setInvalidValue(18446744073709548016);
+	//mDateTimeFilter.setInvalidValue(18446744073709548016);
+	mDateTimeFilter.setInvalidValue(0);
 
 	m35mmFilter.mName = "35mm";
 	mApertureFilter.mName = "Aperture";
@@ -105,6 +108,13 @@ ESQmlBinder::ESQmlBinder()
 	mShutterSpeedFilter.mName = "ShutterSpeed";
 	mWidthFilter.mName = "Width";
 	mHeightFilter.mName = "Height";
+
+	m35mmFilter.mShouldBeSerializedCallback = [&]() { return m35mmFilter.mFilterFrom != getMinFocalLength35mm() || m35mmFilter.mFilterTo != getMaxFocalLength35mm(); };
+	mApertureFilter.mShouldBeSerializedCallback = [&]() { return mApertureFilter.mFilterFrom != getMinAperture() || mApertureFilter.mFilterTo != getMaxAperture(); };
+	mISOSpeedFilter.mShouldBeSerializedCallback = [&]() { return mISOSpeedFilter.mFilterFrom != getMinISOSpeed() || mISOSpeedFilter.mFilterTo != getMaxISOSpeed(); };
+	mShutterSpeedFilter.mShouldBeSerializedCallback = [&]() { return mShutterSpeedFilter.mFilterFrom != getMinShutterSpeed() || mShutterSpeedFilter.mFilterTo != getMaxShutterSpeed(); };
+	mWidthFilter.mShouldBeSerializedCallback = [&]() { return mWidthFilter.mFilterFrom != getMinWidth() || mWidthFilter.mFilterTo != getMaxWidth(); };
+	mHeightFilter.mShouldBeSerializedCallback = [&]() { return mHeightFilter.mFilterFrom != getMinHeight() || mHeightFilter.mFilterTo != getMaxHeight(); };
 
 	mFilters.push_back(&m35mmFilter);
 	mFilters.push_back(&mApertureFilter);
@@ -1188,6 +1198,8 @@ void ESQmlBinder::resetFilters()
 	emit propertyTagsMinSimilarityScoreChanged();
 	emit propertyFocalLengthFilterOutInvalidChanged();
 	emit propertyApertureFilterOutInvalidChanged();
+	emit propertyShutterSpeedFilterOutInvalidChanged();
+	emit propertyISOSpeedFilterOutInvalidChanged();
 	emit propertyTimeFilterOutInvalidChanged();
 	emit propertyGeoShapeFilterChanged();
 }
@@ -1234,8 +1246,8 @@ bool ESQmlBinder::saveFilters(QString pPresetName)
 	for(const ESFilter* lFilter: mFilters)
 	{
 		assert(!lFilter->mName.isEmpty());
-		QJsonObject lStatJson;
-		lPresetJson[lFilter->mName] = lFilter->serialize();
+		if(lFilter->isEnabled() && lFilter->mShouldBeSerializedCallback())
+			lPresetJson[lFilter->mName] = lFilter->serialize();
 	}
 
 	QString lPresetFilePath = getPresetFilePathPath(pPresetName);

@@ -35,6 +35,7 @@ class ESFilter
 public:
 	bool mKeepCategory = false;
 	QString mName;
+	std::function<bool()> mShouldBeSerializedCallback = []() { return true; };
 
 	virtual void reset() = 0;
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const = 0;

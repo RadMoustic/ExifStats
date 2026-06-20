@@ -910,7 +910,7 @@ Flickable
 		{
 			id: cameraFilters
 			
-			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 800) / 2)
+			implicitHeight: MainQmlBinder.isMobile() ? 200 : Math.max(200,(Window.height - 850) / 2)
 			Layout.fillWidth: true
 			
 			Menu

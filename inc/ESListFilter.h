@@ -16,9 +16,11 @@ template<class ExifStatType, typename T>
 class ESListFilter: public ESFilter
 {
 public:
+	std::function<const QVector<T>&()> mDeserializeGetAllValuesCallback;
+
 	virtual bool isEnabled() const override
 	{
-		return !mVectorFilters.empty();
+		return !mFilters.empty();
 	}
 
 	virtual void reset() override
@@ -32,10 +34,6 @@ public:
 
 	void setFilters(const QMap<T, bool>& pFilters, const QVector<T>& pAllValues)
 	{
-		mFilters = pFilters;
-		mVectorFilters.clear();
-		mAllValues = pAllValues;
-		mVectorFilters.resize(pAllValues.size());
 		bool lAllTrue = true;
 		for(bool lFilter: pFilters)
 		{
@@ -45,11 +43,7 @@ public:
 				break;
 			}
 		}
-		for(int i = 0 ; i < pAllValues.size() ; ++i)
-		{
-			auto lItFound = mFilters.find(pAllValues[i]);
-			mVectorFilters[i] = lItFound != mFilters.end() ? *lItFound : lAllTrue;
-		}
+		setFiltersInternal(pFilters, pAllValues, lAllTrue);
 	}
 
 	virtual bool isFileFilteredOut(const ESFileInfo& pFile) const override
@@ -64,31 +58,28 @@ public:
 	{
 		QJsonObject lResult;
 
-		lResult["Keys"] = toJsonArray(mFilters.keys());
-		lResult["Values"] = toJsonArray(mFilters.values());
+		QVector<T> lEnabledFilters;
+		for(typename QMap<T, bool>::const_iterator it = mFilters.begin() ; it != mFilters.end() ; ++it)
+			if(it.value())
+				lEnabledFilters.push_back(it.key());
+
+		lResult["EnabledFilters"] = toJsonArray(lEnabledFilters);
 		
 		return lResult;
 	}
 
 	virtual bool deserialize(const QJsonObject& pJson) override
 	{
-		QVector<T> lKeys;
-		QVariantList lValues;
-		VALIDATE_JSONVALUE(pJson, "Keys", lKeys);
-		VALIDATE_JSONVALUE(pJson, "Values", lValues);
-		if (lKeys.size() != lValues.size())
-		{
-			qWarning("List Filter Key/Values mismatch in Json"); \
-			return false;
-		}
-		
+		QVector<T> lEnabledFilters;
+		VALIDATE_JSONVALUE(pJson, "EnabledFilters", lEnabledFilters);
+
 		QMap<T, bool> lFilters;
-		for (int i = 0; i < lKeys.size(); ++i)
+		for (int i = 0; i < lEnabledFilters.size(); ++i)
 		{
-			lFilters.insert(lKeys[i], lValues[i].toBool());
+			lFilters.insert(lEnabledFilters[i], true);
 		}
 
-		setFilters(lFilters, ESDatabase::getInstance().getAllCameraModels());
+		setFiltersInternal(lFilters, mDeserializeGetAllValuesCallback(), false);
 
 		return true;
 	}
@@ -97,4 +88,17 @@ private:
 	QMap<T, bool> mFilters;
 	std::vector<bool> mVectorFilters;
 	QVector<T> mAllValues;
+
+	void setFiltersInternal(const QMap<T, bool>& pFilters, const QVector<T>& pAllValues, bool pAllTrue)
+	{
+		mFilters = pFilters;
+		mVectorFilters.clear();
+		mAllValues = pAllValues;
+		mVectorFilters.resize(pAllValues.size());
+		for (int i = 0; i < pAllValues.size(); ++i)
+		{
+			auto lItFound = mFilters.find(pAllValues[i]);
+			mVectorFilters[i] = lItFound != mFilters.end() ? *lItFound : pAllTrue;
+		}
+	}
 };
