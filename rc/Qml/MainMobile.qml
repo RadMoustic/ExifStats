@@ -318,6 +318,7 @@ Pane
 				Layout.fillWidth: true
 				currentIndex: 0
 				clip: true
+				leftPadding: 20
 				
 				Repeater
 				{
