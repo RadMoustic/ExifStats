@@ -1289,6 +1289,10 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 		qWarning("Couldn't parse preset file: %s", qUtf8Printable(lPresetFilePath));
 		return false;
 	}
+	
+	for (ESFilter* lFilter : mFilters)
+		lFilter->reset();
+	
 	QJsonObject lPresetJson = lPresetDoc.object();
 	for (ESFilter* lFilter : mFilters)
 	{
@@ -1310,10 +1314,13 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 
 	emit propertyPathInclusiveFiltersChanged();
 	emit propertyTagsSearchStringChanged();
+	emit propertyTagsSearchSimilarImageChanged();
 	emit propertyOrientationFilterModeChanged();
 	emit propertyTagsMinSimilarityScoreChanged();
 	emit propertyFocalLengthFilterOutInvalidChanged();
 	emit propertyApertureFilterOutInvalidChanged();
+	emit propertyShutterSpeedFilterOutInvalidChanged();
+	emit propertyISOSpeedFilterOutInvalidChanged();
 	emit propertyTimeFilterOutInvalidChanged();
 	emit propertyGeoShapeFilterChanged();
 
