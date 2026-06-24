@@ -131,8 +131,8 @@ set IMAGETAGGER_ENABLE=true
 set HNSWLIB_ENABLE=true
 ```
 ## External Libraries and Models
-* [EasyExif](https://github.com/mayanklahiri/easyexif): a simple exif parsing library that has beend modified.
-* [backward-cpp](https://github.com/bombela/backward-cpp): a library used to resolve callstack and create automatic crash reports.
+* [EasyExif](https://github.com/mayanklahiri/easyexif): a simple exif parsing library.
+* [backward-cpp](https://github.com/bombela/backward-cpp): used to resolve callstack and create automatic crash reports.
 * [quazip](https://github.com/stachenov/quazip): a Qt/C++ wrapper to read zip files.
 * [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
 * [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
