@@ -32,6 +32,9 @@ Pane
 		property alias panelCameraVisible: cameraModelsCounter.visible
 		property alias panelTimelineVisible: timelineCounter.visible
 		property alias panelOrientationsCounterVisible: orientationsCounter.visible
+		property alias panelISOSpeedCounterVisible: isoSpeedCounter.visible
+		property alias panelShutterSpeedCounterVisible: shutterSpeedCounter.visible
+		property alias panelResolutionsCounterVisible: resolutionsCounter.visible
 		property alias panelMapVisible: mapRoot.visible
 		property alias panelImagesVisible: imageGrid.visible
 		property var mainSplitViewState
