@@ -123,19 +123,21 @@ Then you need to set the following env var in **User.Setup.bat**:
 set HEIF_PLUGIN_ENABLE=true
 set TURBOJPEG_PLUGIN_ENABLE=true
 ```
-### Image Tagger / Tokenizers / Onnxruntime
-ExifStats uses three libraries to be able to search through the images:
-* [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
-* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
-* [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
-* The [Immich](https://github.com/immich-app/immich) onnxruntime visual and text models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
-
+### Tokenizer / ImageTagger / HNSWLib
 You need to install [Rust](https://rust-lang.org/tools/install/) in order to use Tokenizers.
 Then you can enable ImageTagger and HNSWL in the **User.Setup.bat**:
 ```
 set IMAGETAGGER_ENABLE=true
 set HNSWLIB_ENABLE=true
 ```
+## External Libraries and Models
+* [EasyExif](https://github.com/mayanklahiri/easyexif): a simple exif parsing library that has beend modified.
+* [backward-cpp](https://github.com/bombela/backward-cpp): a library used to resolve callstack and create automatic crash reports.
+* [quazip](https://github.com/stachenov/quazip): a Qt/C++ wrapper to read zip files.
+* [Onnxruntime](https://github.com/microsoft/onnxruntime): a cross-platform inference and training machine-learning accelerator.
+* [Tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp): a wrapper for [Tokenizers](https://github.com/huggingface/tokenizers) which is a [HuggingFace](https://huggingface.co/) rust library.
+* [HNSW Lib](https://github.com/nmslib/hnswlib) is used to accelerate the search by indexing the embeddings and saving it to a file
+* The [Immich](https://github.com/immich-app/immich) onnxruntime visual and text models available on their [Immich HuggingFace Page](https://huggingface.co/immich-app).
 ## Static Compilation
 ### Compile Qt6
 First you need to download and compile Qt in Static, if you don't want to use the turbo jpeg lib remove "-no-libjpeg"
