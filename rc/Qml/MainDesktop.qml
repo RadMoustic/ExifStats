@@ -272,6 +272,7 @@ Pane
 							padding: 0
 							checked: MainQmlBinder.mPauseCaching
 							text: "Pause Caching"
+							opacity: imageGrid.mLoading ? 1.0 : 0.0
 							onCheckedChanged:
 							{
 								MainQmlBinder.mPauseCaching = pauseCaching.checked;
@@ -285,6 +286,7 @@ Pane
 							padding: 0
 							checked: MainQmlBinder.mPauseTagging
 							text: "Pause Tagging"
+							opacity: MainQmlBinder.mTagging ? 1.0 : 0.0
 							onCheckedChanged:
 							{
 								MainQmlBinder.mPauseTagging = pauseTagging.checked;
@@ -293,7 +295,7 @@ Pane
 					}
 					Item
 					{
-						width: 100
+						width: 75
 					}
 					
 					RegularButton
