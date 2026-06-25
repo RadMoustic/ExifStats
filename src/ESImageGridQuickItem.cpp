@@ -13,6 +13,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLFramebufferObject>
 #include <QOpenGLDebugLogger>
+#include <QQuickWindow>
 
 /********************************************************************************/
 
@@ -555,6 +556,7 @@ void ESImageGridQuickItemRenderer::allocateImageTextures(float pTextureSize)
 	if(!mImageTextures || mCurrentTextureSize != pTextureSize)
 	{
 		mCurrentTextureSize = pTextureSize;
+		qInfo() << "New image texture size " << pTextureSize;
 		mImageTextures.reset(new QOpenGLTexture(QOpenGLTexture::Target2DArray)); checkOpengGLErrors();
 		mImageTextures->create(); checkOpengGLErrors();
 		mImageTextures->setSize(pTextureSize, pTextureSize); checkOpengGLErrors();
@@ -602,7 +604,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 	lItem->mPreviousSize = lItem->size();
 	mSize = lItem->size();
 
-	int lTextureSize = std::min(lItem->mTargetImageSize, CACHE_IMAGE_SIZE);
+	int lTextureSize = std::min(int(lItem->mTargetImageSize * lItem->window()->devicePixelRatio()) + 1, CACHE_IMAGE_SIZE);
 
 	if(lItem->mDataHasChanged || lTextureSize != mCurrentTextureSize)
 	{
