@@ -604,7 +604,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 	lItem->mPreviousSize = lItem->size();
 	mSize = lItem->size();
 
-	int lTextureSize = std::min(int(lItem->mTargetImageSize * lItem->window()->devicePixelRatio()) + 1, CACHE_IMAGE_SIZE);
+	int lTextureSize = std::min(int(lItem->mTargetImageSize * lItem->window()->devicePixelRatio()), CACHE_IMAGE_SIZE);
 
 	if(lItem->mDataHasChanged || lTextureSize != mCurrentTextureSize)
 	{
