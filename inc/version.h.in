@@ -2,13 +2,13 @@
 #define STRINGIZE(s) STRINGIZE2(s)
  
 #define VERSION_MAJOR               0
-#define VERSION_MINOR               6
+#define VERSION_MINOR               7
 #define VERSION_REVISION            0
 #define VERSION_BUILD               @SVN_REV@
  
 #define VER_FILE_DESCRIPTION_STR    "ExifStats"
 #define VER_FILE_VERSION            VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_BUILD
-#define VER_FILE_STATUS				"alpha dev"
+#define VER_FILE_STATUS				"dev"
 #ifdef _DEBUG
 	#define VER_FILE_TYPE			" " VER_FILE_STATUS " debug"
 #else
