@@ -103,6 +103,14 @@ Pane
 		filtersPanel.displayData();
 	}
 	
+	function sanitize(x, defaultValue)
+	{
+		if(isNaN(x) || !isFinite(x))
+			return defaultValue;
+		else
+			return x;
+	}
+	
 	Timer
 	{
 		id: loadSettingsTimer
@@ -111,7 +119,7 @@ Pane
 		onTriggered:
 		{
 			//MainQmlBinder.loadDefaultFilters();
-			imageGrid.gridCol = Math.min(imageGrid.maxGridCol, settings.imageGridCol);
+			imageGrid.gridCol = Math.min(sanitize(imageGrid.maxGridCol, 4), sanitize(settings.imageGridCol, 2));
 			//imageGrid.flickableChild.contentY = settings.imageGridYOffset;
 		}
 	}
@@ -423,8 +431,6 @@ Pane
 			{
 				id: resolutionsCounter
 				title: "Resolutions Stats"
-				SplitView.preferredHeight: chartsPanel.visibleCharts > 0 ? parent.height / chartsPanel.visibleCharts : 0
-				SplitView.preferredWidth: parent.width
 				barChartChild.mAllCategoriesOnly: true
 			}
 			
