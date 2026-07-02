@@ -24,7 +24,7 @@ public:
 	static const char* msTimeFormat;
 
 	ESMinMaxStatComponent<uint64_t, ESDateTimeStat> mMinMaxComp;
-	ESCountStepStatComponent<uint64_t, ESDateTimeStat> mCountComp;
+	ESCountStepStatComponent<uint64_t, ESDateTimeStat, std::unordered_map<uint64_t, int>> mCountComp;
 
 	ESDateTimeStat()
 	{

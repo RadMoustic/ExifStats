@@ -22,7 +22,7 @@ class ESISOSpeedStat : public ESStat
 {
 public:
 	ESMinMaxStatComponent<unsigned short, ESISOSpeedStat> mMinMaxComp;
-	ESCountStatComponent<unsigned short, ESISOSpeedStat> mCountComp;
+	ESCountStatComponent<unsigned short, ESISOSpeedStat, std::unordered_map<unsigned short, int>> mCountComp;
 
 	ESISOSpeedStat()
 	{

@@ -17,5 +17,5 @@
 		return pFile.mExif.mFocalLengthIn35mm;
 	auto&& lItFound = msCameraModelsTo35mmFocalFactors.find(pFile.mCameraModelIdx);
 	float lTo35mmFactor = lItFound != msCameraModelsTo35mmFocalFactors.end() ? lItFound->second : 1.f;
-	return pFile.mExif.mFocalLengthIn35mm > 0 ? pFile.mExif.mFocalLengthIn35mm : int(round(pFile.mExif.mFocalLength * lTo35mmFactor));
+	return int(round(pFile.mExif.mFocalLength * lTo35mmFactor));
 }

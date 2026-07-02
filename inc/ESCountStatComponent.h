@@ -17,7 +17,7 @@ struct ESFileInfo;
 /********************************************************************************/
 /********************************************************************************/
 
-template<typename T, class Derived>
+template<typename T, class Derived, class CounterType = std::vector<int>>
 class ESCountStatComponent : public ESCounterStatComponentInterface
 {
 public:
@@ -29,6 +29,9 @@ public:
 		if(!mIgnoreEmptyCategories)
 		{
 			T lFileValue = Derived::getFileValue(pFile);
+			if constexpr (!requires { typename CounterType::mapped_type; })
+				if(size_t(lFileValue) >= mValueCounters.size())
+					mValueCounters.resize(lFileValue+1);
 			mValueCounters[lFileValue] += 0;
 		}
 	}
@@ -36,6 +39,9 @@ public:
 	virtual void addFile(const ESFileInfo& pFile) override
 	{
 		T lFileValue = Derived::getFileValue(pFile);
+		if constexpr (!requires { typename CounterType::mapped_type; })
+			if(size_t(lFileValue) >= mValueCounters.size())
+				mValueCounters.resize(lFileValue+1);
 		mValueCounters[lFileValue] += 1;
 	}
 
@@ -52,9 +58,21 @@ public:
 		std::vector<std::tuple<T, int, QString>> lSortedValues;
 		lSortedValues.reserve(mValueCounters.size());
 
-		for (const auto& lValueCount : mValueCounters)
-			if(mMinCountCategory < 0 || lValueCount.second >= mMinCountCategory)
-				lSortedValues.emplace_back(lValueCount.first, lValueCount.second, Derived::getValueLabel(lValueCount.first));
+		if constexpr (requires { typename CounterType::mapped_type; })
+		{
+			for (const auto& lValueCount : mValueCounters)
+				if(mMinCountCategory < 0 || lValueCount.second >= mMinCountCategory)
+					lSortedValues.emplace_back(lValueCount.first, lValueCount.second, Derived::getValueLabel(lValueCount.first));
+		}
+		else	
+		{
+			for (int i = 0,e = int(mValueCounters.size()) ; i < e ; ++i)
+			{
+				const auto& lValueCount = mValueCounters[i];
+				if(mMinCountCategory < 0 || lValueCount >= mMinCountCategory)
+					lSortedValues.emplace_back(T(i), lValueCount, Derived::getValueLabel(T(i)));
+			}
+		}
 
 		std::sort(lSortedValues.begin(), lSortedValues.end(), [](const auto& a, const auto& b) { return std::get<0>(a) < std::get<0>(b); });
 
@@ -79,7 +97,7 @@ public:
 
 protected:
 
-	std::unordered_map<T, int> mValueCounters;
+	CounterType mValueCounters;
 	QVector<QString> mCounterLabels;
 	QVector<int> mCounters;
 	QVector<T> mValues;

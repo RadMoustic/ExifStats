@@ -22,7 +22,7 @@ class ESShutterSpeedStat : public ESStat
 {
 public:
 	ESMinMaxStatComponent<float, ESShutterSpeedStat> mMinMaxComp;
-	ESCountStatComponent<float, ESShutterSpeedStat> mCountComp;
+	ESCountStatComponent<float, ESShutterSpeedStat, std::unordered_map<float, int>> mCountComp;
 
 	ESShutterSpeedStat()
 	{

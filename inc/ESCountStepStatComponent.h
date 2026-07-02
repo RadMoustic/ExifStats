@@ -17,11 +17,11 @@ struct ESFileInfo;
 /********************************************************************************/
 /********************************************************************************/
 
-template<typename T, class Derived>
-class ESCountStepStatComponent : public ESCountStatComponent<T, Derived>
+template<typename T, class Derived, class CounterType = std::vector<int>>
+class ESCountStepStatComponent : public ESCountStatComponent<T, Derived, CounterType>
 {
 public:
-	typedef ESCountStatComponent<T, Derived> Super;
+	typedef ESCountStatComponent<T, Derived, CounterType> Super;
 
 	T mStep;
 	bool mAddFileCategories = false;
@@ -34,8 +34,10 @@ public:
 		if(mAddFileCategories)
 		{
 			T lFileValue = Derived::getFileValue(pFile);
-
 			T lRoundedToStepFileValue = (lFileValue / mStep) * mStep;
+			if constexpr (!requires { typename CounterType::mapped_type; })
+				if(size_t(lRoundedToStepFileValue) >= Super::mValueCounters.size())
+					Super::mValueCounters.resize(lRoundedToStepFileValue+1);
 			Super::mValueCounters[lRoundedToStepFileValue] += 0;
 		}
 	}
@@ -43,38 +45,67 @@ public:
 	virtual void addFile(const ESFileInfo& pFile) override
 	{
 		T lFileValue = Derived::getFileValue(pFile);
-
-		T lRoundedToStepFileValue = (lFileValue / mStep) * mStep;
+		T lRoundedToStepFileValue = (lFileValue / mStep) * mStep;		
+		if constexpr (!requires { typename CounterType::mapped_type; })
+			if(size_t(lRoundedToStepFileValue) >= Super::mValueCounters.size())
+				Super::mValueCounters.resize(lRoundedToStepFileValue+1);
 		Super::mValueCounters[lRoundedToStepFileValue] += 1;
 	}
 
 	virtual void onAllFilesAdded() override
 	{
-		if(!Super::mValueCounters.empty() && mFillEmptySteps)
+		if(Super::mValueCounters.size() > 0 && mFillEmptySteps)
 		{
 			bool lFirstValueSet = false;
 			bool lLastValueSet = false;
 			T lFirstValue = T();
 			T lLastValue = T();
-			for(const auto& lValueCount : Super::mValueCounters)
+			if constexpr (requires { typename CounterType::mapped_type; })
 			{
-				if(!lFirstValueSet)
+				for(const auto& lValueCount : Super::mValueCounters)
 				{
-					lFirstValue = lValueCount.first;
-					lFirstValueSet = true;
+					if(!lFirstValueSet)
+					{
+						lFirstValue = lValueCount.first;
+						lFirstValueSet = true;
+					}
+					else
+					{
+						lFirstValue = std::min(lFirstValue, lValueCount.first);
+					}
+					if(!lLastValueSet)
+					{
+						lLastValue = lValueCount.first;
+						lLastValueSet = true;
+					}
+					else
+					{
+						lLastValue = std::max(lLastValue, lValueCount.first);
+					}
 				}
-				else
+			}
+			else
+			{
+				for (T i = 0,e = T(Super::mValueCounters.size()) ; i < e ; ++i)
 				{
-					lFirstValue = std::min(lFirstValue, lValueCount.first);
-				}
-				if(!lLastValueSet)
-				{
-					lLastValue = lValueCount.first;
-					lLastValueSet = true;
-				}
-				else
-				{
-					lLastValue = std::max(lLastValue, lValueCount.first);
+					if(!lFirstValueSet)
+					{
+						lFirstValue = i;
+						lFirstValueSet = true;
+					}
+					else
+					{
+						lFirstValue = std::min(lFirstValue, i);
+					}
+					if(!lLastValueSet)
+					{
+						lLastValue = i;
+						lLastValueSet = true;
+					}
+					else
+					{
+						lLastValue = std::max(lLastValue, i);
+					}
 				}
 			}
 			if(mMinFillValue != mMaxFillValue)

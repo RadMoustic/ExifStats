@@ -6,12 +6,14 @@
 
 // ES
 #include "ESStat.h"
+#include "ESCountStatComponent.h"
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
 struct ESFileInfo;
+class ESDatabase;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -20,14 +22,14 @@ struct ESFileInfo;
 class ESLensModelStat : public ESStat
 {
 public:
-	ESCountStatComponent<ESStringId, ESLensModelStat> mCountComp;
+	ESCountStatComponent<uint8_t, ESLensModelStat> mCountComp;
 
 	ESLensModelStat()
 	{
 		addComponent(&mCountComp);
 	}
 
-	static ESStringId getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mLensModel; }
+	static uint8_t getFileValue(const ESFileInfo& pFile) { return pFile.mLensModelIdx; }
 	static uint8_t getFileValueIndex(const ESFileInfo& pFile) { return pFile.mLensModelIdx; }
-	static QString getValueLabel(ESStringId pValue) { return pValue.getString(); }
+	static QString getValueLabel(uint8_t pValue);
 };

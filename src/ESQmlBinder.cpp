@@ -720,32 +720,35 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 
 	for (ESStat* lStat : mStats)
 		lStat->reset();
-	for (ESStat* lStat : mStats)
+	for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
 	{
-		for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
-		{
-			if(lFileInfo.mReadResult != eSuccess)
-				continue;
+		if(lFileInfo.mReadResult != eSuccess)
+			continue;
 			
-			bool lAddFile = true;
-			bool lKeepCategory = false;
-			if(!pIgnoreFilters)
+		bool lAddFile = true;
+		bool lKeepCategory = false;
+		if(!pIgnoreFilters)
+		{
+			for (const ESFilter* lFilter : lActiveFilters)
 			{
-				for (const ESFilter* lFilter : lActiveFilters)
+				if (lFilter->isFileFilteredOut(lFileInfo))
 				{
-					if (lFilter->isFileFilteredOut(lFileInfo))
-					{
-						lAddFile = false;
-						lKeepCategory = lFilter->mKeepCategory;
-						if(!lKeepCategory)
-							break;
-					}
+					lAddFile = false;
+					lKeepCategory = lFilter->mKeepCategory;
+					if(!lKeepCategory)
+						break;
 				}
 			}
-			if(lAddFile)
-				lStat->addFile(lFileInfo);
-			else if (lKeepCategory)
-				lStat->addFileCategory(lFileInfo);
+		}
+		if(lAddFile || lKeepCategory)
+		{
+			for (ESStat* lStat : mStats)
+			{
+				if(lAddFile)
+					lStat->addFile(lFileInfo);
+				else if (lKeepCategory)
+					lStat->addFileCategory(lFileInfo);
+			}
 		}
 	}
 	for (ESStat * lStat : mStats)

@@ -117,7 +117,7 @@ void ESImageLoader::LoadingThreadTask::start()
 				}
 				else
 				{
-					QThread::sleep(std::chrono::nanoseconds(500000));
+					QThread::sleep(std::chrono::nanoseconds(100000));
 				}
 			}
 		});

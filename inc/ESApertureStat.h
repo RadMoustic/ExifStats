@@ -22,7 +22,7 @@ class ESApertureStat : public ESStat
 {
 public:
 	ESMinMaxStatComponent<float, ESApertureStat> mMinMaxComp;
-	ESCountStatComponent<float, ESApertureStat> mCountComp;
+	ESCountStatComponent<float, ESApertureStat, std::unordered_map<float, int>> mCountComp;
 
 	ESApertureStat()
 	{

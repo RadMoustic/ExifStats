@@ -31,7 +31,7 @@ public:
 		static unsigned short getFileValue(const ESFileInfo& pFile) { return pFile.mExif.mHeight; }
 	};
 
-	ESCountStatComponent<ESStringId, ESResolutionStat> mCountComp;
+	ESCountStatComponent<ESStringId, ESResolutionStat, std::unordered_map<ESStringId, int>> mCountComp;
 	ESMinMaxStatComponent<unsigned short, ESWidthStat> mMinMaxWidthComp;
 	ESMinMaxStatComponent<unsigned short, ESHeightStat> mMinMaxHeightComp;
 
