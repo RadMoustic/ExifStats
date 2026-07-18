@@ -13,6 +13,7 @@
 
 #define CACHE_IMAGE_SIZE 850
 #define CACHE_IMAGE_JPEG_COMPRESSION 50
+#define CACHE_IMAGE_FOLDER_NAME "ImageCache"
 
 class ESDatabase;
 

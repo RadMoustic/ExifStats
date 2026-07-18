@@ -38,8 +38,13 @@
 #include "ESImageCache.h"
 #include "ESImageTaggerManager.h"
 
-// External
+// Exif
 #include "exif.h"
+
+// Quazip
+#ifdef Q_OS_ANDROID
+#include <quazip/quazip.h>
+#endif // Q_OS_ANDROID
 
 /********************************************************************************/
 /********************************************************************************/
@@ -168,6 +173,7 @@ public:
 	B_QML_PROPERTY_GETSET(TagsMinSimilarityScore, float, mTagsFilter.getMinSimilarityScore, mTagsFilter.setMinSimilarityScore)
 	B_QML_PROPERTY(OrientationFilterMode, mOrientationFilter.mFilterMode, int)
 	B_QML_PROPERTY(GeoShapeFilter, mGeoLocationFilter.mGeoShapeFilter, QGeoShape)
+	B_QML_PROPERTY(ShowGuessedLocation, mGeoLocationFilter.mShowGuessedLocation, bool)
 
 	// Features
 	ES_QML_PROPERTY(ImageTaggerEnabled, bool)
@@ -364,14 +370,22 @@ private:
 	uint64_t mDateTimeMin;
 	uint64_t mDateTimeMax;
 
+#ifdef Q_OS_ANDROID
+	mutable std::unique_ptr<QuaZip> mArchiveZip;
+#endif // Q_OS_ANDROID
+
 	/********************************* METHODS ***********************************/
 
 	void updateStats(bool pIgnoreFilters);
-	void updateFiltersFromData();
+	void updateMinMaxFromData();
+	void resetFiltersMinMax();
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);
 	bool extractZip(const std::vector<QString>& pSplittedZipFiles, const QString& pOutputDir, std::function<void(float)> pProgressCallback);
+#ifdef Q_OS_ANDROID
+	void openArchiveZip() const;
+#endif // Q_OS_ANDROID
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)

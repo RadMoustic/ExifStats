@@ -54,7 +54,7 @@ ESImageCache::ESImageCache()
 #else
 	QString lDataBaseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QDir::separator();
 #endif
-	mCacheFolderPath = lDataBaseDir + "ImageCache";
+	mCacheFolderPath = lDataBaseDir + CACHE_IMAGE_FOLDER_NAME;
 	QDir lDir;
 	lDir.mkpath(mCacheFolderPath);
 

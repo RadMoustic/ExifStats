@@ -81,7 +81,10 @@ void ESImageViewerQuickItem::updateInternal()
 		setDateTime(QDateTime::fromSecsSinceEpoch(lExif.mDateTime).toString("yyyy/MM/dd hh:mm:ss"));
 		setShutterSpeedValue(lExif.mShutterSpeedValue);
 		setFNumber(lExif.mFNumber);
-		setGeoLocation(QGeoCoordinate(lExif.mGeoLocation.mLatitude, lExif.mGeoLocation.mLongitude));
+		if(lExif.mGeoLocationGuessed)
+			setGeoLocation(QGeoCoordinate(0,0));
+		else
+			setGeoLocation(QGeoCoordinate(lExif.mGeoLocation.mLatitude, lExif.mGeoLocation.mLongitude));
 		setFocalLengthIn35mm(lExif.mFocalLengthIn35mm);
 		setFocalLength(lExif.mFocalLength);
 		setOrientation(lExif.mOrientation);

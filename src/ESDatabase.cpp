@@ -30,7 +30,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 10;
+constexpr uint DATABASE_VERSION = 11;
 /*static*/ const char* ESDatabase::msReadOnlyDatabaseFolderSettingsKey = "ReadOnlyDataBaseFolderPath";
 
 /********************************************************************************/
@@ -190,8 +190,7 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 					}
 				});
 			lRes.waitForFinished();
-			mFilesMutex.unlock();
-
+			
 			// Extract all camera models and counter
 			std::unordered_set<ESStringId> lCameraModels;
 			std::unordered_set<ESStringId> lLensModels;
@@ -231,6 +230,83 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 					++lLensModelIdx;
 				}
 			}
+
+			// Sort files by date time, to guess the geolocation for files with missing GPS data
+			std::vector<ESFileInfo*> lFilesSortedByDateTime;
+			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
+			{
+				if (	lProcessedFile.second.mReadResult == eSuccess
+					&&	lProcessedFile.second.mExif.mDateTime > 0)
+				{
+					lFilesSortedByDateTime.push_back(&lProcessedFile.second);
+				}
+			}
+			std::sort(lFilesSortedByDateTime.begin(), lFilesSortedByDateTime.end(), [](const ESFileInfo* a, const ESFileInfo* b)
+			{
+				return a->mExif.mDateTime < b->mExif.mDateTime;
+			});
+
+			// Guess GeoLocation for files with missing GPS data
+			constexpr int cMaxTimeDiffInSeconds = 3 * 60 * 60; // 3 hours
+			constexpr float cMaxGeoDistance = 100000.f; // 100km
+			
+			std::vector<quint64> lFilesGeoLocDateTimeDiff;
+			lFilesGeoLocDateTimeDiff.resize(lFilesSortedByDateTime.size());
+
+			ESFileInfo* lLastFileWithGPSData = nullptr;
+			for (int i = 0; i < lFilesSortedByDateTime.size(); ++i)
+			{
+				ESFileInfo* lFileInfo = lFilesSortedByDateTime[i];
+				if (lFileInfo->mExif.mGeoLocation.mLatitude == 0.f && lFileInfo->mExif.mGeoLocation.mLongitude == 0.f)
+				{
+					if(lLastFileWithGPSData)
+					{
+						quint64 lTimeDiff = lFileInfo->mExif.mDateTime - lLastFileWithGPSData->mExif.mDateTime;
+						if(lTimeDiff < cMaxTimeDiffInSeconds)
+						{
+							lFileInfo->mExif.mGeoLocation = lLastFileWithGPSData->mExif.mGeoLocation;
+							lFileInfo->mExif.mGeoLocationGuessed = true;
+							lFilesGeoLocDateTimeDiff[i] = lTimeDiff;
+						}
+						else
+						{
+							lLastFileWithGPSData = nullptr;
+						}
+					}
+				}
+				else
+				{
+					lLastFileWithGPSData = lFileInfo;
+				}
+			}
+
+			lLastFileWithGPSData = nullptr;
+			for (int i = int(lFilesSortedByDateTime.size()) - 1; i >= 0; --i)
+			{
+				ESFileInfo* lFileInfo = lFilesSortedByDateTime[i];
+				if (lFileInfo->mExif.mGeoLocationGuessed)
+				{
+					if(lLastFileWithGPSData)
+					{
+						quint64 lTimeDiff = lLastFileWithGPSData->mExif.mDateTime - lFileInfo->mExif.mDateTime;
+						if (lTimeDiff < cMaxTimeDiffInSeconds)
+						{
+							if(lTimeDiff < lFilesGeoLocDateTimeDiff[i])
+								lFileInfo->mExif.mGeoLocation = lLastFileWithGPSData->mExif.mGeoLocation;
+						}
+						else
+						{
+							lLastFileWithGPSData = nullptr;
+						}
+					}
+				}
+				else if (lFileInfo->mExif.mGeoLocation.mLatitude != 0.f || lFileInfo->mExif.mGeoLocation.mLongitude != 0.f)
+				{
+					lLastFileWithGPSData = lFileInfo;
+				}
+			}
+
+			mFilesMutex.unlock();
 
 			mUsefullExifVersion = USEFULLEXIF_VERSION;
 
@@ -401,6 +477,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mExif.mFocalLengthIn35mm);
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLatitude);
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLongitude);
+			if(lDatabaseVersion >= 11)
+				pSerializer.Serialize(pFileInfo.mExif.mGeoLocationGuessed);
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
 			if(lDatabaseVersion >= 5)
 				pSerializer.Serialize(pFileInfo.mExif.mOrientation);

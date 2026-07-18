@@ -146,6 +146,21 @@ QGeoCoordinate ESImageGridQuickItem::getImageGeoCoordinateAtPos(float pX, float 
 
 /********************************************************************************/
 
+bool ESImageGridQuickItem::isImageGeoCoordinateGuessedAtPos(float pX, float pY) const
+{
+	bool lResult = false;
+	int lIndex = getImageIndexAtPos(pX, pY);
+	if (lIndex >= 0 && lIndex < mImages.size())
+	{
+		const std::shared_ptr<ESImage>& lImage = mImages[lIndex];
+		lResult = lImage->getExif().mGeoLocationGuessed;
+	}
+
+	return lResult;
+}
+
+/********************************************************************************/
+
 int ESImageGridQuickItem::getImageIndexAtPos(float pX, float pY, bool pGetClosestIfNotFound) const
 {
 	int lIndex = -1;

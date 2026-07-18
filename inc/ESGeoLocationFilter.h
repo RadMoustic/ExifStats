@@ -25,10 +25,12 @@ class ESGeoLocationFilter : public ESFilter
 {
 public:
 	QGeoShape mGeoShapeFilter;
+	bool mShowGuessedLocation = false;
 
 	virtual void reset() override
 	{
 		mGeoShapeFilter = QGeoShape();
+		mShowGuessedLocation = false;
 	}
 
 	virtual bool isEnabled() const override
@@ -41,6 +43,8 @@ public:
 		return		mGeoShapeFilter.isValid()
 				&&	(	(	pFile.mExif.mGeoLocation.mLatitude == 0
 						&&	pFile.mExif.mGeoLocation.mLongitude == 0)
+					||	(	!mShowGuessedLocation
+						&& pFile.mExif.mGeoLocationGuessed)
 					||	!mGeoShapeFilter.contains(QGeoCoordinate(pFile.mExif.mGeoLocation.mLatitude, pFile.mExif.mGeoLocation.mLongitude)));
 	}
 

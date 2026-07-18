@@ -27,6 +27,7 @@
 
 static const char* scPresetExtension = "espreset";
 static const char* scDefaultPresetName = "__Default__";
+static const char* scPresetsFolderName = "Presets";
 
 /********************************************************************************/
 /********************************************************************************/
@@ -52,7 +53,8 @@ ESQmlBinder::ESQmlBinder()
 	[this]()
 	{
 		updateStats(true);
-		updateFiltersFromData();
+		updateMinMaxFromData();
+		resetFiltersMinMax();
 		emit processedFoldersChanged();
 	}, Qt::QueuedConnection);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
@@ -425,10 +427,20 @@ void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
 #ifdef HNSWLIB_ENABLED
 			lFiles.emplace_back(mTagsFilter.getHNSWIndexFilePath(), "");
 #endif // HNSWLIB_ENABLED
+
+			// Add image cache
 			for(const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
 				if (std::shared_ptr<ESImage> lImage = lImageCache.getImage(lFileInfo.mFilePath))
 					if(lImage->hasCacheFile())
-						lFiles.emplace_back(lImage->getImageCachePath(), "ImageCache");
+						lFiles.emplace_back(lImage->getImageCachePath(), CACHE_IMAGE_FOLDER_NAME);
+			// Add presets
+			QDir lDir(getPresetsFolderPath());
+			if (lDir.exists())
+			{
+				QStringList lPresetFiles = lDir.entryList(QStringList() << QString("*.%1").arg(scPresetExtension), QDir::Files);
+				for (const QString& lPresetFile : lPresetFiles)
+					lFiles.emplace_back(QString("%1/%2").arg(getPresetsFolderPath()).arg(lPresetFile), scPresetsFolderName);
+			}
 
 			setExportingProgress(0.f);
 			int lFileIndex = 0;
@@ -647,58 +659,68 @@ void ESQmlBinder::themeHasChanged()
 
 /********************************************************************************/
 
-void ESQmlBinder::updateFiltersFromData()
+void ESQmlBinder::updateMinMaxFromData()
 {
-	m35mmFilter.mFilterFrom = m35mmStat.mMinMaxComp.getMinValue();
-	m35mmMin = m35mmFilter.mFilterFrom;
-	emit propertyFocalLengthFromChanged();
+	m35mmMin = m35mmStat.mMinMaxComp.getMinValue();
+	m35mmMax = m35mmStat.mMinMaxComp.getMaxValue();
 
-	m35mmFilter.mFilterTo = m35mmStat.mMinMaxComp.getMaxValue();
-	m35mmMax = m35mmFilter.mFilterTo;
-	emit propertyFocalLengthToChanged();
+	mApertureMin = mApertureStat.mMinMaxComp.getMinValue();
+	mApertureMax = mApertureStat.mMinMaxComp.getMaxValue();
 
-	mApertureFilter.mFilterFrom = mApertureStat.mMinMaxComp.getMinValue();
-	mApertureMin = mApertureFilter.mFilterFrom;
+	mISOSpeedMin = mISOSpeedStat.mMinMaxComp.getMinValue();
+	mISOSpeedMax = mISOSpeedStat.mMinMaxComp.getMaxValue();
+
+	mShutterSpeedMin = mShutterSpeedStat.mMinMaxComp.getMinValue();
+	mShutterSpeedMax = mShutterSpeedStat.mMinMaxComp.getMaxValue();
+
+	mWidthMin = mResolutionStat.mMinMaxWidthComp.getMinValue();
+	mWidthMax = mResolutionStat.mMinMaxWidthComp.getMaxValue();
+	
+	mHeightMin = mResolutionStat.mMinMaxHeightComp.getMinValue();
+	mHeightMax = mResolutionStat.mMinMaxHeightComp.getMaxValue();
+
+	mDateTimeMin = mDateTimeStat.mMinMaxComp.getMinValue();
+	mDateTimeMax = mDateTimeStat.mMinMaxComp.getMaxValue();
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::resetFiltersMinMax()
+{
+	m35mmFilter.mFilterFrom = m35mmMin;
+	m35mmFilter.mFilterTo = m35mmMax;
+
+	mApertureFilter.mFilterFrom = mApertureMin;
+	mApertureFilter.mFilterTo = mApertureMax;
+
+	mISOSpeedFilter.mFilterFrom = mISOSpeedMin;
+	mISOSpeedFilter.mFilterTo = mISOSpeedMax;
+
+	mShutterSpeedFilter.mFilterFrom = mShutterSpeedMin;
+	mShutterSpeedFilter.mFilterTo = mShutterSpeedMax;
+
+	mWidthFilter.mFilterFrom = mWidthMin;
+	mWidthFilter.mFilterTo = mWidthMax;
+
+	mHeightFilter.mFilterFrom = mHeightMin;
+	mHeightFilter.mFilterTo = mHeightMax;
+
+	mDateTimeFilter.mFilterFrom = mDateTimeMin;
+	mDateTimeFilter.mFilterTo = mDateTimeMax;
+
 	emit propertyApertureFromChanged();
-
-	mApertureFilter.mFilterTo = mApertureStat.mMinMaxComp.getMaxValue();
-	mApertureMax = mApertureFilter.mFilterTo;
 	emit propertyApertureToChanged();
-
-	mISOSpeedFilter.mFilterFrom = mISOSpeedStat.mMinMaxComp.getMinValue();
-	mISOSpeedMin = mISOSpeedFilter.mFilterFrom;
+	emit propertyFocalLengthFromChanged();
+	emit propertyFocalLengthToChanged();
 	emit propertyISOSpeedFromChanged();
-
-	mISOSpeedFilter.mFilterTo = mISOSpeedStat.mMinMaxComp.getMaxValue();
-	mISOSpeedMax = mISOSpeedFilter.mFilterTo;
 	emit propertyISOSpeedToChanged();
-
-	mShutterSpeedFilter.mFilterFrom = mShutterSpeedStat.mMinMaxComp.getMinValue();
-	mShutterSpeedMin = mShutterSpeedFilter.mFilterFrom;
 	emit propertyShutterSpeedFromChanged();
-
-	mShutterSpeedFilter.mFilterTo = mShutterSpeedStat.mMinMaxComp.getMaxValue();
-	mShutterSpeedMax = mShutterSpeedFilter.mFilterTo;
 	emit propertyShutterSpeedToChanged();
-
-	mWidthFilter.mFilterFrom = mResolutionStat.mMinMaxWidthComp.getMinValue();
-	mWidthMin = mWidthFilter.mFilterFrom;
 	emit propertyWidthFromChanged();
-
-	mWidthFilter.mFilterTo = mResolutionStat.mMinMaxWidthComp.getMaxValue();
-	mWidthMax = mWidthFilter.mFilterTo;
 	emit propertyWidthToChanged();
-
-	mHeightFilter.mFilterFrom = mResolutionStat.mMinMaxHeightComp.getMinValue();
-	mHeightMin = mHeightFilter.mFilterFrom;
 	emit propertyHeightFromChanged();
-
-	mHeightFilter.mFilterTo = mResolutionStat.mMinMaxHeightComp.getMaxValue();
-	mHeightMax = mHeightFilter.mFilterTo;
 	emit propertyHeightToChanged();
-
-	mDateTimeFilter.mFilterTo = mDateTimeStat.mMinMaxComp.getMaxValue();
-	mDateTimeMax = mDateTimeFilter.mFilterTo;
+	emit timeFromChanged();
 	emit timeToChanged();
 }
 
@@ -1192,7 +1214,8 @@ void ESQmlBinder::resetFilters()
 	for (ESFilter* lFilter : mFilters)
 		lFilter->reset();
 	updateStats(true);
-	updateFiltersFromData();
+	updateMinMaxFromData();
+	resetFiltersMinMax();
 
 	emit propertyPathInclusiveFiltersChanged();
 	emit propertyTagsSearchStringChanged();
@@ -1205,6 +1228,7 @@ void ESQmlBinder::resetFilters()
 	emit propertyISOSpeedFilterOutInvalidChanged();
 	emit propertyTimeFilterOutInvalidChanged();
 	emit propertyGeoShapeFilterChanged();
+	emit propertyShowGuessedLocationChanged();
 }
 
 /********************************************************************************/
@@ -1221,6 +1245,28 @@ bool ESQmlBinder::loadDefaultFilters()
 {
 	return loadFilters(scDefaultPresetName);
 }
+
+/********************************************************************************/
+
+#ifdef Q_OS_ANDROID
+void ESQmlBinder::openArchiveZip() const
+{
+	if (!mArchiveZip)
+	{
+		QSettings lSettings;
+		QString lDataBasePath = lSettings.value(ESDatabase::msReadOnlyDatabaseFolderSettingsKey).toString();
+		if (!lDataBasePath.isEmpty())
+		{
+			mArchiveZip.reset(new QuaZip(lDataBasePath));
+			if (!mArchiveZip->open(QuaZip::mdUnzip))
+			{
+				mArchiveZip.reset();
+				qWarning() << "Cannot open ExifStats archive file";
+			}
+		}
+	}
+}
+#endif // Q_OS_ANDROID
 
 /********************************************************************************/
 
@@ -1244,6 +1290,19 @@ bool ESQmlBinder::saveFilters(QString pPresetName)
 		qWarning("Preset name contains invalid characters: %s", qUtf8Printable(pPresetName));
 		return false;
 	}
+
+#ifdef Q_OS_ANDROID
+	openArchiveZip();
+	if(mArchiveZip)
+	{
+		QString lArchivePresetPath = QString("%1/%2.%3").arg(scPresetsFolderName).arg(pPresetName).arg(scPresetExtension);
+		if (mArchiveZip->setCurrentFile(lArchivePresetPath))
+		{
+			qWarning("Cannot replace a preset from the archive: %s", qUtf8Printable(lArchivePresetPath));
+			return false;
+		}
+	}
+#endif // Q_OS_ANDROID
 
 	QJsonObject lPresetJson;
 	for(const ESFilter* lFilter: mFilters)
@@ -1278,23 +1337,46 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 		qWarning("Preset name empty: %s", qUtf8Printable(pPresetName));
 		return false;
 	}
-	QString lPresetFilePath = getPresetFilePathPath(pPresetName);
-	QFile lPresetFile(lPresetFilePath);
-	if (!lPresetFile.open(QIODevice::ReadOnly))
+
+	QByteArray lPresetData;
+
+#ifdef Q_OS_ANDROID
+	openArchiveZip();
+	if (mArchiveZip)
 	{
-		qWarning("Couldn't open preset file: %s", qUtf8Printable(lPresetFilePath));
-		return false;
+		QString lArchivePresetPath = QString("%1/%2.%3").arg(scPresetsFolderName).arg(pPresetName).arg(scPresetExtension);
+		if (mArchiveZip->setCurrentFile(lArchivePresetPath))
+		{
+			QuaZipFile lPresetFile(mArchiveZip.get());
+			if (!lPresetFile.open(QIODevice::ReadOnly))
+				qWarning("Couldn't open archive preset file: %s", qUtf8Printable(lArchivePresetPath));
+			else
+				lPresetData = lPresetFile.readAll();
+		}
 	}
-	QByteArray lPresetData = lPresetFile.readAll();
+#endif // Q_OS_ANDROID
+
+	if(lPresetData.isEmpty())
+	{
+		QString lPresetFilePath = getPresetFilePathPath(pPresetName);
+		QFile lPresetFile(lPresetFilePath);
+		if (!lPresetFile.open(QIODevice::ReadOnly))
+		{
+			qWarning("Couldn't open preset file: %s", qUtf8Printable(lPresetFilePath));
+			return false;
+		}
+		lPresetData = lPresetFile.readAll();
+	}
 	QJsonDocument lPresetDoc = QJsonDocument::fromJson(lPresetData);
 	if (lPresetDoc.isNull() || !lPresetDoc.isObject())
 	{
-		qWarning("Couldn't parse preset file: %s", qUtf8Printable(lPresetFilePath));
+		qWarning("Couldn't parse preset file: %s", qUtf8Printable(pPresetName));
 		return false;
 	}
 	
 	for (ESFilter* lFilter : mFilters)
 		lFilter->reset();
+	resetFiltersMinMax();
 	
 	QJsonObject lPresetJson = lPresetDoc.object();
 	for (ESFilter* lFilter : mFilters)
@@ -1312,6 +1394,14 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	emit propertyApertureToChanged();
 	emit propertyFocalLengthFromChanged();
 	emit propertyFocalLengthToChanged();
+	emit propertyISOSpeedFromChanged();
+	emit propertyISOSpeedToChanged();
+	emit propertyShutterSpeedFromChanged();
+	emit propertyShutterSpeedToChanged();
+	emit propertyWidthFromChanged();
+	emit propertyWidthToChanged();
+	emit propertyHeightFromChanged();
+	emit propertyHeightToChanged();
 	emit timeFromChanged();
 	emit timeToChanged();
 
@@ -1326,6 +1416,7 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	emit propertyISOSpeedFilterOutInvalidChanged();
 	emit propertyTimeFilterOutInvalidChanged();
 	emit propertyGeoShapeFilterChanged();
+	emit propertyShowGuessedLocationChanged();
 
 	return true;
 }
@@ -1370,6 +1461,23 @@ QStringList ESQmlBinder::getFiltersPresets() const
 			continue;
 		lResult.push_back(lPresetName);
 	}
+
+#ifdef Q_OS_ANDROID
+	openArchiveZip();
+	if (mArchiveZip)
+	{
+		QStringList lZipFiles = mArchiveZip->getFileNameList();
+		QString lPresetsFolderName = QString("%1/").arg(scPresetsFolderName);
+		QString lPresetExt = QString(".%1").arg(scPresetExtension);
+		for (const QString& lFile : lZipFiles)
+		{
+			if(lFile.startsWith(lPresetsFolderName) && lFile.endsWith(lPresetExt))
+			{
+				lResult.push_back(lFile.mid(lPresetsFolderName.length(), lFile.length() - lPresetsFolderName.length() - lPresetExt.length()));
+			}
+		}
+	}
+#endif // Q_OS_ANDROID
 	return lResult;
 }
 
@@ -1377,7 +1485,7 @@ QStringList ESQmlBinder::getFiltersPresets() const
 
 QString ESQmlBinder::getPresetsFolderPath() const
 {
-	return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QDir::separator() + "Presets";
+	return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QDir::separator() + scPresetsFolderName;
 }
 
 /********************************************************************************/

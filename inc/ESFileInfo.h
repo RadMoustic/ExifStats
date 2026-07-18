@@ -55,25 +55,26 @@ enum ESExifOrientation : unsigned short
 	Undefined = 9
 };
 
-constexpr uint USEFULLEXIF_VERSION = 5;
+constexpr uint USEFULLEXIF_VERSION = 6;
 struct ESUsefullExif
 {
 	ESStringId mCameraModel;
 	ESStringId mLensModel;
-	quint64 mDateTime;
-	float mShutterSpeedValue;
-	float mFNumber;
+	quint64 mDateTime = 0;
+	float mShutterSpeedValue = 0.f;
+	float mFNumber = 0.f;
 	struct GeoLocation
 	{
-		float mLatitude;
-		float mLongitude;
+		float mLatitude = 0.f;
+		float mLongitude = 0.f;
 	} mGeoLocation;
-	quint16 mFocalLengthIn35mm;
-	quint16 mFocalLength;
-	ESExifOrientation mOrientation;
-	unsigned short mISOSpeedRatings;
-	unsigned short mWidth;
-	unsigned short mHeight;
+	quint16 mFocalLengthIn35mm = 0;
+	quint16 mFocalLength = 0;
+	ESExifOrientation mOrientation = Unspecified;
+	unsigned short mISOSpeedRatings = 0;
+	unsigned short mWidth = 0;
+	unsigned short mHeight = 0;
+	bool mGeoLocationGuessed = false;
 
 	unsigned short getOrientedWidth() const
 	{

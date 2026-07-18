@@ -117,6 +117,7 @@ public:
 	Q_INVOKABLE float getMinImageSize() const;
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
 	Q_INVOKABLE QGeoCoordinate getImageGeoCoordinateAtPos(float pX, float pY) const;
+	Q_INVOKABLE bool isImageGeoCoordinateGuessedAtPos(float pX, float pY) const;
 	Q_INVOKABLE QString getPreviousImage(QString pImage, int pPreloadCountAround) const;
 	Q_INVOKABLE QString getNextImage(QString pImage, int pPreloadCountAround) const;
 
