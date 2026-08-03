@@ -651,10 +651,19 @@ Pane
 					visible: false
 					
 					mapItem: mapRoot
+					imageViewerItem: imageViewerRoot
 					
 					SplitView.preferredWidth: 200
 					SplitView.preferredHeight: parent.height
 					SplitView.minimumWidth: 270
+				}
+				ImageViewer
+				{
+					id: imageViewerRoot
+					SplitView.preferredWidth: 200
+					SplitView.preferredHeight: parent.height
+					SplitView.minimumWidth: 270
+					
 				}
 			}
 		}

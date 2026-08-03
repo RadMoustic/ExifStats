@@ -24,6 +24,8 @@ public:
 	T mFilterTo;
 
 	bool mFilterOutInvalidValues;
+	T mMinValue = std::numeric_limits<T>::min();
+	T mMaxValue = std::numeric_limits<T>::max();
 
 	ESFromToFilter()
 	 : mFilterFrom(std::numeric_limits<T>::min())
@@ -43,13 +45,13 @@ public:
 
 	virtual bool isEnabled() const override
 	{
-		return mFilterFrom != std::numeric_limits<T>::min() || mFilterTo != std::numeric_limits<T>::max() || (mInvalidValueSet && mFilterOutInvalidValues);
+		return mFilterFrom != mMinValue || mFilterTo != mMaxValue || (mInvalidValueSet && mFilterOutInvalidValues);
 	}
 
 	virtual void reset() override
 	{
-		mFilterFrom = std::numeric_limits<T>::min();
-		mFilterTo = std::numeric_limits<T>::max();
+		mFilterFrom = mMinValue;
+		mFilterTo = mMaxValue;
 		mFilterOutInvalidValues = false;
 	}
 

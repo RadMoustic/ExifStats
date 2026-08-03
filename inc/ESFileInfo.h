@@ -55,7 +55,7 @@ enum ESExifOrientation : unsigned short
 	Undefined = 9
 };
 
-constexpr uint USEFULLEXIF_VERSION = 6;
+constexpr uint USEFULLEXIF_VERSION = 10;
 struct ESUsefullExif
 {
 	ESStringId mCameraModel;
@@ -67,6 +67,7 @@ struct ESUsefullExif
 	{
 		float mLatitude = 0.f;
 		float mLongitude = 0.f;
+		bool isValid() const { return mLatitude != 0.f || mLongitude != 0.f; }
 	} mGeoLocation;
 	quint16 mFocalLengthIn35mm = 0;
 	quint16 mFocalLength = 0;

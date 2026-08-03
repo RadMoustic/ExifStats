@@ -201,14 +201,15 @@ ESImageGridQuickItem
 				
 			onTapped: (pEventPoint, pButton) =>
 			{
-				if(MainQmlBinder.isMobile())
+				if(imageViewerItem)
 				{
 					var selectedFile = imageGrid.getImageFileAtPos(pEventPoint.position.x, pEventPoint.position.y);
 					if(selectedFile !== "")
 					{
 						imageViewerItem.visible = true;
 						imageViewerItem.imageViewerChild.mImagePath = selectedFile;
-						MainQmlBinder.mFullScreen = true;
+						if(MainQmlBinder.isMobile())
+							MainQmlBinder.mFullScreen = true;
 					}
 				}
 				else if (pButton == Qt.RightButton)

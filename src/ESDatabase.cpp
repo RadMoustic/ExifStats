@@ -164,7 +164,15 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 					easyexif::EXIFInfo lExifData;
 					lFileInfo.mReadResult = readFileExif(lFileInfo.mFilePath, lExifData);
 					if (lFileInfo.mReadResult != eSuccess)
+					{
+						QImage lImage(lFileInfo.mFilePath.getString());
+						if (!lImage.isNull())
+						{
+							lFileInfo.mExif.mWidth = lImage.width();
+							lFileInfo.mExif.mHeight = lImage.height();
+						}
 						return;
+					}
 
 					lFileInfo.mExif = convertToUsefullExif(lExifData);
 
@@ -235,6 +243,12 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			std::vector<ESFileInfo*> lFilesSortedByDateTime;
 			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
 			{
+				if(lProcessedFile.second.mExif.mGeoLocationGuessed)
+				{
+					lProcessedFile.second.mExif.mGeoLocationGuessed = false;
+					lProcessedFile.second.mExif.mGeoLocation.mLatitude = 0.f;
+					lProcessedFile.second.mExif.mGeoLocation.mLongitude = 0.f;
+				}
 				if (	lProcessedFile.second.mReadResult == eSuccess
 					&&	lProcessedFile.second.mExif.mDateTime > 0)
 				{
@@ -248,7 +262,8 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 
 			// Guess GeoLocation for files with missing GPS data
 			constexpr int cMaxTimeDiffInSeconds = 3 * 60 * 60; // 3 hours
-			constexpr float cMaxGeoDistance = 100000.f; // 100km
+			constexpr int cMaxGeoDistanceTimeDiffInSeconds = 10 * 60; // 10 min
+			constexpr float cMaxGeoDistance = 10000.f; // 10km
 			
 			std::vector<quint64> lFilesGeoLocDateTimeDiff;
 			lFilesGeoLocDateTimeDiff.resize(lFilesSortedByDateTime.size());
@@ -257,7 +272,7 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			for (int i = 0; i < lFilesSortedByDateTime.size(); ++i)
 			{
 				ESFileInfo* lFileInfo = lFilesSortedByDateTime[i];
-				if (lFileInfo->mExif.mGeoLocation.mLatitude == 0.f && lFileInfo->mExif.mGeoLocation.mLongitude == 0.f)
+				if (!lFileInfo->mExif.mGeoLocation.isValid())
 				{
 					if(lLastFileWithGPSData)
 					{
@@ -284,23 +299,44 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			for (int i = int(lFilesSortedByDateTime.size()) - 1; i >= 0; --i)
 			{
 				ESFileInfo* lFileInfo = lFilesSortedByDateTime[i];
-				if (lFileInfo->mExif.mGeoLocationGuessed)
+				if (	lFileInfo->mExif.mGeoLocationGuessed
+					||	!lFileInfo->mExif.mGeoLocation.isValid())
 				{
 					if(lLastFileWithGPSData)
 					{
+						float lDist = QGeoCoordinate(lFileInfo->mExif.mGeoLocation.mLatitude, lFileInfo->mExif.mGeoLocation.mLongitude)
+							.distanceTo(QGeoCoordinate(lLastFileWithGPSData->mExif.mGeoLocation.mLatitude, lLastFileWithGPSData->mExif.mGeoLocation.mLongitude));
+						
+						// The guessed geo location is too far from the next file with GPS data, we discard it if the time diff is also too big
 						quint64 lTimeDiff = lLastFileWithGPSData->mExif.mDateTime - lFileInfo->mExif.mDateTime;
-						if (lTimeDiff < cMaxTimeDiffInSeconds)
+						if(lFileInfo->mExif.mGeoLocationGuessed && lDist > cMaxGeoDistance)
 						{
-							if(lTimeDiff < lFilesGeoLocDateTimeDiff[i])
+							if (lTimeDiff <= cMaxGeoDistanceTimeDiffInSeconds && lTimeDiff < lFilesGeoLocDateTimeDiff[i])
+							{
 								lFileInfo->mExif.mGeoLocation = lLastFileWithGPSData->mExif.mGeoLocation;
+								lFileInfo->mExif.mGeoLocationGuessed = true;
+							}
+							else if(lFilesGeoLocDateTimeDiff[i] > cMaxGeoDistanceTimeDiffInSeconds)
+							{
+								lFileInfo->mExif.mGeoLocationGuessed = false;
+								lFileInfo->mExif.mGeoLocation.mLatitude = 0.f;
+								lFileInfo->mExif.mGeoLocation.mLongitude = 0.f;
+							}
 						}
 						else
 						{
-							lLastFileWithGPSData = nullptr;
+							if (lTimeDiff < cMaxTimeDiffInSeconds)
+							{
+								if(lTimeDiff < lFilesGeoLocDateTimeDiff[i])
+								{
+									lFileInfo->mExif.mGeoLocation = lLastFileWithGPSData->mExif.mGeoLocation;
+									lFileInfo->mExif.mGeoLocationGuessed = true;
+								}
+							}
 						}
 					}
 				}
-				else if (lFileInfo->mExif.mGeoLocation.mLatitude != 0.f || lFileInfo->mExif.mGeoLocation.mLongitude != 0.f)
+				else if (lFileInfo->mExif.mGeoLocation.isValid())
 				{
 					lLastFileWithGPSData = lFileInfo;
 				}

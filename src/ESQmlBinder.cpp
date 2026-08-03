@@ -52,9 +52,7 @@ ESQmlBinder::ESQmlBinder()
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
 	{
-		updateStats(true);
-		updateMinMaxFromData();
-		resetFiltersMinMax();
+		resetFilters();
 		emit processedFoldersChanged();
 	}, Qt::QueuedConnection);
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::propertyProcessingChanged, this, &ESQmlBinder::processingChanged);
@@ -661,67 +659,33 @@ void ESQmlBinder::themeHasChanged()
 
 void ESQmlBinder::updateMinMaxFromData()
 {
-	m35mmMin = m35mmStat.mMinMaxComp.getMinValue();
-	m35mmMax = m35mmStat.mMinMaxComp.getMaxValue();
+	m35mmFilter.mMinValue = m35mmStat.mMinMaxComp.getMinValue();
+	m35mmFilter.mMaxValue = m35mmStat.mMinMaxComp.getMaxValue();
+	m35mmFilter.reset();
 
-	mApertureMin = mApertureStat.mMinMaxComp.getMinValue();
-	mApertureMax = mApertureStat.mMinMaxComp.getMaxValue();
+	mApertureFilter.mMinValue = mApertureStat.mMinMaxComp.getMinValue();
+	mApertureFilter.mMaxValue = mApertureStat.mMinMaxComp.getMaxValue();
+	mApertureFilter.reset();
 
-	mISOSpeedMin = mISOSpeedStat.mMinMaxComp.getMinValue();
-	mISOSpeedMax = mISOSpeedStat.mMinMaxComp.getMaxValue();
+	mISOSpeedFilter.mMinValue = mISOSpeedStat.mMinMaxComp.getMinValue();
+	mISOSpeedFilter.mMaxValue = mISOSpeedStat.mMinMaxComp.getMaxValue();
+	mISOSpeedFilter.reset();
 
-	mShutterSpeedMin = mShutterSpeedStat.mMinMaxComp.getMinValue();
-	mShutterSpeedMax = mShutterSpeedStat.mMinMaxComp.getMaxValue();
+	mShutterSpeedFilter.mMinValue = mShutterSpeedStat.mMinMaxComp.getMinValue();
+	mShutterSpeedFilter.mMaxValue = mShutterSpeedStat.mMinMaxComp.getMaxValue();
+	mShutterSpeedFilter.reset();
 
-	mWidthMin = mResolutionStat.mMinMaxWidthComp.getMinValue();
-	mWidthMax = mResolutionStat.mMinMaxWidthComp.getMaxValue();
+	mWidthFilter.mMinValue = mResolutionStat.mMinMaxWidthComp.getMinValue();
+	mWidthFilter.mMaxValue = mResolutionStat.mMinMaxWidthComp.getMaxValue();
+	mWidthFilter.reset();
 	
-	mHeightMin = mResolutionStat.mMinMaxHeightComp.getMinValue();
-	mHeightMax = mResolutionStat.mMinMaxHeightComp.getMaxValue();
+	mHeightFilter.mMinValue = mResolutionStat.mMinMaxHeightComp.getMinValue();
+	mHeightFilter.mMaxValue = mResolutionStat.mMinMaxHeightComp.getMaxValue();
+	mHeightFilter.reset();
 
-	mDateTimeMin = mDateTimeStat.mMinMaxComp.getMinValue();
-	mDateTimeMax = mDateTimeStat.mMinMaxComp.getMaxValue();
-}
-
-/********************************************************************************/
-
-void ESQmlBinder::resetFiltersMinMax()
-{
-	m35mmFilter.mFilterFrom = m35mmMin;
-	m35mmFilter.mFilterTo = m35mmMax;
-
-	mApertureFilter.mFilterFrom = mApertureMin;
-	mApertureFilter.mFilterTo = mApertureMax;
-
-	mISOSpeedFilter.mFilterFrom = mISOSpeedMin;
-	mISOSpeedFilter.mFilterTo = mISOSpeedMax;
-
-	mShutterSpeedFilter.mFilterFrom = mShutterSpeedMin;
-	mShutterSpeedFilter.mFilterTo = mShutterSpeedMax;
-
-	mWidthFilter.mFilterFrom = mWidthMin;
-	mWidthFilter.mFilterTo = mWidthMax;
-
-	mHeightFilter.mFilterFrom = mHeightMin;
-	mHeightFilter.mFilterTo = mHeightMax;
-
-	mDateTimeFilter.mFilterFrom = mDateTimeMin;
-	mDateTimeFilter.mFilterTo = mDateTimeMax;
-
-	emit propertyApertureFromChanged();
-	emit propertyApertureToChanged();
-	emit propertyFocalLengthFromChanged();
-	emit propertyFocalLengthToChanged();
-	emit propertyISOSpeedFromChanged();
-	emit propertyISOSpeedToChanged();
-	emit propertyShutterSpeedFromChanged();
-	emit propertyShutterSpeedToChanged();
-	emit propertyWidthFromChanged();
-	emit propertyWidthToChanged();
-	emit propertyHeightFromChanged();
-	emit propertyHeightToChanged();
-	emit timeFromChanged();
-	emit timeToChanged();
+	mDateTimeFilter.mMinValue = mDateTimeStat.mMinMaxComp.getMinValue();
+	mDateTimeFilter.mMaxValue = mDateTimeStat.mMinMaxComp.getMaxValue();
+	mDateTimeFilter.reset();
 }
 
 /********************************************************************************/
@@ -743,10 +707,7 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 	for (ESStat* lStat : mStats)
 		lStat->reset();
 	for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
-	{
-		if(lFileInfo.mReadResult != eSuccess)
-			continue;
-			
+	{		
 		bool lAddFile = true;
 		bool lKeepCategory = false;
 		if(!pIgnoreFilters)
@@ -764,12 +725,19 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 		}
 		if(lAddFile || lKeepCategory)
 		{
-			for (ESStat* lStat : mStats)
+			if (lFileInfo.mReadResult != eSuccess)
 			{
-				if(lAddFile)
-					lStat->addFile(lFileInfo);
-				else if (lKeepCategory)
-					lStat->addFileCategory(lFileInfo);
+				mListFilesStat.addFile(lFileInfo);
+			}
+			else
+			{
+				for (ESStat* lStat : mStats)
+				{
+					if(lAddFile)
+						lStat->addFile(lFileInfo);
+					else if (lKeepCategory)
+						lStat->addFileCategory(lFileInfo);
+				}
 			}
 		}
 	}
@@ -903,14 +871,14 @@ QVector<QString> ESQmlBinder::getApertureLabels() const
 
 float ESQmlBinder::getMinAperture() const
 {
-	return mApertureMin;
+	return mApertureFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 float ESQmlBinder::getMaxAperture() const
 {
-	return mApertureMax;
+	return mApertureFilter.mMaxValue;
 }
 
 /********************************************************************************/
@@ -931,14 +899,14 @@ QVector<QString> ESQmlBinder::getISOSpeedLabels() const
 
 int ESQmlBinder::getMinISOSpeed() const
 {
-	return mISOSpeedMin;
+	return mISOSpeedFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMaxISOSpeed() const
 {
-	return mISOSpeedMax;
+	return mISOSpeedFilter.mMaxValue;
 }
 
 /********************************************************************************/
@@ -966,42 +934,42 @@ QVector<float> ESQmlBinder::getShutterSpeedValues() const
 
 float ESQmlBinder::getMinShutterSpeed() const
 {
-	return mShutterSpeedMin;
+	return mShutterSpeedFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 float ESQmlBinder::getMaxShutterSpeed() const
 {
-	return mShutterSpeedMax;
+	return mShutterSpeedFilter.mMaxValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMinWidth() const
 {
-	return mWidthMin;
+	return	mWidthFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMaxWidth() const
 {
-	return mWidthMax;
+	return mWidthFilter.mMaxValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMinHeight() const
 {
-	return mHeightMin;
+	return mHeightFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMaxHeight() const
 {
-	return mHeightMax;
+	return mHeightFilter.mMaxValue;
 }
 
 /********************************************************************************/
@@ -1109,28 +1077,28 @@ QVector<QString> ESQmlBinder::getTimeLabels() const
 
 int ESQmlBinder::getMinFocalLength35mm() const
 {
-	return m35mmMin;
+	return m35mmFilter.mMinValue;
 }
 
 /********************************************************************************/
 
 int ESQmlBinder::getMaxFocalLength35mm() const
 {
-	return m35mmMax;
+	return m35mmFilter.mMaxValue;
 }
 
 /********************************************************************************/
 
 QString ESQmlBinder::getMinTime() const
 {
-	return QDateTime::fromSecsSinceEpoch(mDateTimeMin).toString(ESDateTimeStat::msTimeFormat);
+	return QDateTime::fromSecsSinceEpoch(mDateTimeFilter.mMinValue).toString(ESDateTimeStat::msTimeFormat);
 }
 
 /********************************************************************************/
 
 QString ESQmlBinder::getMaxTime() const
 {
-	return QDateTime::fromSecsSinceEpoch(mDateTimeMax).toString(ESDateTimeStat::msTimeFormat);
+	return QDateTime::fromSecsSinceEpoch(mDateTimeFilter.mMaxValue).toString(ESDateTimeStat::msTimeFormat);
 }
 
 /********************************************************************************/
@@ -1215,7 +1183,21 @@ void ESQmlBinder::resetFilters()
 		lFilter->reset();
 	updateStats(true);
 	updateMinMaxFromData();
-	resetFiltersMinMax();
+	
+	emit propertyApertureFromChanged();
+	emit propertyApertureToChanged();
+	emit propertyFocalLengthFromChanged();
+	emit propertyFocalLengthToChanged();
+	emit propertyISOSpeedFromChanged();
+	emit propertyISOSpeedToChanged();
+	emit propertyShutterSpeedFromChanged();
+	emit propertyShutterSpeedToChanged();
+	emit propertyWidthFromChanged();
+	emit propertyWidthToChanged();
+	emit propertyHeightFromChanged();
+	emit propertyHeightToChanged();
+	emit timeFromChanged();
+	emit timeToChanged();
 
 	emit propertyPathInclusiveFiltersChanged();
 	emit propertyTagsSearchStringChanged();
@@ -1376,7 +1358,6 @@ bool ESQmlBinder::loadFilters(QString pPresetName)
 	
 	for (ESFilter* lFilter : mFilters)
 		lFilter->reset();
-	resetFiltersMinMax();
 	
 	QJsonObject lPresetJson = lPresetDoc.object();
 	for (ESFilter* lFilter : mFilters)

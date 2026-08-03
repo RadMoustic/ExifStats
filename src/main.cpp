@@ -5,6 +5,7 @@
 #include "ESImageCache.h"
 #include "ESImageTaggerManager.h"
 #include "ESCrashHandler.h"
+#include "ESNetServer.h"
 
 // Qt
 #include <QApplication>
@@ -75,16 +76,38 @@ int main(int argc, char* argv[])
 
 	ESStringPool lStringPool;
 
-	ESWindow lMainWindow;
-	lMainWindow.initialize();
-	lMainWindow.show();
+	const bool isServer = lApp.arguments().contains("-server");
 
-	int lAppResult = lApp.exec();
+	int lAppResult = 0;
 
-	ESImageCache::getInstance().stopAndCancelAllLoadings();
-#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-	ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
+	if(isServer)
+	{
+		ESNetServer lServer;
+		if(!lServer.listen(QHostAddress::Any, 12345))
+		{
+			std::cerr << "Failed to start server: " << lServer.errorString().toStdString() << std::endl;
+			return -1;
+		}
+		std::cout << "Server started on port 12345" << std::endl;
+
+		lAppResult = lApp.exec();
+	}
+	else
+	{
+		ESWindow lMainWindow;
+		lMainWindow.initialize();
+		lMainWindow.show();
+
+		lAppResult = lApp.exec();
+	}
+
+	if(!isServer)
+	{
+		ESImageCache::getInstance().stopAndCancelAllLoadings();
+	#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
+		ESImageTaggerManager::getInstance().stopAndCancelAllLoadings();
+	#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
+	}
 
 	QThreadPool::globalInstance()->waitForDone();
 

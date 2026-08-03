@@ -348,28 +348,6 @@ private:
 	ESFromToFilter<unsigned short, ESResolutionStat::ESHeightStat> mHeightFilter;
 	std::vector<ESStat*> mStats;
 	std::vector<ESFilter*> mFilters;
-
-	float mApertureMin;
-	float mApertureMax;
-
-	int m35mmMin;
-	int m35mmMax;
-
-	int mISOSpeedMin;
-	int mISOSpeedMax;
-
-	float mShutterSpeedMin;
-	float mShutterSpeedMax;
-
-	int mWidthMin;
-	int mWidthMax;
-
-	int mHeightMin;
-	int mHeightMax;
-
-	uint64_t mDateTimeMin;
-	uint64_t mDateTimeMax;
-
 #ifdef Q_OS_ANDROID
 	mutable std::unique_ptr<QuaZip> mArchiveZip;
 #endif // Q_OS_ANDROID
@@ -378,7 +356,6 @@ private:
 
 	void updateStats(bool pIgnoreFilters);
 	void updateMinMaxFromData();
-	void resetFiltersMinMax();
 	QString getPresetsFolderPath() const;
 	QString getPresetFilePathPath(const QString& pPresetName) const;
 	void onTaggingProgress(int pLoadedCount, int pLoadingCount);

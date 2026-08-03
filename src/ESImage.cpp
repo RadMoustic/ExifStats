@@ -179,6 +179,18 @@ const ESUsefullExif& ESImage::getExif() const
 
 /********************************************************************************/
 
+float ESImage::getRatio() const
+{
+	if(mExif.mWidth > 0 && mExif.mHeight > 0 )
+		return mExif.getOrientedRatio();
+	else if(mImage)
+		return float(mImage->width()) / float(mImage->height());
+	else
+		return 1.0f;
+}
+
+/********************************************************************************/
+
 bool ESImage::hasCacheFile() const
 {
 	if(!mCacheFileChecked)

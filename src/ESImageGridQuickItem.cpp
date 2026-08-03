@@ -405,7 +405,7 @@ void ESImageGridQuickItem::updateInternal()
 						int lImageIdx = i * mNbColumns + j;
 						if(lImageIdx >= lNbImages)
 							break;
-						float lRatio = mImages[lImageIdx]->getExif().getOrientedRatio();
+						float lRatio = mImages[lImageIdx]->getRatio();
 						float lImageHeight = mNbColumns == 1 ? 1.f / lRatio : std::min(1.0f, 1.f / lRatio);
 				
 						lRowHeight = std::max(lRowHeight, lImageHeight);
@@ -428,7 +428,7 @@ void ESImageGridQuickItem::updateInternal()
 			}
 			else
 			{
-				lNewContentHeight = mImagesYOffsets.back() + (mImageSize / mImages.back()->getExif().getOrientedRatio());
+				lNewContentHeight = mImagesYOffsets.back() + (mImageSize / mImages.back()->getRatio());
 			}
 
 			lNewContentHeight *= mImageSize;
@@ -692,7 +692,7 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 				std::shared_ptr<ESImage>& lImageWrapper = lItem->mImages[lIndex];
 				lImageWrapper->updateLastUsed();
 
-				float lImageRatio = lImageWrapper->getExif().getOrientedRatio();
+				float lImageRatio = lImageWrapper->getRatio();
 				float lImageQuadSize = lItem->mImageSize;
 
 				float lX = lCol * lItem->mImageSize;

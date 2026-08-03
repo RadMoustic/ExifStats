@@ -44,6 +44,7 @@ public:
 	ESStringId getImagePath() const;
 	QString getImageCachePath() const;
 	const ESUsefullExif& getExif() const;
+	float getRatio() const;
 	
 	bool hasCacheFile() const;
 

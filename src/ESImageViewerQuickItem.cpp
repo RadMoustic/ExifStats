@@ -3,9 +3,11 @@
 // ES
 #include "ESImage.h"
 #include "ESImageCache.h"
+#include "ESNetClient.h"
 
 // Qt
 #include <QPainter>
+#include <QtConcurrent>
 
 /********************************************************************************/
 
@@ -15,7 +17,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 	, mGeometryHasChanged(false)
 	, mImageRatio(1.f)
 {
-
+	setTextureSize(textureSize()*3);
 }
 
 /********************************************************************************/
@@ -29,9 +31,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 
 	if (mValid && mImage && mImage->isLoaded())
 	{
-		std::shared_ptr<const QImage> lImage = mImage->getImage();
-		if(!lImage)
-			return;
+		const QImage* lImage = mOriginalImage.isNull() ? mImage->getImage().get() : &mOriginalImage;
 		float lW = width();
 		float lH = height();
 		pPainter->fillRect(pPainter->viewport(), Qt::black);
@@ -71,11 +71,22 @@ void ESImageViewerQuickItem::updateInternal()
 		if(mImage)
 			disconnect(mImageLoadedConnection);
 		mImage = ESImageCache::getInstance().getImage(mImagePath);
+		mOriginalImage = QImage();
+
+		mOriginalImageDownloadRequest = ESNetClient::downloadOriginalImage(mImagePath, "192.168.1.15", 12345,
+		[this](const QImage& pImage)
+		{
+			if (!pImage.isNull())
+			{
+				mOriginalImage = pImage;
+				QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
+			}
+		});
 
 		const ESUsefullExif& lExif = mImage->getExif();
 		setImageWidth(lExif.getOrientedWidth());
 		setImageHeight(lExif.getOrientedHeight());
-		setImageRatio(lExif.getOrientedRatio());
+		setImageRatio(mImage->getRatio());
 		setCameraModel(lExif.mCameraModel.getString());
 		setLensModel(lExif.mLensModel.getString());
 		setDateTime(QDateTime::fromSecsSinceEpoch(lExif.mDateTime).toString("yyyy/MM/dd hh:mm:ss"));
@@ -93,7 +104,11 @@ void ESImageViewerQuickItem::updateInternal()
 		mImage->updateLastUsed();
 		if (!mImage->isLoaded() && !mImage->isLoading())
 			mImage->loadImage();
-		mImageLoadedConnection = connect(mImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]() { update(); });
+		update();
+		mImageLoadedConnection = connect(mImage.get(), &ESImage::imageLoadedOrCanceled, this, [this]()
+		{
+			update();
+		});
 	}
 
 	mDataHasChanged = false;

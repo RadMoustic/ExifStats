@@ -17,6 +17,7 @@
 /********************************************************************************/
 
 class ESImage;
+class ESNetClientOriginalImageDownloadRequest;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -62,6 +63,8 @@ private:
 	/******************************** ATTRIBUTES **********************************/
 
 	std::shared_ptr<ESImage> mImage;
+	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> mOriginalImageDownloadRequest;
+	QImage mOriginalImage;
 	QMetaObject::Connection mImageLoadedConnection;
 
 	QSizeF mPreviousSize;
