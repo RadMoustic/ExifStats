@@ -34,6 +34,42 @@ Q_IMPORT_PLUGIN(QTurboJpegPlugin)
 /********************************************************************************/
 
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
+
+struct CmdArgs
+{
+	int mArgc = 0;
+	QVector<QByteArray> mBuffer;
+	QVector<char*> mArgv;
+};
+
+CmdArgs parseWinMainArgs()
+{
+	CmdArgs lResult;
+
+	int lArgc = 0;
+	LPWSTR* lArgvW = CommandLineToArgvW(GetCommandLineW(), &lArgc);
+
+	if (!lArgvW)
+	{
+		return lResult;
+	}
+
+	lResult.mArgc = lArgc;
+	lResult.mBuffer.reserve(lArgc);
+	lResult.mArgv.reserve(lArgc + 1);
+
+	for (int lI = 0; lI < lArgc; ++lI)
+	{
+		lResult.mBuffer.append(QString::fromWCharArray(lArgvW[lI]).toUtf8());
+		lResult.mArgv.append(lResult.mBuffer.last().data());
+	}
+	lResult.mArgv.append(nullptr);
+
+	LocalFree(lArgvW);
+
+	return lResult;
+}
+
 int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PWSTR /*pCmdLine*/, int /*nCmdShow*/)
 #else
 int main(int argc, char* argv[])
@@ -62,7 +98,8 @@ int main(int argc, char* argv[])
 	QSurfaceFormat::setDefaultFormat(lFormat);
 
 #if !defined(QT_DEBUG) && defined(_MSC_VER)
-	QApplication lApp(__argc, __argv);
+	CmdArgs lCmdArgs = parseWinMainArgs();
+	QApplication lApp(lCmdArgs.mArgc, lCmdArgs.mArgv.data());
 #else
 	QApplication lApp(argc, argv);
 #endif
