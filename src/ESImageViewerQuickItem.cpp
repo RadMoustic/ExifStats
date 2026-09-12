@@ -17,7 +17,7 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 	, mGeometryHasChanged(false)
 	, mImageRatio(1.f)
 {
-	setTextureSize(textureSize()*3);
+	setTextureSize(QSize(4096, 4096));
 }
 
 /********************************************************************************/
@@ -73,12 +73,35 @@ void ESImageViewerQuickItem::updateInternal()
 		mImage = ESImageCache::getInstance().getImage(mImagePath);
 		mOriginalImage = QImage();
 
-		mOriginalImageDownloadRequest = ESNetClient::downloadOriginalImage(mImagePath, "192.168.1.15", 12345,
+		mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(mImagePath, "192.168.1.15", 12345,
 		[this](const QImage& pImage)
 		{
 			if (!pImage.isNull())
 			{
-				mOriginalImage = pImage;
+				if (mImage->getExif().mOrientation != ESExifOrientation::Unspecified && mImage->getExif().mOrientation != ESExifOrientation::UpperLeft)
+				{
+					QTransform lTransform;
+					switch (mImage->getExif().mOrientation)
+					{
+					case ESExifOrientation::UpperRight:
+						lTransform.rotate(90);
+						break;
+					case ESExifOrientation::LowerRight:
+						lTransform.rotate(180);
+						break;
+					case ESExifOrientation::LowerLeft:
+						lTransform.rotate(270);
+						break;
+					default:
+						break;
+					}
+					mOriginalImage = pImage.transformed(lTransform, Qt::SmoothTransformation);
+				}
+				else
+				{
+					mOriginalImage = pImage;
+				}
+				//setTextureSize(QSize(mImageWidth, mImageHeight));
 				QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 			}
 		});

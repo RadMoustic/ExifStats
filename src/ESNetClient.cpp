@@ -21,14 +21,15 @@ const int cRetryDelayMs = 500;
 /********************************************************************************/
 /********************************************************************************/
 
-std::shared_ptr<ESNetClientOriginalImageDownloadRequest> ESNetClient::downloadOriginalImage(QString pImagePath, const QString& pHost, quint16 pPort, const std::function<void(const QImage&)>& pFinishedCallback)
+std::shared_ptr<ESNetClientOriginalImageDownloadRequest> ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(QString pImagePath, const QString& pHost, quint16 pPort, const std::function<void(const QImage&)>& pFinishedCallback)
 {
 	QThread* lThread = new QThread();
 	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lRequest = std::make_shared<ESNetClientOriginalImageDownloadRequest>(pImagePath, pHost, pPort, pFinishedCallback);
 	lRequest->moveToThread(lThread);
+	lRequest->mInternalRequest->moveToThread(lThread);
 
 	QObject::connect(lThread, &QThread::started, lRequest.get(), &ESNetClientOriginalImageDownloadRequest::process);
-	QObject::connect(lRequest.get(), &ESNetClientOriginalImageDownloadRequest::finishedthread, lThread, &QThread::quit);
+	QObject::connect(lRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, lThread, &QThread::quit);
 	QObject::connect(lThread, &QThread::finished, lThread, &QObject::deleteLater);
 
 	lThread->start();
@@ -39,31 +40,35 @@ std::shared_ptr<ESNetClientOriginalImageDownloadRequest> ESNetClient::downloadOr
 /********************************************************************************/
 
 ESNetClientOriginalImageDownloadRequest::ESNetClientOriginalImageDownloadRequest(const QString& pPath, const QString& pHost, quint16 pPort, const std::function<void(const QImage&)>& pFinishedCallback)
-	: mPath(pPath)
-	, mHost(pHost)
-	, mPort(pPort)
-	, mFinishedCallback(pFinishedCallback)
-	, mRetryCount(0)
-	, mIsCancelled(false)
 {
+	mInternalRequest = new ESNetClientOriginalImageDownloadRequestInternal(pPath, pHost, pPort, pFinishedCallback);
+	QObject::connect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::finished, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished);
 }
 
 /********************************************************************************/
 
 /*virtual*/ ESNetClientOriginalImageDownloadRequest::~ESNetClientOriginalImageDownloadRequest() /*override*/
 {
+	QObject::disconnect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::finished, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished);
 	cancelRequest();
+}
+
+/********************************************************************************/
+
+void ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished()
+{
+	emit finished();
+	mInternalRequest = nullptr;
 }
 
 /********************************************************************************/
 
 void ESNetClientOriginalImageDownloadRequest::cancelRequest()
 {
-	mIsCancelled = true;
-	if(mSocket)
+	if(mInternalRequest)
 	{
-		mSocket->abort();
-		mFinishedCallback(QImage());
+		mInternalRequest->cancelRequest();
+		mInternalRequest = nullptr;
 	}
 }
 
@@ -71,9 +76,52 @@ void ESNetClientOriginalImageDownloadRequest::cancelRequest()
 
 void ESNetClientOriginalImageDownloadRequest::process()
 {
+	mInternalRequest->process();
+}
+
+/********************************************************************************/
+
+ESNetClientOriginalImageDownloadRequestInternal::ESNetClientOriginalImageDownloadRequestInternal(const QString& pPath, const QString& pHost, quint16 pPort, const std::function<void(const QImage&)>& pCallback)
+	: mPath(pPath)
+	, mHost(pHost)
+	, mPort(pPort)
+	, mFinishedCallback(pCallback)
+	, mRetryCount(0)
+	, mIsCancelled(false)
+{
+
+}
+
+/********************************************************************************/
+
+/*virtual*/ ESNetClientOriginalImageDownloadRequestInternal::~ESNetClientOriginalImageDownloadRequestInternal() /*override*/
+{
+
+}
+
+/********************************************************************************/
+
+void ESNetClientOriginalImageDownloadRequestInternal::cancelRequest()
+{
+	if (mIsCancelled)
+		return;
+	mIsCancelled = true;
+
+	QMetaObject::invokeMethod(this, [this]()
+		{
+			if (mSocket)
+				mSocket->abort();
+			finish(QImage());
+		}, Qt::QueuedConnection);
+}
+
+/********************************************************************************/
+
+void ESNetClientOriginalImageDownloadRequestInternal::process()
+{
 	mSocket = new QTcpSocket();
-	connect(mSocket, &QTcpSocket::readyRead, this, &ESNetClientOriginalImageDownloadRequest::readbytes);
-	connect(mSocket, &QTcpSocket::errorOccurred, this, &ESNetClientOriginalImageDownloadRequest::handleerror);
+	connect(mSocket, &QTcpSocket::readyRead, this, &ESNetClientOriginalImageDownloadRequestInternal::readbytes);
+	connect(mSocket, &QTcpSocket::errorOccurred, this, &ESNetClientOriginalImageDownloadRequestInternal::handleerror);
 
 	mAwaitingchallenge = true;
 	mSocket->connectToHost(mHost, mPort);
@@ -81,8 +129,11 @@ void ESNetClientOriginalImageDownloadRequest::process()
 
 /********************************************************************************/
 
-void ESNetClientOriginalImageDownloadRequest::readbytes()
+void ESNetClientOriginalImageDownloadRequestInternal::readbytes()
 {
+	if (mIsCancelled)
+		return;
+
 	if (mAwaitingchallenge)
 	{
 		if (mSocket->bytesAvailable() < 32)
@@ -117,7 +168,8 @@ void ESNetClientOriginalImageDownloadRequest::readbytes()
 
 			if (mExpectedimagesize == 0)
 			{
-				finished(QImage());
+				finish(QImage());
+				return;
 			}
 		}
 
@@ -127,30 +179,35 @@ void ESNetClientOriginalImageDownloadRequest::readbytes()
 			QImage lImage;
 			lImage.loadFromData(lData, "JPG");
 
-			finished(lImage);
+			finish(lImage);
+			return;
 		}
 	}
 }
 
 /********************************************************************************/
 
-void ESNetClientOriginalImageDownloadRequest::finished(QImage& pImage)
+void ESNetClientOriginalImageDownloadRequestInternal::finish(const QImage& pImage)
 {
-	mSocket->disconnectFromHost();
-	mSocket->deleteLater();
-	mSocket = nullptr;
+	if(mSocket)
+	{
+		disconnect(mSocket, &QTcpSocket::readyRead, this, &ESNetClientOriginalImageDownloadRequestInternal::readbytes);
+		disconnect(mSocket, &QTcpSocket::errorOccurred, this, &ESNetClientOriginalImageDownloadRequestInternal::handleerror);
+		mSocket->disconnectFromHost();
+		mSocket->deleteLater();
+		mSocket = nullptr;
+	}
 	mFinishedCallback(pImage);
-	emit finishedthread();
+	emit finished();
+	deleteLater();
 }
 
 /********************************************************************************/
 
-void ESNetClientOriginalImageDownloadRequest::handleerror(QAbstractSocket::SocketError /*pError*/)
+void ESNetClientOriginalImageDownloadRequestInternal::handleerror(QAbstractSocket::SocketError /*pError*/)
 {
 	if (mIsCancelled)
-	{
 		return;
-	}
 
 	mSocket->abort();
 	mSocket->deleteLater();
@@ -159,10 +216,10 @@ void ESNetClientOriginalImageDownloadRequest::handleerror(QAbstractSocket::Socke
 	if (mRetryCount < cMaxRetries)
 	{
 		mRetryCount++;
-		QTimer::singleShot(cRetryDelayMs, this, &ESNetClientOriginalImageDownloadRequest::process);
+		QTimer::singleShot(cRetryDelayMs, this, &ESNetClientOriginalImageDownloadRequestInternal::process);
 	}
 	else
 	{
-		finished(QImage());
+		finish(QImage());
 	}
 }

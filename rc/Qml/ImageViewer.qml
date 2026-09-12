@@ -12,6 +12,7 @@ Rectangle
 
 	property alias imageViewerChild: imageViewer
 	property real initialScale: 1.0
+	property real maxZoom: 15.0
 	
 	function resetView()
 	{
@@ -76,6 +77,25 @@ Rectangle
 			yAxis.minimum: getMinMax(imageViewer.height, imageViewer.scale, imageViewer.imageOffsetY).min
 			yAxis.maximum: getMinMax(imageViewer.height, imageViewer.scale, imageViewer.imageOffsetY).max
 		}
+		
+		WheelHandler
+		{
+			enabled: !MainQmlBinder.isMobile()
+			property real previousX: 0
+			property real previousY: 0
+			onWheel: (pWheel) =>
+			{	
+				var newScale = Math.max(1.0, Math.min(imageViewerRoot.maxZoom, imageViewer.scale * (pWheel.angleDelta.y > 0 ? 1.1 : 0.9)));
+				var zoomRatio = newScale / imageViewer.scale;
+				
+				let minMaxX = getMinMax(imageViewer.width, newScale, imageViewer.imageOffsetX);
+				let minMaxY = getMinMax(imageViewer.height, newScale, imageViewer.imageOffsetY);
+
+				imageViewer.x = Math.min(minMaxX.max, Math.max(minMaxX.min, newScale == 1.0 ? 0 : pWheel.x - (pWheel.x - imageViewer.x) * zoomRatio));
+				imageViewer.y = Math.min(minMaxY.max, Math.max(minMaxY.min, newScale == 1.0 ? 0 : pWheel.y - (pWheel.y - imageViewer.y) * zoomRatio));
+				imageViewer.scale = newScale;
+			}
+		}
 	}
 
 	PinchArea
@@ -92,7 +112,7 @@ Rectangle
 		{
 			dragBlocker.restart();
 					
-			var newScale = Math.max(1.0, Math.min(5.0, imageViewerRoot.initialScale * pPinch.scale));
+			var newScale = Math.max(1.0, Math.min(imageViewerRoot.maxZoom, imageViewerRoot.initialScale * pPinch.scale));
 			var zoomRatio = newScale / imageViewer.scale;
 			var dx = pPinch.center.x - pPinch.previousCenter.x;
 			var dy = pPinch.center.y - pPinch.previousCenter.y;
