@@ -76,7 +76,7 @@ bool loadTurboJpeg(QImage& pImageOut, const QByteArray& pImageData)
 
 /********************************************************************************/
 
-ESImage::ESImage(ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif* pImageExif)
+ESImage::ESImage(ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif& pImageExif, QString pImageHash)
 	: mLastUsed(0)
 	, mImagePath(pImagePath)
 	, mImageCachePath(pImageCachePath)
@@ -87,11 +87,9 @@ ESImage::ESImage(ESStringId pImagePath, const QString pImageCachePath, const ESU
 	, mCacheFileChecked(false)
 	, mHasCacheFile(false)
 	, mCurrentSearchSimilarity(0.f)
+	, mExif(pImageExif)
+	, mImageHash(pImageHash)
 {
-	if (pImageExif)
-	{
-		mExif = *pImageExif;
-	}
 }
 
 /********************************************************************************/
@@ -212,6 +210,13 @@ bool ESImage::hasCacheFile() const
 QString ESImage::getImageCachePath() const
 {
 	return mImageCachePath;
+}
+
+/********************************************************************************/
+
+QString ESImage::getImageHash() const
+{
+	return mImageHash;
 }
 
 /********************************************************************************/

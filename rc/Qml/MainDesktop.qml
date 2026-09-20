@@ -116,25 +116,34 @@ Pane
 
 		filtersPanel.displayData();
 	}
+	
+	function saveSettings()
+	{
+		settings.mainSplitViewState = mainSplitView.saveState();
+		settings.centerPanelState = centerPanel.saveState();
+		settings.chartsPanelState = chartsPanel.saveState();
+		settings.theme = mainWindow.Material.theme;
+	}
+	
+	function loadSettings()
+	{
+		mainSplitView.restoreState(settings.mainSplitViewState);
+		centerPanel.restoreState(settings.centerPanelState);
+		chartsPanel.restoreState(settings.chartsPanelState);
+		mainWindow.Material.theme = settings.theme;
+	}
 		
 	Component.onCompleted:
 	{
 		imageGrid.mFilteredFilesList = MainQmlBinder.getFilteredFilesList();
 		displayData();
 		MainQmlBinder.dataHasChanged.connect(displayData);
-		
-		mainSplitView.restoreState(settings.mainSplitViewState);
-			centerPanel.restoreState(settings.centerPanelState);
-		chartsPanel.restoreState(settings.chartsPanelState);
-		mainWindow.Material.theme = settings.theme;
+		loadSettings();
 	}
 	
 	Component.onDestruction:
 	{
-		settings.mainSplitViewState = mainSplitView.saveState();
-		settings.centerPanelState = centerPanel.saveState();
-		settings.chartsPanelState = chartsPanel.saveState();
-		settings.theme = mainWindow.Material.theme;
+		saveSettings();
 	}
 
 	FolderDialog
@@ -651,19 +660,10 @@ Pane
 					visible: false
 					
 					mapItem: mapRoot
-					imageViewerItem: imageViewerRoot
 					
 					SplitView.preferredWidth: 200
 					SplitView.preferredHeight: parent.height
 					SplitView.minimumWidth: 270
-				}
-				ImageViewer
-				{
-					id: imageViewerRoot
-					SplitView.preferredWidth: 200
-					SplitView.preferredHeight: parent.height
-					SplitView.minimumWidth: 270
-					
 				}
 			}
 		}

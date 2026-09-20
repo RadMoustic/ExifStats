@@ -108,10 +108,10 @@ public:
 	ES_QML_PROPERTY(ImageSize, int, mImageSize = std::clamp(mImageSize, msMinImageSize, width() > CACHE_IMAGE_SIZE ? int(width()) : CACHE_IMAGE_SIZE); mGeometryHasChanged = true; update();)
 	ES_QML_PROPERTY(ZoomCenter, QVector2D)
 	ES_QML_PROPERTY(YOffset, float, update();)
-	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)
-	ES_QML_PROPERTY(Loading, bool)
-	ES_QML_PROPERTY(LoadingProgress, float)
+	ES_QML_PROPERTY(SortingMode, int, mDataHasChanged = true; update();)	
 
+	ES_QML_READ_PROPERTY(Loading, bool)
+	ES_QML_READ_PROPERTY(LoadingProgress, float)
 	ES_QML_READ_PROPERTY(ContentHeight, int)
 
 	Q_INVOKABLE float getMinImageSize() const;

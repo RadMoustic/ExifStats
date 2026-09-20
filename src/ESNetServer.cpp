@@ -1,6 +1,7 @@
 #include "ESNetServer.h"
 
 // ES
+#include "ESDatabase.h"
 #include "ESNetClientHandler.h"
 
 // Qt
@@ -23,6 +24,7 @@
 ESNetServer::ESNetServer(QObject* pParent)
 	: QTcpServer(pParent)
 {
+	ESDatabase::getInstance().loadDatabase();
 }
 
 /********************************************************************************/

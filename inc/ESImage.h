@@ -18,6 +18,7 @@
 /********************************************************************************/
 
 class QuaZip;
+class ESNetClientOriginalImageDownloadRequest;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -32,6 +33,7 @@ public:
 	/******************************** ATTRIBUTES **********************************/
 
 	float mCurrentSearchSimilarity;
+	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> mOriginalImageDownloadRequest;
 
 	/********************************* METHODS ***********************************/
 
@@ -43,6 +45,7 @@ public:
 	std::shared_ptr<const QImage> getImage() const;
 	ESStringId getImagePath() const;
 	QString getImageCachePath() const;
+	QString getImageHash() const;
 	const ESUsefullExif& getExif() const;
 	float getRatio() const;
 	
@@ -75,8 +78,8 @@ private:
 	std::atomic_bool mCancelLoading;
 	std::shared_ptr<QImage> mImage;
 	QByteArray mImageFileData;
-
 	ESUsefullExif mExif;
+	QString mImageHash;
 
 #ifdef Q_OS_ANDROID
 	static int msCloseZipIdx;
@@ -86,7 +89,7 @@ private:
 
 	/********************************* METHODS ***********************************/
 
-	explicit ESImage(const ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif* pImageExif);
+	explicit ESImage(const ESStringId pImagePath, const QString pImageCachePath, const ESUsefullExif& pImageExif, QString pImageHash);
 
 	void loadImageInternal(const QSize pMaxSize, bool pAsync, std::atomic_int32_t* pNumAsyncTaskStarted);
 	void readImage(const QString& pImagePath, QSize pMaxSize);

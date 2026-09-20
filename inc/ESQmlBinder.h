@@ -302,7 +302,7 @@ public:
 	// Search tags
 	Q_INVOKABLE QStringList getTagsFound() const;
 
-	void save();
+	Q_INVOKABLE void save();
 
 signals:
 	/********************************** SIGNALS ***********************************/

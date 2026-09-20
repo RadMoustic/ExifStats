@@ -476,8 +476,10 @@ void ESImageGridQuickItem::sort()
 	{
 		if(mSortingMode == int(eSortBySimilarityScore) && (a->mCurrentSearchSimilarity > 0 || b->mCurrentSearchSimilarity > 0))
 			return a->mCurrentSearchSimilarity > b->mCurrentSearchSimilarity;
-		else
+		else if(a->getExif().mDateTime != 0 || b->getExif().mDateTime != 0)
 			return a->getExif().mDateTime < b->getExif().mDateTime;
+		else
+			return a->getImagePath().getString() < b->getImagePath().getString();
 	});
 }
 

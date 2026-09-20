@@ -79,9 +79,6 @@ ESWindow::ESWindow()
 
 /*virtual*/ ESWindow::~ESWindow() /*override*/
 {
-	QSettings lSettings;
-	lSettings.setValue("ProcessedFolders", mBinder->getProcessedFolders());
-	ESDatabase::getInstance().saveDatabase();
 	mBinder->save();
 	setSource(QUrl());
 }

@@ -9,6 +9,7 @@
 #include <QVector2D>
 #include <QGeoShape>
 #include <QDateTime>
+#include <QCryptographicHash>
 
 // Stl
 #include <functional>
@@ -98,6 +99,8 @@ typedef uint32_t ESFileInfoId;
 
 struct ESFileInfo
 {
+	QString mHash;
+
 	ESFileInfoId mId;
 	ESStringId mFilePath;
 	ESUsefullExif mExif;
@@ -108,4 +111,30 @@ struct ESFileInfo
 	std::vector<uint16_t> mTagIndexes;
 	ESEmbeddings mEmbeddings;
 	bool mTagsGenerated = false;
+
+	void computeHash()
+	{
+		mHash = "";
+		if(mReadResult == eSuccess)
+		{
+			QCryptographicHash lHash(QCryptographicHash::Sha256);
+
+			lHash.addData(mExif.mCameraModel.getString().toUtf8());
+			lHash.addData(mExif.mLensModel.getString().toUtf8());
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mDateTime), sizeof(mExif.mDateTime)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mShutterSpeedValue), sizeof(mExif.mShutterSpeedValue)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFNumber), sizeof(mExif.mFNumber)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLatitude), sizeof(mExif.mGeoLocation.mLatitude)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLongitude), sizeof(mExif.mGeoLocation.mLongitude)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLengthIn35mm), sizeof(mExif.mFocalLengthIn35mm)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLength), sizeof(mExif.mFocalLength)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mOrientation), sizeof(mExif.mOrientation)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mISOSpeedRatings), sizeof(mExif.mISOSpeedRatings)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mWidth), sizeof(mExif.mWidth)));
+			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mHeight), sizeof(mExif.mHeight)));
+		
+
+			mHash = QString::fromLatin1(lHash.result().toHex());
+		}
+	}
 };

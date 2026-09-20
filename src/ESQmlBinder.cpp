@@ -1487,6 +1487,7 @@ QStringList ESQmlBinder::getTagsFound() const
 
 void ESQmlBinder::save()
 {
+	ESDatabase::getInstance().saveDatabase();
 #if defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)
 	mTagsFilter.saveHnswIndex();
 #endif // defined(IMAGETAGGER_ENABLE) && defined(HNSWLIB_ENABLED)

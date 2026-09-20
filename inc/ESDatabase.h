@@ -69,6 +69,8 @@ public:
 
 	const QVector<QString>& getFolders() const;
 
+	ESFileInfo* getFileInfoFromHash(QString pHash);
+	const ESFileInfo* getFileInfoFromHash(QString pHash) const;
 	ESFileInfo* getFileInfo(ESStringId pFile);
 	const ESFileInfo* getFileInfo(ESStringId pFile) const;
 	ESFileInfo* getFileInfo(ESFileInfoId pFile);
@@ -100,6 +102,7 @@ private:
 
 	std::map<ESFileInfoId, ESFileInfo> mFiles;
 	std::map<ESStringId, ESFileInfoId> mFilesPathToId;
+	std::map<QString, ESFileInfoId> mFilesHashToId;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
 	mutable std::shared_mutex mFilesMutex;

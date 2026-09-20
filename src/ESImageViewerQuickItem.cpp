@@ -4,6 +4,7 @@
 #include "ESImage.h"
 #include "ESImageCache.h"
 #include "ESNetClient.h"
+#include "ESDatabase.h"
 
 // Qt
 #include <QPainter>
@@ -16,8 +17,25 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 	, mDataHasChanged(false)
 	, mGeometryHasChanged(false)
 	, mImageRatio(1.f)
+	, mIsUserInteracting(false)
+	, mHighResImageDisplayed(false)
 {
-	setTextureSize(QSize(4096, 4096));
+}
+
+/********************************************************************************/
+
+void ESImageViewerQuickItem::downloadOriginalImage(QString pImagePath)
+{
+	std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImagePath);
+	if(lImage && (!lImage->mOriginalImageDownloadRequest || lImage->mOriginalImageDownloadRequest->isCancelled()) && !lImage->getImageHash().isEmpty())
+	{
+		lImage->mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(lImage, "192.168.1.15", 12345);
+		connect(lImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, this,
+			[this](const ESNetClientOriginalImageDownloadRequest& /*pRequest*/)
+			{
+				QMetaObject::invokeMethod(this, [this]() {onHighResImageDownloaded(); }, Qt::QueuedConnection);
+			}, Qt::DirectConnection);
+	}
 }
 
 /********************************************************************************/
@@ -31,7 +49,14 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 
 	if (mValid && mImage && mImage->isLoaded())
 	{
-		const QImage* lImage = mOriginalImage.isNull() ? mImage->getImage().get() : &mOriginalImage;
+		// Keep refs to avoid race conditions with the image being unloaded while painting
+		std::shared_ptr<ESImage> lESImage = mImage;
+		std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lRequest = lESImage->mOriginalImageDownloadRequest;
+
+		bool hasHighResImage = lRequest && !lRequest->isCancelled() && lRequest->isFinished() && !lRequest->getDownloadedImage().isNull() && !mIsUserInteracting;
+		mHighResImageDisplayed = hasHighResImage;
+		const QImage* lImage = hasHighResImage ? &lRequest->getDownloadedImage() : lESImage->getImage().get();
+		
 		float lW = width();
 		float lH = height();
 		pPainter->fillRect(pPainter->viewport(), Qt::black);
@@ -59,6 +84,35 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 
 /********************************************************************************/
 
+void ESImageViewerQuickItem::onUserInteractingChanged()
+{
+	if(!mIsUserInteracting)
+	{
+		if (textureSize() != QSize(4096, 4096))
+		{
+			setTextureSize(QSize(4096, 4096));
+			update();
+		}
+		else if (!mHighResImageDisplayed)
+		{
+			update();
+		}
+	}
+}
+
+/********************************************************************************/
+
+void ESImageViewerQuickItem::onHighResImageDownloaded()
+{
+	if (!mIsUserInteracting)
+	{
+		setTextureSize(QSize(4096, 4096));
+		update();
+	}
+}
+
+/********************************************************************************/
+
 void ESImageViewerQuickItem::updateInternal()
 {
 	mValid = true;
@@ -68,43 +122,36 @@ void ESImageViewerQuickItem::updateInternal()
 
 	if (mDataHasChanged)
 	{
+		std::lock_guard<std::mutex> lLock(mImageMutex);
+
 		if(mImage)
 			disconnect(mImageLoadedConnection);
 		mImage = ESImageCache::getInstance().getImage(mImagePath);
-		mOriginalImage = QImage();
+		assert(mImage);
 
-		mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(mImagePath, "192.168.1.15", 12345,
-		[this](const QImage& pImage)
+		mHighResImageDisplayed = true;
+
+		const ESFileInfo* lImageFileInfo = ESDatabase::getInstance().getFileInfo(mImage->getImagePath());
+		assert(lImageFileInfo);
+
+		if(mImage && !mImage->getImageHash().isEmpty() && (!mImage->mOriginalImageDownloadRequest || mImage->mOriginalImageDownloadRequest->isCancelled()))
 		{
-			if (!pImage.isNull())
+			mHighResImageDisplayed = false;
+			mImage->mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(mImage, "192.168.1.15", 12345);
+			connect(mImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, this,
+			[this](const ESNetClientOriginalImageDownloadRequest& pRequest)
 			{
-				if (mImage->getExif().mOrientation != ESExifOrientation::Unspecified && mImage->getExif().mOrientation != ESExifOrientation::UpperLeft)
+				std::lock_guard<std::mutex> lLock(mImageMutex);
+
+				if (pRequest.getImage() == mImage && !pRequest.getDownloadedImage().isNull())
 				{
-					QTransform lTransform;
-					switch (mImage->getExif().mOrientation)
-					{
-					case ESExifOrientation::UpperRight:
-						lTransform.rotate(90);
-						break;
-					case ESExifOrientation::LowerRight:
-						lTransform.rotate(180);
-						break;
-					case ESExifOrientation::LowerLeft:
-						lTransform.rotate(270);
-						break;
-					default:
-						break;
-					}
-					mOriginalImage = pImage.transformed(lTransform, Qt::SmoothTransformation);
+					QMetaObject::invokeMethod(this,[this](){onHighResImageDownloaded();}, Qt::QueuedConnection);
 				}
-				else
-				{
-					mOriginalImage = pImage;
-				}
-				//setTextureSize(QSize(mImageWidth, mImageHeight));
-				QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
-			}
-		});
+			}, Qt::DirectConnection);
+		}
+
+		if(mImage->mOriginalImageDownloadRequest)
+			mImage->mOriginalImageDownloadRequest->mLastUsedImage = QDateTime::currentMSecsSinceEpoch();
 
 		const ESUsefullExif& lExif = mImage->getExif();
 		setImageWidth(lExif.getOrientedWidth());

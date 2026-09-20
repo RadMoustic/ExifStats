@@ -30,7 +30,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 11;
+constexpr uint DATABASE_VERSION = 12;
 /*static*/ const char* ESDatabase::msReadOnlyDatabaseFolderSettingsKey = "ReadOnlyDataBaseFolderPath";
 
 /********************************************************************************/
@@ -342,6 +342,13 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 				}
 			}
 
+			// Compute the hash for all files
+			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
+			{
+				lProcessedFile.second.computeHash();
+			}
+
+
 			mFilesMutex.unlock();
 
 			mUsefullExifVersion = USEFULLEXIF_VERSION;
@@ -500,6 +507,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 	pSerializer.SerializeCustom(mFiles,
 		[&](ESFileInfoId& pFileInfoId, ESFileInfo& pFileInfo)
 		{
+			if (lDatabaseVersion >= 12)
+				pSerializer.Serialize(pFileInfo.mHash);
 			if (lDatabaseVersion >= 9)
 				pSerializer.Serialize(pFileInfo.mId);
 			pSerializer.Serialize(pFileInfo.mFilePath);
@@ -564,7 +573,11 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					assert(mEmbeddingsDimension == pFileInfo.mEmbeddings.size());
 				}
 
+				if (lDatabaseVersion < 12)
+					pFileInfo.computeHash();
+
 				mFilesPathToId[pFileInfo.mFilePath] = pFileInfo.mId;
+				mFilesHashToId[pFileInfo.mHash] = pFileInfo.mId;
 			}
 			else
 			{
@@ -696,6 +709,31 @@ void ESDatabase::loadDatabase()
 const QVector<QString>& ESDatabase::getFolders() const
 {
 	return mFolders;
+}
+
+/********************************************************************************/
+
+ESFileInfo* ESDatabase::getFileInfoFromHash(QString pHash)
+{
+	ESFileInfo* lResult = nullptr;
+	if(pHash.size() > 10)
+	{
+		auto&& lIdItFound = mFilesHashToId.find(pHash);
+		if (lIdItFound != mFilesHashToId.end())
+		{
+			auto lItFound = mFiles.find(lIdItFound->second);
+			if (lItFound != mFiles.end())
+				lResult = &lItFound->second;
+		}
+	}
+	return lResult;
+}
+
+/********************************************************************************/
+
+const ESFileInfo* ESDatabase::getFileInfoFromHash(QString pHash) const
+{
+	return const_cast<ESDatabase*>(this)->getFileInfoFromHash(pHash);
 }
 
 /********************************************************************************/

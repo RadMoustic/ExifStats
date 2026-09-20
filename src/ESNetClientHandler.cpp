@@ -1,5 +1,9 @@
 #include "ESNetClientHandler.h"
 
+// ExifStats
+#include "ESDatabase.h"
+
+// Qt
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QThread>
@@ -86,53 +90,84 @@ void ESNetClientHandler::processReadyRead()
 		lStream.setVersion(QDataStream::Qt_6_0);
 			
 		lStream.startTransaction();
-		QString lRequestedPath;
-		lStream >> lRequestedPath;
-			
-		if (lStream.commitTransaction())
+
+		uint lProtocolVersion = 0;
+		uint lRequestType = 0;
+		QString lRequestedFileHash;
+
+		lStream >> lProtocolVersion;
+		if(lProtocolVersion == 1)
 		{
-			// Prevent memory exhaustion attacks from malicious path sizes
-			if (lRequestedPath.size() > 1024)
+			lStream >> lRequestType;
+			if(lRequestType == 1)
 			{
+				lStream >> lRequestedFileHash;
+			
+				if (lStream.commitTransaction())
+				{
+					// Prevent memory exhaustion attacks from malicious path sizes
+					if (lRequestedFileHash.size() > 1024)
+					{
+						mSocket->disconnectFromHost();
+						return;
+					}
+
+					QPointer<ESNetClientHandler> lSafeThis(this);
+				
+					QtConcurrent::run([lSafeThis, lRequestedFileHash]()
+						{
+							QByteArray lData;
+					
+							const ESFileInfo* lRequestedFileInfo = ESDatabase::getInstance().getFileInfoFromHash(lRequestedFileHash);
+							if(lRequestedFileInfo)
+							{
+								QFileInfo lInfo(lRequestedFileInfo->mFilePath.getString());
+								QString lSuffix = lInfo.suffix().toLower();
+								QImage lImage(lRequestedFileInfo->mFilePath.getString());
+								if (!lImage.isNull())
+								{
+									QBuffer lBuffer(&lData);
+									lBuffer.open(QIODevice::WriteOnly);
+									if (lImage.width() > 4096 || lImage.height() > 4096)
+									{
+										if(lImage.width() > lImage.height())
+										{
+											lImage = lImage.scaledToWidth(4096, Qt::SmoothTransformation);
+										}
+										else
+										{
+											lImage = lImage.scaledToHeight(4096, Qt::SmoothTransformation);
+										}
+									}
+									lImage.save(&lBuffer, "JPG", 90);
+								}
+							}
+
+							QMetaObject::invokeMethod(
+								lSafeThis.data(),
+								[lSafeThis, lData = std::move(lData)]()
+								{
+									if (lSafeThis)
+									{
+										lSafeThis->sendImageData(lData);
+									}
+								},
+								Qt::QueuedConnection);
+						});
+				}
+			}
+			else
+			{
+				qInfo() << "Unknown request type: " << lRequestType;
 				mSocket->disconnectFromHost();
 				return;
 			}
-
-			QPointer<ESNetClientHandler> lSafeThis(this);
-				
-			QtConcurrent::run([lSafeThis, lRequestedPath]()
-				{
-					QByteArray lData;
-					QFileInfo lInfo(lRequestedPath);
-					QString lSuffix = lInfo.suffix().toLower();
-
-					bool lIsAlreadyJpeg = (lSuffix == "jpg" || lSuffix == "jpeg");
-
-					if (lIsAlreadyJpeg)
-					{
-						QFile lFile(lRequestedPath);
-						if (lFile.open(QIODevice::ReadOnly))
-						{
-							lData = lFile.readAll();
-						}
-					}
-					else
-					{
-						QImage lImage(lRequestedPath);
-						if (!lImage.isNull())
-						{
-							QBuffer lBuffer(&lData);
-							lBuffer.open(QIODevice::WriteOnly);
-							// Convert to JPEG with quality 90
-							lImage.save(&lBuffer, "JPG", 90);
-						}
-					}
-
-					if (lSafeThis)
-					{
-						QMetaObject::invokeMethod(lSafeThis, "sendImageData", Qt::QueuedConnection, Q_ARG(QByteArray, lData));
-					}
-				});
+		}
+		else
+		{
+			qInfo() << "Unknown protocol version: " << lProtocolVersion;
+			mSocket->disconnectFromHost();
+			return;
 		}
 	}
 }

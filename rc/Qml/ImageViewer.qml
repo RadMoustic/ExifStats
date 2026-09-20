@@ -57,6 +57,7 @@ Rectangle
 		width: imageViewerRoot.width
 		height: imageViewerRoot.height
 		transformOrigin: Item.TopLeft
+		mIsUserInteracting: dragHandler.active || pinchArea.active
 		
 		property real viewportRatio: width / height
 		property real fullScreenWidth: mImageRatio >= viewportRatio ? width : height * mImageRatio
@@ -67,10 +68,13 @@ Rectangle
 		onMImagePathChanged:
 		{
 			imageViewerRoot.resetView();
+			imageViewer.downloadOriginalImage(imageGrid.getNextImage(mImagePath, 0));
+			imageViewer.downloadOriginalImage(imageGrid.getPreviousImage(mImagePath, 0));
 		}
 		
 		DragHandler
 		{
+			id: dragHandler
 			enabled: !pinchArea.pinch.active && !dragBlocker.running && imageViewer.scale !== 1.0
 			xAxis.minimum: getMinMax(imageViewer.width, imageViewer.scale, imageViewer.imageOffsetX).min
 			xAxis.maximum: getMinMax(imageViewer.width, imageViewer.scale, imageViewer.imageOffsetX).max
@@ -103,9 +107,17 @@ Rectangle
 		id: pinchArea
 		anchors.fill: parent
 		
+		property bool active: false
+		
 		onPinchStarted:
 		{
 			imageViewerRoot.initialScale = imageViewer.scale;
+			pinchArea.active = true;
+		}
+		
+		onPinchFinished:
+		{
+			pinchArea.active = false;
 		}
 		
 		onPinchUpdated: (pPinch) =>

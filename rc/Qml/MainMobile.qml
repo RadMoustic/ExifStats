@@ -123,6 +123,14 @@ Pane
 			//imageGrid.flickableChild.contentY = settings.imageGridYOffset;
 		}
 	}
+
+	function saveSettings()
+	{
+		settings.theme = mainWindow.Material.theme === Material.Dark ? true : false;
+		settings.imageGridYOffset = imageGrid.flickableChild.contentY;
+		settings.imageGridCol = imageGrid.gridCol;
+		MainQmlBinder.saveDefaultFilters();
+	}
 	
 	Component.onCompleted:
 	{
@@ -138,10 +146,7 @@ Pane
 	
 	Component.onDestruction:
 	{
-		settings.theme = mainWindow.Material.theme === Material.Dark ? true : false;
-		settings.imageGridYOffset = imageGrid.flickableChild.contentY;
-		settings.imageGridCol = imageGrid.gridCol;
-		MainQmlBinder.saveDefaultFilters();
+		saveSettings();
 	}
 	
 	FileDialog
@@ -200,7 +205,15 @@ Pane
 		edge: Qt.LeftEdge
 		interactive: true
 		
-		onPositionChanged: mapRoot.panEnabled = (position === 0.0)
+		onPositionChanged:
+		{
+			var isClosed = position === 0.0;
+			mapRoot.panEnabled = isClosed;
+			if(isClosed)
+			{
+				saveSettings();
+			}
+		}
 		
 		Item
 		{

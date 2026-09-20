@@ -12,6 +12,9 @@
 #include <QImage>
 #include <QGeoCoordinate>
 
+// Stl
+#include <mutex>
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -36,6 +39,8 @@ public:
 	ESImageViewerQuickItem();
 	
 	ES_QML_PROPERTY(ImagePath, QString, mDataHasChanged = true; update();)
+	ES_QML_PROPERTY(IsUserInteracting, bool, onUserInteractingChanged();)
+
 	ES_QML_READ_PROPERTY(ImageRatio, float)
 	ES_QML_READ_PROPERTY(ImageWidth, float)
 	ES_QML_READ_PROPERTY(ImageHeight, float)
@@ -51,6 +56,9 @@ public:
 	ES_QML_READ_PROPERTY(Orientation, int)
 	ES_QML_READ_PROPERTY(ISOSpeedRatings, int)
 
+
+	Q_INVOKABLE void downloadOriginalImage(QString pImagePath);
+
 	virtual void paint(QPainter* pPainter) override;
 
 signals:
@@ -62,18 +70,20 @@ private:
 	
 	/******************************** ATTRIBUTES **********************************/
 
+	std::mutex mImageMutex;
 	std::shared_ptr<ESImage> mImage;
-	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> mOriginalImageDownloadRequest;
-	QImage mOriginalImage;
 	QMetaObject::Connection mImageLoadedConnection;
 
 	QSizeF mPreviousSize;
 	bool mValid;
 	bool mDataHasChanged;
 	bool mGeometryHasChanged;
+	bool mHighResImageDisplayed;
 
 	/********************************* METHODS ***********************************/
 
 	void updateInternal();
+	void onUserInteractingChanged();
+	void onHighResImageDownloaded();
 };
 
