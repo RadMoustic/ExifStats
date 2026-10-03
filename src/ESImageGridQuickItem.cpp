@@ -18,10 +18,13 @@
 /********************************************************************************/
 
 #ifdef Q_OS_ANDROID
-constexpr int cMaxDisplayedImages = 256;
+constexpr int cMaxDisplayedImages = 64;
 #else
 constexpr int cMaxDisplayedImages = 512;
 #endif
+
+constexpr int cPreloadRowCountBefore = 4;
+constexpr int cPreloadRowCountAfter = 4;
 
 /********************************************************************************/
 
@@ -663,8 +666,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 			}
 		}
 
-		const int lStartPreloadRow = std::max(0, lStartDrawRow - 5);
-		const int lEndPreloadRow = std::min(lItem->mNbRows, lEndDrawRow + 5);
+		const int lStartPreloadRow = std::max(0, lStartDrawRow - cPreloadRowCountBefore);
+		const int lEndPreloadRow = std::min(lItem->mNbRows, lEndDrawRow + cPreloadRowCountAfter);
 
 		// Release slots
 		for (auto it = mImageToTextureSlot.begin(); it != mImageToTextureSlot.end();)

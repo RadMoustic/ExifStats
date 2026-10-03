@@ -37,7 +37,7 @@ Item
 			PluginParameter
 			{
 				name: "osm.mapping.custom.host"
-				value: "https://basemaps.cartocdn.com/dark_all/"
+				value: "https://basemaps.cartocdn.com/rastertiles/dark_all/%z/%x/%y.png?key=cb1_3xkd_1_dd4cc00460f9d5b97500f455&fake=.png"
 			}
 		}
 		

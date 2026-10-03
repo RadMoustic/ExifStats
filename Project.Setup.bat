@@ -10,4 +10,5 @@ set QT_MSVC_DIR=msvc2022_64
 set QT_STATIC_DIR=Src\BuildStatic
 set QML_DIR=%ROOT%\rc\Qml
 set QT_DEPLOY_PLUGINS=true
+set AVX2_ENABLE=true
 set RUN_ARGS=

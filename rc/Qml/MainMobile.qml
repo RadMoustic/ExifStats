@@ -192,6 +192,58 @@ Pane
 		}
 	}
 	
+	Dialog
+	{
+		id: serverSettingDialog
+		title: "Server Settings"
+		standardButtons: Dialog.Ok
+		anchors.centerIn: Overlay.overlay
+		modal: true
+		
+		ColumnLayout
+		{
+			RowLayout
+			{
+				Label
+				{
+					text: "Address:"
+				}
+				TextField
+				{
+					id: addressField
+				}
+			}
+			RowLayout
+			{
+				Label
+				{
+					text: "Port:"
+				}
+				TextField
+				{
+					id: portField
+				}
+			}
+			RowLayout
+			{
+				Label
+				{
+					text: "Password:"
+				}
+				TextField
+				{
+					id: passwordField
+				}
+			}
+		}
+		
+		onAccepted:
+		{
+			MainQmlBinder.setServerAddressAndPort(addressField.text, parseInt(portField.text));
+			MainQmlBinder.setServerPassword(passwordField.text);
+		}
+	}
+	
 	Drawer
 	{
 		id: sidePanel
@@ -228,7 +280,7 @@ Pane
 				{
 					RegularButton
 					{
-						text:"Database"
+						text:"DB"
 						
 						onReleased:
 						{
@@ -237,12 +289,23 @@ Pane
 					}
 					RegularButton
 					{
-						text:"Search Models"
+						text:"Models"
 						enabled: !MainQmlBinder.mSearchModelsExtracting
 						
 						onReleased:
 						{
 							searchModelDialog.open();
+						}
+					}
+					RegularButton
+					{
+						text:"Server"
+						
+						onReleased:
+						{
+							addressField.text = MainQmlBinder.getServerAddress();
+							portField.text = MainQmlBinder.getServerPort().toString();
+							serverSettingDialog.open();
 						}
 					}
 					RegularButton

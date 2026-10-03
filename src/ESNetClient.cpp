@@ -11,15 +11,19 @@
 #include <QCryptographicHash>
 #include <QTimer>
 #include <QThread>
+#include <QSettings>
 
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
 
-const QByteArray cSharedSecret = "MyUniqueSecureCode123";
 const int cMaxRetries = 3;
-const int cRetryDelayMs = 500;
-const int cMaxRequestAlive = 10;
+const int cRetryDelayMs = 1000;
+const int cMaxRequestAlive = 5;
+
+/*static*/ QString ESNetClientOriginalImageDownloadRequest::msServerSaltedPassword;
+/*static*/ QString ESNetClientOriginalImageDownloadRequest::msServerAddress;
+/*static*/ quint16 ESNetClientOriginalImageDownloadRequest::msServerPort = 0;
 
 /*static*/ std::mutex ESNetClientOriginalImageDownloadRequest::msActiveRequestsMutex;
 /*static*/ std::vector<std::weak_ptr<ESNetClientOriginalImageDownloadRequest>> ESNetClientOriginalImageDownloadRequest::msActiveRequests;
@@ -28,36 +32,46 @@ const int cMaxRequestAlive = 10;
 /********************************************************************************/
 /********************************************************************************/
 
-std::shared_ptr<ESNetClientOriginalImageDownloadRequest> ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(const std::shared_ptr<ESImage>& pImage, const QString& pHost, quint16 pPort)
+std::shared_ptr<ESNetClientOriginalImageDownloadRequest> ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(const std::shared_ptr<ESImage>& pImage)
 {
-	QThread* lThread = new QThread();
-	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lRequest = std::make_shared<ESNetClientOriginalImageDownloadRequest>(pImage, pHost, pPort);
-	lRequest->moveToThread(lThread);
-	lRequest->mInternalRequest->moveToThread(lThread);
+	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lRequest;
+	if (	!ESNetClientOriginalImageDownloadRequest::msServerAddress.isEmpty()
+		&&	ESNetClientOriginalImageDownloadRequest::msServerPort != 0
+		&&	!ESNetClientOriginalImageDownloadRequest::msServerSaltedPassword.isEmpty())
+	{
+		QThread* lThread = new QThread();
 
-	QObject::connect(lThread, &QThread::started, lRequest.get(), &ESNetClientOriginalImageDownloadRequest::process);
-	QObject::connect(lRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, lThread, &QThread::quit);
-	QObject::connect(lThread, &QThread::finished, lThread, &QObject::deleteLater);
+		lRequest = std::make_shared<ESNetClientOriginalImageDownloadRequest>(pImage);
+		lRequest->moveToThread(lThread);
+		lRequest->mInternalRequest->moveToThread(lThread);
 
-	lThread->start();
+		QObject::connect(lThread, &QThread::started, lRequest.get(), &ESNetClientOriginalImageDownloadRequest::process);
+		QObject::connect(lRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, lThread, &QThread::quit);
+		QObject::connect(lThread, &QThread::finished, lThread, &QObject::deleteLater);
 
-	std::lock_guard<std::mutex> lLock(msActiveRequestsMutex);
-	msActiveRequests.push_back(lRequest);
+		lThread->start();
 
-	garbageCollectRequests();
+		std::lock_guard<std::mutex> lLock(msActiveRequestsMutex);
+		msActiveRequests.push_back(lRequest);
+
+		garbageCollectRequests();
+	}
 
 	return lRequest;
 }
 
 /********************************************************************************/
 
-ESNetClientOriginalImageDownloadRequest::ESNetClientOriginalImageDownloadRequest(const std::shared_ptr<ESImage>& pImage, const QString& pHost, quint16 pPort)
+ESNetClientOriginalImageDownloadRequest::ESNetClientOriginalImageDownloadRequest(const std::shared_ptr<ESImage>& pImage)
 	: mParentImage(pImage)
 	, mIsFinished(false)
-	, mInternalRequest(new ESNetClientOriginalImageDownloadRequestInternal(pImage->getImageHash(), pHost, pPort))
+	, mInternalRequest(new ESNetClientOriginalImageDownloadRequestInternal(pImage->getImageHash(), pImage->getImageFileName()))
 	, mLastUsedImage(QDateTime::currentMSecsSinceEpoch())
+	, mLastMessage(ESNetClientHandler::MsgNone)
 {
+	QObject::connect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::lastMessageChanged, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestLastMessageChanged);
 	QObject::connect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::finished, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished);
+	QObject::connect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::downloadProgress, this, &ESNetClientOriginalImageDownloadRequest::downloadProgress);
 }
 
 /********************************************************************************/
@@ -72,6 +86,10 @@ ESNetClientOriginalImageDownloadRequest::ESNetClientOriginalImageDownloadRequest
 
 void ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished(const QImage& pImage)
 {
+	if(!mInternalRequest)
+	{
+		return;
+	}
 	mDownloadedImage = pImage;
 	mInternalRequest = nullptr;
 	mIsFinished = true;
@@ -106,10 +124,21 @@ void ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished(const QI
 
 /********************************************************************************/
 
+void ESNetClientOriginalImageDownloadRequest::onInternalRequestLastMessageChanged(ESNetClientHandler::Message pLastMessage)
+{
+	mLastMessage = pLastMessage;
+	emit lastMessageChanged(pLastMessage);
+}
+
+/********************************************************************************/
+
 void ESNetClientOriginalImageDownloadRequest::cancelRequest()
 {
 	if(mInternalRequest)
 	{
+		QObject::disconnect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::lastMessageChanged, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestLastMessageChanged);
+		QObject::disconnect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::finished, this, &ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished);
+		QObject::disconnect(mInternalRequest, &ESNetClientOriginalImageDownloadRequestInternal::downloadProgress, this, &ESNetClientOriginalImageDownloadRequest::downloadProgress);
 		mInternalRequest->cancelRequest();
 		mInternalRequest = nullptr;
 	}
@@ -124,9 +153,16 @@ void ESNetClientOriginalImageDownloadRequest::process()
 
 /********************************************************************************/
 
-const bool ESNetClientOriginalImageDownloadRequest::isCancelled() const
+const ESNetClientHandler::Message& ESNetClientOriginalImageDownloadRequest::getLastMessage() const
 {
-	return mInternalRequest == nullptr && !mIsFinished;
+	return mLastMessage;
+}
+
+/********************************************************************************/
+
+const bool ESNetClientOriginalImageDownloadRequest::hasFailed() const
+{
+	return mInternalRequest == nullptr && (!mIsFinished || mDownloadedImage.isNull());
 }
 
 /********************************************************************************/
@@ -152,12 +188,15 @@ std::shared_ptr<ESImage> ESNetClientOriginalImageDownloadRequest::getImage() con
 
 /********************************************************************************/
 
-ESNetClientOriginalImageDownloadRequestInternal::ESNetClientOriginalImageDownloadRequestInternal(const QString& pImageHash, const QString& pHost, quint16 pPort)
+ESNetClientOriginalImageDownloadRequestInternal::ESNetClientOriginalImageDownloadRequestInternal(const QString& pImageHash, const QString& pImageFileName)
 	: mImageHash(pImageHash)
-	, mHost(pHost)
-	, mPort(pPort)
+	, mImageFileName(pImageFileName)
 	, mRetryCount(0)
 	, mIsCancelled(false)
+	, mSocket(nullptr)
+	, mAwaitingchallenge(true)
+	, mExpectedimagesize(0)
+	, mLastMessage(ESNetClientHandler::MsgNone)
 {
 
 }
@@ -194,7 +233,7 @@ void ESNetClientOriginalImageDownloadRequestInternal::process()
 	connect(mSocket, &QTcpSocket::errorOccurred, this, &ESNetClientOriginalImageDownloadRequestInternal::handleerror);
 
 	mAwaitingchallenge = true;
-	mSocket->connectToHost(mHost, mPort);
+	mSocket->connectToHost(ESNetClientOriginalImageDownloadRequest::msServerAddress, ESNetClientOriginalImageDownloadRequest::msServerPort);
 }
 
 /********************************************************************************/
@@ -213,7 +252,7 @@ void ESNetClientOriginalImageDownloadRequestInternal::readbytes()
 
 		QByteArray lChallenge = mSocket->read(32);
 		QMessageAuthenticationCode lMac(QCryptographicHash::Sha256);
-		lMac.setKey(cSharedSecret);
+		lMac.setKey(ESNetClientOriginalImageDownloadRequest::getSaltedPassword().toUtf8());
 		lMac.addData(lChallenge);
 
 		mSocket->write(lMac.result());
@@ -225,8 +264,26 @@ void ESNetClientOriginalImageDownloadRequestInternal::readbytes()
 		lStream << lProtocolVersion;
 		lStream << lRequestType;
 		lStream << mImageHash;
+		lStream << mImageFileName;
 
 		mAwaitingchallenge = false;
+	}
+	else if (mLastMessage != ESNetClientHandler::MsgSendingFile)
+	{
+		if (mSocket->bytesAvailable() < static_cast<qint64>(sizeof(quint8)))
+		{
+			return;
+		}
+		QDataStream lStream(mSocket);
+		lStream.setVersion(QDataStream::Qt_6_0);
+		lStream >> mLastMessage;
+		emit lastMessageChanged(mLastMessage);
+		if(		mLastMessage == ESNetClientHandler::MsgFailedToOpenFile
+			||	mLastMessage == ESNetClientHandler::MsgFileNotFound)
+		{
+			finish(QImage());
+			return;
+		}
 	}
 	else
 	{
@@ -245,6 +302,11 @@ void ESNetClientOriginalImageDownloadRequestInternal::readbytes()
 				finish(QImage());
 				return;
 			}
+		}
+
+		if (mExpectedimagesize > 0)
+		{
+			emit downloadProgress(float(mSocket->bytesAvailable()) / float(mExpectedimagesize));
 		}
 
 		if (mSocket->bytesAvailable() >= static_cast<qint64>(mExpectedimagesize))
@@ -309,11 +371,11 @@ void ESNetClientOriginalImageDownloadRequestInternal::handleerror(QAbstractSocke
 			{
 				std::sort(msActiveRequests.begin(), msActiveRequests.end(), [](const std::weak_ptr<ESNetClientOriginalImageDownloadRequest>& a, const std::weak_ptr<ESNetClientOriginalImageDownloadRequest>& b)
 					{
-						auto aLock = a.lock();
-						auto bLock = b.lock();
-						if (!aLock) return false;
-						if (!bLock) return true;
-						return aLock->mLastUsedImage > bLock->mLastUsedImage;
+						std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lLockA = a.lock();
+						std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lLockB = b.lock();
+						if (!lLockA) return false;
+						if (!lLockB) return true;
+						return lLockA->mLastUsedImage > lLockB->mLastUsedImage;
 					});
 			
 				for(int i = cMaxRequestAlive; i < static_cast<int>(msActiveRequests.size()); ++i)
@@ -326,4 +388,48 @@ void ESNetClientOriginalImageDownloadRequestInternal::handleerror(QAbstractSocke
 				msActiveRequests.erase(msActiveRequests.begin() + cMaxRequestAlive, msActiveRequests.end());
 			}
 		});
+}
+
+/********************************************************************************/
+
+/*static*/ void ESNetClientOriginalImageDownloadRequest::initialize()
+{
+	QSettings lSettings;
+	msServerAddress = lSettings.value("ServerAddress").toString();
+	msServerPort = lSettings.value("ServerPort").toInt();
+	msServerSaltedPassword = lSettings.value("ServerPassword").toString();
+}
+
+/********************************************************************************/
+
+/*static*/ void ESNetClientOriginalImageDownloadRequest::setServerAddressAndPort(QString pAddress, quint16 pPort)
+{
+	QSettings lSettings;
+	lSettings.setValue("ServerAddress", pAddress);
+	lSettings.setValue("ServerPort", pPort);
+
+	msServerAddress = pAddress;
+	msServerPort = pPort;
+}
+
+/********************************************************************************/
+
+/*static*/ void ESNetClientOriginalImageDownloadRequest::setPassword(const QString& pPassword)
+{
+	if (pPassword.size() < 20)
+	{
+		qWarning() << "Password too short. It should be at least 20 characters long.";
+		return;
+	}
+	msServerSaltedPassword = QCryptographicHash::hash(pPassword.toUtf8() + "ExifStatsSalt", QCryptographicHash::Sha256).toHex();
+
+	QSettings lSettings;
+	lSettings.setValue("ServerPassword", msServerSaltedPassword);
+}
+
+/********************************************************************************/
+
+/*static*/ QString ESNetClientOriginalImageDownloadRequest::getSaltedPassword()
+{
+	return msServerSaltedPassword;
 }

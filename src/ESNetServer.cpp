@@ -24,15 +24,21 @@
 ESNetServer::ESNetServer(QObject* pParent)
 	: QTcpServer(pParent)
 {
-	ESDatabase::getInstance().loadDatabase();
+	QSettings lSettings;
+	mSaltedPassword = lSettings.value("ServerPassword").toString();
 }
 
 /********************************************************************************/
 
 void ESNetServer::incomingConnection(qintptr pSocketDescriptor)
 {
+	if(mSaltedPassword.isEmpty())
+	{
+		qInfo() << "No password set for the server. Connection rejected.";
+		return;
+	}
 	QThread* lThread = new QThread(this);
-	ESNetClientHandler* lHandler = new ESNetClientHandler(pSocketDescriptor);
+	ESNetClientHandler* lHandler = new ESNetClientHandler(pSocketDescriptor, this);
 		
 	lHandler->moveToThread(lThread);
 		
@@ -42,4 +48,26 @@ void ESNetServer::incomingConnection(qintptr pSocketDescriptor)
 	connect(lThread, &QThread::finished, lThread, &QObject::deleteLater);
 		
 	lThread->start();
+}
+
+/********************************************************************************/
+
+void ESNetServer::setPassword(const QString& pPassword)
+{
+	if(pPassword.size() < 20)
+	{
+		qWarning() << "Password too short. It should be at least 20 characters long.";
+		return;
+	}
+	mSaltedPassword = QCryptographicHash::hash(pPassword.toUtf8() + "ExifStatsSalt", QCryptographicHash::Sha256).toHex();
+
+	QSettings lSettings;
+	lSettings.setValue("ServerPassword", mSaltedPassword);
+}
+
+/********************************************************************************/
+
+const QString& ESNetServer::getSaltedPassword() const
+{
+	return mSaltedPassword;
 }

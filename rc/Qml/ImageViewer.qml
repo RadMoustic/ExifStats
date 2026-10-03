@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts 
+import QtQuick.Window
 
 import ExifStats
 
@@ -26,6 +27,7 @@ Rectangle
 		imageViewerRoot.visible = false;
 		MainQmlBinder.mFullScreen = false;
 		imageInfo.display = false;
+		imageViewer.cancelAllDownloadRequests();
 	}
 	
 	function getMinMax(pSize, pScale, pOffset)
@@ -43,6 +45,16 @@ Rectangle
 			: -scaledImageOffset;
 			
 		return { "min": min, "max": max };
+	}
+	
+	Connections
+	{
+		target: Screen
+		
+		function onOrientationChanged()
+		{
+			resetView();
+		}
 	}
 	
 	Timer
@@ -68,8 +80,9 @@ Rectangle
 		onMImagePathChanged:
 		{
 			imageViewerRoot.resetView();
-			imageViewer.downloadOriginalImage(imageGrid.getNextImage(mImagePath, 0));
-			imageViewer.downloadOriginalImage(imageGrid.getPreviousImage(mImagePath, 0));
+			imageViewer.downloadOriginalImage(imageGrid.getNextImage(mImagePath, 0), false);
+			imageViewer.downloadOriginalImage(imageGrid.getPreviousImage(mImagePath, 0), false);
+			highResLoadingState.hide = false;
 		}
 		
 		DragHandler
@@ -278,6 +291,52 @@ Rectangle
 		onReleased:
 		{
 			imageInfo.display = !imageInfo.display;
+		}
+	}
+	
+	function isError(pStep)
+	{
+		return pStep >= 10 || pStep == -1;
+	}
+	
+	function getHighResImageStepColor(pStep)
+	{
+		if(pStep == 0) // Started
+			return "grey";
+		if(pStep == 1) // Opening File
+			return "green";
+		if(pStep == 2) // Converting File
+			return "green";
+		if(pStep == 3) // Sending File
+			return "green"
+		if(isError(pStep))
+			return "red";
+			
+		return "pink";
+	}
+	
+	CircularProgressBar
+	{
+		id: highResLoadingState
+		
+		x: 5
+		y: 5
+		width: 20
+		height: 20
+		property bool hide: false
+		
+		visible: !hide && imageViewer.mHighResImageStep >= -1
+		statusColor: getHighResImageStepColor(imageViewer.mHighResImageStep)
+		loading: imageViewer.mHighResImageStep >= 0 && imageViewer.mHighResImageStep < 3
+		progress: imageViewer.mHighResImageDownloadProgress
+		
+		MouseArea 
+		{
+			anchors.fill: parent
+			onClicked: (pMouse) =>
+			{
+				highResLoadingState.hide = true;
+			}
 		}
 	}
 }

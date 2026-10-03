@@ -59,7 +59,7 @@ Pane
 		anchors.bottom: parent.bottom
 		anchors.leftMargin: 10
 		anchors.bottomMargin: 10
-		anchors.topMargin: mainWindow.Window.window ? mainWindow.Window.window.SafeArea.margins.top : 0
+		anchors.topMargin: rootItem.Window.window ? rootItem.Window.window.SafeArea.margins.top : 0
 		onReleased:
 		{
 			Qt.callLater( consoleStrList.positionViewAtEnd )

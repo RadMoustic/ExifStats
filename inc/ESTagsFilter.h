@@ -114,6 +114,7 @@ private:
 	void onDatabaseTagsHaveChanged();
 #ifdef HNSWLIB_ENABLED
 	bool loadHnswIndex();
+	void updateHnswIndex();
 	void onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLoadingCount);
 	void updateHnswSearchResults();
 #endif // HNSWLIB_ENABLED

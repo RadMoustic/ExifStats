@@ -9,6 +9,7 @@
 /********************************************************************************/
 
 class QTcpSocket;
+class ESNetServer;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -19,9 +20,26 @@ class ESNetClientHandler : public QObject
 	Q_OBJECT
 
 public:
+	
+	enum Message : quint8
+	{
+		MsgNone = 0,
+
+		MsgFirstSuccess = 1,
+		MsgOpeningFile = MsgFirstSuccess,
+		MsgConvertingFile,
+		MsgSendingFile,
+		MsgSucessCount,
+
+		MsgFirstError = 10,
+		MsgFileNotFound = MsgFirstError,
+		MsgFailedToOpenFile,
+		MsgErrorCount,
+	};
+
 	/********************************* METHODS ***********************************/
 
-	explicit ESNetClientHandler(qintptr pSocketDescriptor, QObject* pParent = nullptr);
+	explicit ESNetClientHandler(qintptr pSocketDescriptor, ESNetServer* pParent);
 	void initializeConnection();
 
 signals:
@@ -32,16 +50,18 @@ signals:
 private slots:
 	/********************************* METHODS ***********************************/
 
-	void sendImageData(const QByteArray& pData);
+	void sendMessage(Message pMsg);
+	void sendImageData(const QByteArray& pData, QString pFilePath);
 
 private:
 	/********************************* METHODS ***********************************/
 
 	void processReadyRead();
-	void terminateConnection();
+	void onDisconnected();
 
 	/******************************** ATTRIBUTES **********************************/
 
+	ESNetServer* mServer;
 	qintptr mSocketDescriptor;
 	QTcpSocket* mSocket;
 	QByteArray mChallengeNonce;

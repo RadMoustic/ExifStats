@@ -185,12 +185,20 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 	}
 	else
 	{
-		if(mHnswIndexUpdateFuture.isRunning())
-		{
-			mHnswIndexUpdatingAbortRequested = true;
-			mHnswIndexUpdateFuture.waitForFinished();
-		}
-		mHnswIndexUpdateFuture = QtConcurrent::run([this]()
+		updateHnswIndex();
+	}
+}
+
+/********************************************************************************/
+
+void ESTagsFilter::updateHnswIndex()
+{
+	if (mHnswIndexUpdateFuture.isRunning())
+	{
+		mHnswIndexUpdatingAbortRequested = true;
+		mHnswIndexUpdateFuture.waitForFinished();
+	}
+	mHnswIndexUpdateFuture = QtConcurrent::run([this]()
 		{
 			const ESDatabase& lDB = ESDatabase::getInstance();
 			if (lDB.getEmbeddingsDimension() > 0)
@@ -233,8 +241,8 @@ void ESTagsFilter::onImageTaggerManagerLoadingProgress(int pLoadedCount, int pLo
 				setUpdatingHNSWIndexProgress(1.f);
 			}
 		});
-	}
 }
+
 #endif // HNSWLIB_ENABLED
 
 /********************************************************************************/

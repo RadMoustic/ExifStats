@@ -221,6 +221,14 @@ QString ESImage::getImageHash() const
 
 /********************************************************************************/
 
+QString ESImage::getImageFileName() const
+{
+	// Extract the file name from the path without QFileInfo because we may not have the file locally
+	return mImagePath.getString().section('/', -1);
+}
+
+/********************************************************************************/
+
 QChar ESImage::getDriveLetter() const
 {
 	if(mDriveLetter.isNull())

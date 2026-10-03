@@ -14,6 +14,7 @@
 
 // Stl
 #include <mutex>
+#include <deque>
 
 /********************************************************************************/
 /********************************************************************************/
@@ -56,8 +57,11 @@ public:
 	ES_QML_READ_PROPERTY(Orientation, int)
 	ES_QML_READ_PROPERTY(ISOSpeedRatings, int)
 
+	ES_QML_READ_PROPERTY(HighResImageStep, int)
+	ES_QML_READ_PROPERTY(HighResImageDownloadProgress, float)
 
-	Q_INVOKABLE void downloadOriginalImage(QString pImagePath);
+	Q_INVOKABLE void downloadOriginalImage(QString pImagePath, bool pHighPriority);
+	Q_INVOKABLE void cancelAllDownloadRequests();
 
 	virtual void paint(QPainter* pPainter) override;
 
@@ -67,12 +71,21 @@ signals:
 private:
 	/********************************** TYPES *************************************/
 
+	enum HighResImageStep: int
+	{
+		StepFinished = -3,
+		StepNone = -2,
+		StepNoHash = -1,
+		StepStarted = 0,
+	};
 	
 	/******************************** ATTRIBUTES **********************************/
 
 	std::mutex mImageMutex;
 	std::shared_ptr<ESImage> mImage;
 	QMetaObject::Connection mImageLoadedConnection;
+	std::deque<QString> mOriginalDownloadRequests;
+	std::shared_ptr<ESNetClientOriginalImageDownloadRequest> mCurrentOriginalImageDownloadRequest;
 
 	QSizeF mPreviousSize;
 	bool mValid;
@@ -85,5 +98,6 @@ private:
 	void updateInternal();
 	void onUserInteractingChanged();
 	void onHighResImageDownloaded();
+	void startNextOriginalImageDownloadRequest();
 };
 

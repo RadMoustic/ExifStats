@@ -804,6 +804,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.TimeFrom = text;
+					MainQmlBinder.TimeFilterOutInvalid = true;
 				}
 
 			}
@@ -824,6 +825,7 @@ Flickable
 				onEditingFinished:
 				{
 					MainQmlBinder.TimeTo = text;
+					MainQmlBinder.TimeFilterOutInvalid = true;
 				}
 			}
 			

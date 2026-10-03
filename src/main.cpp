@@ -1,6 +1,7 @@
 // ExifStats
 #include "ESStringPool.h"
 #include "ESWindow.h"
+#include "ESServerWindow.h"
 #include "ESLogger.h"
 #include "ESImageCache.h"
 #include "ESImageTaggerManager.h"
@@ -113,19 +114,15 @@ int main(int argc, char* argv[])
 
 	ESStringPool lStringPool;
 
-	const bool isServer = lApp.arguments().contains("-server");
+	const bool lIsServer = lApp.arguments().contains("-server");
 
 	int lAppResult = 0;
 
-	if(isServer)
+	if(lIsServer)
 	{
-		ESNetServer lServer;
-		if(!lServer.listen(QHostAddress::Any, 12345))
-		{
-			std::cerr << "Failed to start server: " << lServer.errorString().toStdString() << std::endl;
-			return -1;
-		}
-		std::cout << "Server started on port 12345" << std::endl;
+		ESServerWindow lServerWindow;
+		lServerWindow.initialize();
+		lServerWindow.show();
 
 		lAppResult = lApp.exec();
 	}
@@ -138,7 +135,7 @@ int main(int argc, char* argv[])
 		lAppResult = lApp.exec();
 	}
 
-	if(!isServer)
+	if(!lIsServer)
 	{
 		ESImageCache::getInstance().stopAndCancelAllLoadings();
 	#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)

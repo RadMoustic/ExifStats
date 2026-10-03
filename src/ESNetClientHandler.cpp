@@ -2,6 +2,7 @@
 
 // ExifStats
 #include "ESDatabase.h"
+#include "ESNetServer.h"
 
 // Qt
 #include <QTcpServer>
@@ -20,14 +21,9 @@
 /********************************************************************************/
 /********************************************************************************/
 
-const QByteArray cSharedSecret = "MyUniqueSecureCode123";
-
-/********************************************************************************/
-/********************************************************************************/
-/********************************************************************************/
-
-ESNetClientHandler::ESNetClientHandler(qintptr pSocketDescriptor, QObject* pParent)
-	: QObject(pParent)
+ESNetClientHandler::ESNetClientHandler(qintptr pSocketDescriptor, ESNetServer* pParent)
+	: QObject()
+	, mServer(pParent)
 	, mSocketDescriptor(pSocketDescriptor)
 	, mSocket(nullptr)
 	, mIsAuthenticated(false)
@@ -43,7 +39,7 @@ void ESNetClientHandler::initializeConnection()
 	if (mSocket->setSocketDescriptor(mSocketDescriptor))
 	{
 		connect(mSocket, &QTcpSocket::readyRead, this, &ESNetClientHandler::processReadyRead);
-		connect(mSocket, &QTcpSocket::disconnected, this, &ESNetClientHandler::terminateConnection);
+		connect(mSocket, &QTcpSocket::disconnected, this, &ESNetClientHandler::onDisconnected);
 			
 		quint32 lBuffer[8];
 		QRandomGenerator::system()->fillRange(lBuffer);
@@ -70,7 +66,7 @@ void ESNetClientHandler::processReadyRead()
 
 		QByteArray lResponse = mSocket->read(32);
 		QMessageAuthenticationCode lMac(QCryptographicHash::Sha256);
-		lMac.setKey(cSharedSecret);
+		lMac.setKey(mServer->getSaltedPassword().toUtf8());
 		lMac.addData(mChallengeNonce);
 			
 		if (lResponse == lMac.result())
@@ -79,6 +75,7 @@ void ESNetClientHandler::processReadyRead()
 		}
 		else
 		{
+			qWarning() << "Incorrect password, disconnecting client: " << mSocket->peerAddress().toString();
 			mSocket->disconnectFromHost();
 			return;
 		}
@@ -94,6 +91,7 @@ void ESNetClientHandler::processReadyRead()
 		uint lProtocolVersion = 0;
 		uint lRequestType = 0;
 		QString lRequestedFileHash;
+		QString lRequestedFileName;
 
 		lStream >> lProtocolVersion;
 		if(lProtocolVersion == 1)
@@ -102,54 +100,92 @@ void ESNetClientHandler::processReadyRead()
 			if(lRequestType == 1)
 			{
 				lStream >> lRequestedFileHash;
+				lStream >> lRequestedFileName;
 			
 				if (lStream.commitTransaction())
 				{
 					// Prevent memory exhaustion attacks from malicious path sizes
 					if (lRequestedFileHash.size() > 1024)
 					{
+						qWarning() << "Incorrect file hash size, disconnecting client: " << mSocket->peerAddress().toString();
 						mSocket->disconnectFromHost();
 						return;
 					}
 
 					QPointer<ESNetClientHandler> lSafeThis(this);
+
+					qInfo() << "File Requested '" << lRequestedFileHash << " / " << lRequestedFileName << "' by client: " << mSocket->peerAddress().toString();
 				
-					QtConcurrent::run([lSafeThis, lRequestedFileHash]()
+					QtConcurrent::run([lSafeThis, lRequestedFileHash, lRequestedFileName, lPeerAddress = mSocket->peerAddress().toString()]()
 						{
 							QByteArray lData;
 					
-							const ESFileInfo* lRequestedFileInfo = ESDatabase::getInstance().getFileInfoFromHash(lRequestedFileHash);
-							if(lRequestedFileInfo)
+							const std::vector<const ESFileInfo*> lRequestedFileInfos = ESDatabase::getInstance().getFileInfoFromHash(lRequestedFileHash);
+							const ESFileInfo* lRequestedFileInfo = nullptr;
+							if(!lRequestedFileInfos.empty())
 							{
-								QFileInfo lInfo(lRequestedFileInfo->mFilePath.getString());
-								QString lSuffix = lInfo.suffix().toLower();
-								QImage lImage(lRequestedFileInfo->mFilePath.getString());
-								if (!lImage.isNull())
+								if (lRequestedFileInfos.size() > 1)
 								{
-									QBuffer lBuffer(&lData);
-									lBuffer.open(QIODevice::WriteOnly);
-									if (lImage.width() > 4096 || lImage.height() > 4096)
+									for(auto lFileInfo : lRequestedFileInfos)
 									{
-										if(lImage.width() > lImage.height())
+										QString lFileName = QFileInfo(lFileInfo->mFilePath.getString()).fileName();
+										if(lRequestedFileName.compare(lFileName, Qt::CaseInsensitive) == 0)
 										{
-											lImage = lImage.scaledToWidth(4096, Qt::SmoothTransformation);
-										}
-										else
-										{
-											lImage = lImage.scaledToHeight(4096, Qt::SmoothTransformation);
+											lRequestedFileInfo = lFileInfo;
+											break;
 										}
 									}
-									lImage.save(&lBuffer, "JPG", 90);
+								}
+								else
+								{
+									lRequestedFileInfo = lRequestedFileInfos.front();
 								}
 							}
 
+							if(!lRequestedFileInfo)
+							{
+								QMetaObject::invokeMethod(lSafeThis.data(),[lSafeThis](){lSafeThis->sendMessage(ESNetClientHandler::MsgFileNotFound);},	Qt::QueuedConnection);
+								qWarning() << "File info not found for hash/name: " << lRequestedFileHash << " / " << lRequestedFileName << ", disconnecting client: " << lPeerAddress;
+								return;
+							}
+							QMetaObject::invokeMethod(lSafeThis.data(), [lSafeThis]() {lSafeThis->sendMessage(ESNetClientHandler::MsgOpeningFile); }, Qt::QueuedConnection);
+							QFileInfo lInfo(lRequestedFileInfo->mFilePath.getString());
+							QString lSuffix = lInfo.suffix().toLower();
+							QImage lImage(lRequestedFileInfo->mFilePath.getString());
+							if (lImage.isNull())
+							{
+								QMetaObject::invokeMethod(lSafeThis.data(), [lSafeThis]() {lSafeThis->sendMessage(ESNetClientHandler::MsgFailedToOpenFile); }, Qt::QueuedConnection);
+								qWarning() << "Failed to open file: " << lRequestedFileInfo->mFilePath.getString() << ", disconnecting client: " << lPeerAddress;
+								return;
+							}
+							else
+							{
+								QMetaObject::invokeMethod(lSafeThis.data(), [lSafeThis]() {lSafeThis->sendMessage(ESNetClientHandler::MsgConvertingFile); }, Qt::QueuedConnection);
+								QBuffer lBuffer(&lData);
+								lBuffer.open(QIODevice::WriteOnly);
+								if (lImage.width() > 4096 || lImage.height() > 4096)
+								{
+									if(lImage.width() > lImage.height())
+									{
+										lImage = lImage.scaledToWidth(4096, Qt::SmoothTransformation);
+									}
+									else
+									{
+										lImage = lImage.scaledToHeight(4096, Qt::SmoothTransformation);
+									}
+								}
+								lImage.save(&lBuffer, "JPG", 90);
+								QMetaObject::invokeMethod(lSafeThis.data(), [lSafeThis]() {lSafeThis->sendMessage(ESNetClientHandler::MsgSendingFile); }, Qt::QueuedConnection);
+								qInfo() << "Sending file '" << lRequestedFileInfo->mFilePath.getString() << "' to client: " << lPeerAddress << "...";
+							}
+							
 							QMetaObject::invokeMethod(
 								lSafeThis.data(),
-								[lSafeThis, lData = std::move(lData)]()
+								[lSafeThis, lData = std::move(lData), lFilePath = lRequestedFileInfo ? lRequestedFileInfo->mFilePath.getString() : "(not found)"]()
 								{
 									if (lSafeThis)
 									{
-										lSafeThis->sendImageData(lData);
+										lSafeThis->sendImageData(lData, lFilePath);
 									}
 								},
 								Qt::QueuedConnection);
@@ -158,14 +194,14 @@ void ESNetClientHandler::processReadyRead()
 			}
 			else
 			{
-				qInfo() << "Unknown request type: " << lRequestType;
+				qWarning() << "Unknown request type: " << lRequestType << ", disconnecting client: " << mSocket->peerAddress().toString();
 				mSocket->disconnectFromHost();
 				return;
 			}
 		}
 		else
 		{
-			qInfo() << "Unknown protocol version: " << lProtocolVersion;
+			qWarning() << "Unknown protocol version: " << lProtocolVersion << ", disconnecting client: " << mSocket->peerAddress().toString();
 			mSocket->disconnectFromHost();
 			return;
 		}
@@ -174,7 +210,28 @@ void ESNetClientHandler::processReadyRead()
 
 /********************************************************************************/
 
-void ESNetClientHandler::sendImageData(const QByteArray& pData)
+void ESNetClientHandler::sendMessage(Message pMsg)
+{
+	if (mSocket && mSocket->state() == QAbstractSocket::ConnectedState)
+	{
+		QDataStream lStream(mSocket);
+		lStream.setVersion(QDataStream::Qt_6_0);
+		lStream << pMsg;
+
+		lStream.commitTransaction();
+
+		if (	pMsg == MsgFailedToOpenFile
+			||	pMsg == MsgFileNotFound)
+		{
+			mSocket->waitForBytesWritten(3000);
+			mSocket->disconnectFromHost();
+		}
+	}
+}
+
+/********************************************************************************/
+
+void ESNetClientHandler::sendImageData(const QByteArray& pData, QString pFilePath)
 {
 	if (mSocket && mSocket->state() == QAbstractSocket::ConnectedState)
 	{
@@ -188,16 +245,23 @@ void ESNetClientHandler::sendImageData(const QByteArray& pData)
 		if (!pData.isEmpty())
 		{
 			mSocket->write(pData);
+			qInfo() << "File '" << pFilePath << "' successfully sent to client: " << mSocket->peerAddress().toString();
+		}
+		else
+		{
+			qWarning() << "File '" << pFilePath << "' not found or failed to load, sending empty data to client: " << mSocket->peerAddress().toString();
 		}
 
+		
 		mSocket->disconnectFromHost();
 	}
 }
 
 /********************************************************************************/
 
-void ESNetClientHandler::terminateConnection()
+void ESNetClientHandler::onDisconnected()
 {
+	qInfo() << "Client disconnected: " << mSocket->peerAddress().toString();
 	mSocket->deleteLater();
 	mSocket = nullptr;
 	emit finished();

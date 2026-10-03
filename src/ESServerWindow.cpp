@@ -1,14 +1,9 @@
-#include "ESWindow.h"
+#include "ESServerWindow.h"
 
 // ExifStats
 #include "ESDatabase.h"
 #include "ESQmlBinder.h"
 #include "ESDebugQmlBinder.h"
-#include "ESMapDotsQuickItem.h"
-#include "ESBarChartQuickItem.h"
-#include "ESImageGridQuickItem.h"
-#include "ESImageViewerQuickItem.h"
-#include "ESImageTaggerManager.h"
 
 // Qt
 #include <qdir.h>
@@ -33,13 +28,8 @@ static const char* scMainQmlDirPath = "../../../rc/Qml";
 static const char* scMainQmlDirPath = "ESQml";
 #endif
 
-#if defined(Q_OS_ANDROID) || defined(EXIFSTATS_READONLY)
-static const char* scMainQmlLocalPath = "MainMobile.qml";
-static const char* scMainQmlPathQRC = "qrc:/Qml/MainMobile.qml";
-#else
-static const char* scMainQmlLocalPath = "MainDesktop.qml";
-static const char* scMainQmlPathQRC = "qrc:/Qml/MainDesktop.qml";
-#endif // Q_OS_ANDROID
+static const char* scMainQmlLocalPath = "MainServer.qml";
+static const char* scMainQmlPathQRC = "qrc:/Qml/MainServer.qml";
 static const char* scFallbackQmlQRC = "qrc:/Qml/FallbackQmlErrors.qml";
 
 
@@ -48,19 +38,16 @@ static const char* scFallbackQmlQRC = "qrc:/Qml/FallbackQmlErrors.qml";
 /********************************************************************************/
 
 
-ESWindow::ESWindow()
+ESServerWindow::ESServerWindow()
 : mFallbackQmlLoaded(false)
 {
-	setSurfaceType(QSurface::OpenGLSurface);
 	QQuickStyle::setStyle("Material");
+	setWidth(800);
+	setHeight(600);
 
 	ESDatabase::getInstance();
-	ESImageCache::getInstance();
-#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-	ESImageTaggerManager::getInstance();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
 
-	mBinder = std::make_shared<ESQmlBinder>(false);
+	mBinder = std::make_shared<ESQmlBinder>(true);
 	mDebugBinder = std::make_shared<ESDebugQmlBinder>();
 
 	(void)connect(mBinder.get(), &ESQmlBinder::propertyFullScreenChanged, this, 
@@ -71,13 +58,11 @@ ESWindow::ESWindow()
 			else
 				showNormal();
 		});
-
-	(void)connect(this, &QQuickWindow::sceneGraphError, this,&ESWindow::onSceneGraphError);
 }
 
 /********************************************************************************/
 
-/*virtual*/ ESWindow::~ESWindow() /*override*/
+/*virtual*/ ESServerWindow::~ESServerWindow() /*override*/
 {
 	mBinder->save();
 	setSource(QUrl());
@@ -85,36 +70,24 @@ ESWindow::ESWindow()
 
 /********************************************************************************/
 
-void ESWindow::initialize()
+void ESServerWindow::initialize()
 {
 	initializeQml();
 	loadMainQml();
 
 	ESDatabase::getInstance().loadDatabase();
-	mBinder->initialize(true);
-	(void)QtConcurrent::run([]()
-		{
-			ESImageCache::getInstance().initializeFromDatabase();
-#if defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-			ESImageTaggerManager::getInstance().initialize();
-#endif // defined(IMAGETAGGER_ENABLE) && !defined(EXIFSTATS_READONLY)
-		});
+	mBinder->initialize(false);
 }
 
 /********************************************************************************/
 
-void ESWindow::initializeQml()
+void ESServerWindow::initializeQml()
 {
 	setResizeMode(QQuickView::SizeRootObjectToView);
 
-	connect(engine(), &QQmlEngine::quit, this, &ESWindow::onQuit);
-	connect(engine(), &QQmlEngine::warnings, this, &ESWindow::onQmlWarnings, Qt::QueuedConnection);
+	connect(engine(), &QQmlEngine::quit, this, &ESServerWindow::onQuit);
+	connect(engine(), &QQmlEngine::warnings, this, &ESServerWindow::onQmlWarnings, Qt::QueuedConnection);
 	engine()->setOutputWarningsToStandardError(false);
-
-	qmlRegisterType<ESMapDotsQuickItem>("ExifStats", 1, 0, "ESMapDotsQuickItem");
-	qmlRegisterType<ESBarChartQuickItem>("ExifStats", 1, 0, "ESBarChartQuickItem");
-	qmlRegisterType<ESImageGridQuickItem>("ExifStats", 1, 0, "ESImageGridQuickItem");
-	qmlRegisterType<ESImageViewerQuickItem>("ExifStats", 1, 0, "ESImageViewerQuickItem");
 
 	engine()->rootContext()->setContextProperty("MainQmlBinder", mBinder.get());
 	engine()->rootContext()->setContextProperty("DebugQmlBinder", mDebugBinder.get());
@@ -128,23 +101,14 @@ void ESWindow::initializeQml()
 
 /********************************************************************************/
 
-void ESWindow::onSceneGraphError(QQuickWindow::SceneGraphError pError, const QString& pMessage)
-{
-	Q_UNUSED(pError);
-	qWarning("GPU_CRASH_OR_SCENEGRAPH_ERROR: %s", pMessage.toStdString().c_str());
-	abort();
-}
-
-/********************************************************************************/
-
-QString ESWindow::getMainQmlFilePath() const
+QString ESServerWindow::getMainQmlFilePath() const
 {
 	return qApp->applicationDirPath() + QDir::separator() + QString(scMainQmlDirPath) + QDir::separator() + scMainQmlLocalPath;
 }
 
 /********************************************************************************/
 
-void ESWindow::loadMainQml()
+void ESServerWindow::loadMainQml()
 {
 	QString lMainQmlFilePath = getMainQmlFilePath();
 	if (QFile::exists(lMainQmlFilePath))
@@ -175,7 +139,7 @@ void ESWindow::loadMainQml()
 		}
 
 		mQmlFileWatcher = std::make_shared<QFileSystemWatcher>(lQmlFiles);
-		(void)connect(mQmlFileWatcher.get(), &QFileSystemWatcher::fileChanged, this, &ESWindow::onQmlFileChanged);
+		(void)connect(mQmlFileWatcher.get(), &QFileSystemWatcher::fileChanged, this, &ESServerWindow::onQmlFileChanged);
 		setSource(QUrl::fromLocalFile(lMainQmlFilePath));
 		logQmlErrors();
 	}
@@ -188,7 +152,7 @@ void ESWindow::loadMainQml()
 
 /********************************************************************************/
 
-void ESWindow::onQuit()
+void ESServerWindow::onQuit()
 {
 	qInfo() << "Closing";
 	engine()->rootContext()->setContextProperty("GClosing", QVariant::fromValue(true));
@@ -196,7 +160,7 @@ void ESWindow::onQuit()
 
 /********************************************************************************/
 
-void ESWindow::onQmlFileChanged(const QString& pFilePath)
+void ESServerWindow::onQmlFileChanged(const QString& pFilePath)
 {
 	Q_UNUSED(pFilePath);
 
@@ -211,7 +175,7 @@ void ESWindow::onQmlFileChanged(const QString& pFilePath)
 
 /********************************************************************************/
 
-void ESWindow::logQmlErrors()
+void ESServerWindow::logQmlErrors()
 {
 	if (errors().size() > 0)
 	{
@@ -237,7 +201,7 @@ void ESWindow::logQmlErrors()
 
 /********************************************************************************/
 
-void ESWindow::onQmlWarnings(const QList<QQmlError>& pWarnings)
+void ESServerWindow::onQmlWarnings(const QList<QQmlError>& pWarnings)
 {
 	QString lWarnings;
 	for (const QQmlError& lWarning : pWarnings)

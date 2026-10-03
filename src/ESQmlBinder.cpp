@@ -7,6 +7,8 @@
 #include "ESMaterialPalette.h"
 #include "ESCrashHandler.h"
 #include "ESSplitZipFileDevice.h"
+#include "ESNetServer.h"
+#include "ESNetClient.h"
 
 // Qt
 #include <QApplication>
@@ -33,8 +35,9 @@ static const char* scPresetsFolderName = "Presets";
 /********************************************************************************/
 /********************************************************************************/
 
-ESQmlBinder::ESQmlBinder()
-	: mFullScreen(false)
+ESQmlBinder::ESQmlBinder(bool pIsServer)
+	: mIsServer(pIsServer)
+	, mFullScreen(false)
 	, mTagging(false)
 	, mTaggingProgress(1.f)
 	, mPauseCaching(false)
@@ -137,15 +140,78 @@ ESQmlBinder::ESQmlBinder()
 
 /********************************************************************************/
 
-void ESQmlBinder::initialize()
+/*virtual*/ ESQmlBinder::~ESQmlBinder() /*override*/
+{
+
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::initialize(bool pLoadTokenizerAndHNSW)
 {
 #ifdef IMAGETAGGER_ENABLE
-	mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
+	if (pLoadTokenizerAndHNSW)
+	{
+		mTagsFilter.loadTokenizerAndHNSW([this](bool pTokenizerEnabled, bool pHNSWEnabled)
 		{
 			setTokenizerEnabled(pTokenizerEnabled);
 			setHNSWIndexEnabled(pHNSWEnabled);
 		});
+	}
+#else
+	Q_UNUSED(pLoadTokenizerAndHNSW);
 #endif // IMAGETAGGER_ENABLE
+
+	if(mIsServer)
+	{
+		mServer = std::make_unique<ESNetServer>();
+		if (mServer->listen(QHostAddress::Any, 12345))
+		{
+			qInfo() << "Server started on port 12345";
+		}
+		else
+		{
+			qCritical() << "Failed to start server: " << mServer->errorString();
+		}
+	}
+	else
+	{
+		ESNetClientOriginalImageDownloadRequest::initialize();
+	}
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::setServerAddressAndPort(QString pAddress, quint16 pPort)
+{
+	if (!mIsServer)
+	{
+		ESNetClientOriginalImageDownloadRequest::setServerAddressAndPort(pAddress, pPort);
+	}
+}
+
+/********************************************************************************/
+
+QString ESQmlBinder::getServerAddress()
+{
+	return ESNetClientOriginalImageDownloadRequest::msServerAddress;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getServerPort()
+{
+	return ESNetClientOriginalImageDownloadRequest::msServerPort;
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::setServerPassword(QString pPassword)
+{
+	if(mIsServer)
+		mServer->setPassword(pPassword);
+	else
+		ESNetClientOriginalImageDownloadRequest::setPassword(pPassword);
 }
 
 /********************************************************************************/
@@ -692,6 +758,9 @@ void ESQmlBinder::updateMinMaxFromData()
 
 void ESQmlBinder::updateStats(bool pIgnoreFilters)
 {
+	if(mIsServer)
+		return;
+
 	ESPerfLog lPerfLog(__FUNCTION__);
 
 	const ESDatabase& lDB = ESDatabase::getInstance();

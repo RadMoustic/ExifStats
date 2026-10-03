@@ -115,6 +115,9 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			{
 				mFiles.clear();
 				mFolders.clear();
+				mFilesPathToId.clear();
+				mFilesHashToId.clear();
+				mLastAssignedId = 0;
 			}
 
 			QVector<ESFileInfoId> lAllImageFileIds;
@@ -141,6 +144,7 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 						lFileInfo.mId = lFileInfoId;
 						lFileInfo.mFilePath = lFilePath;
 						lItFound->second = lFileInfoId;
+						mFilesPathToId[lFilePath] = lFileInfoId;
 					}
 					if (!pNewFilesOnly || lIsNewFile || lFileInfo.mReadResult != eSuccess)
 						lAllImageFileIds << lFileInfoId;
@@ -343,11 +347,13 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			}
 
 			// Compute the hash for all files
+			mFilesHashToId.clear();
 			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
 			{
 				lProcessedFile.second.computeHash();
+				if(!lProcessedFile.second.mHash.isEmpty())
+					mFilesHashToId.emplace(lProcessedFile.second.mHash, lProcessedFile.first);
 			}
-
 
 			mFilesMutex.unlock();
 
@@ -355,6 +361,8 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 
 			setProcessing(false);
 			emit dataChanged();
+
+			qInfo() << "Database updated and now with " << mFiles.size() << " files";
 		});
 #endif // EXIFSTATS_READONLY
 }
@@ -577,7 +585,8 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					pFileInfo.computeHash();
 
 				mFilesPathToId[pFileInfo.mFilePath] = pFileInfo.mId;
-				mFilesHashToId[pFileInfo.mHash] = pFileInfo.mId;
+				if(!pFileInfo.mHash.isEmpty())
+					mFilesHashToId.emplace(pFileInfo.mHash, pFileInfo.mId);
 			}
 			else
 			{
@@ -695,6 +704,8 @@ void ESDatabase::loadDatabase()
 	emit tagsChanged();
 	emit dataChanged();
 
+	qInfo() << "Database loaded with " << mFiles.size() << " files";
+
 	if(mUsefullExifVersion != USEFULLEXIF_VERSION)
 	{
 		QTimer::singleShot(1000,[this]()
@@ -713,27 +724,20 @@ const QVector<QString>& ESDatabase::getFolders() const
 
 /********************************************************************************/
 
-ESFileInfo* ESDatabase::getFileInfoFromHash(QString pHash)
+std::vector<const ESFileInfo*> ESDatabase::getFileInfoFromHash(QString pHash) const
 {
-	ESFileInfo* lResult = nullptr;
+	std::vector<const ESFileInfo*> lResult;
 	if(pHash.size() > 10)
 	{
-		auto&& lIdItFound = mFilesHashToId.find(pHash);
-		if (lIdItFound != mFilesHashToId.end())
+		auto lRange = mFilesHashToId.equal_range(pHash);
+		for (auto lItFiles = lRange.first; lItFiles != lRange.second; ++lItFiles)
 		{
-			auto lItFound = mFiles.find(lIdItFound->second);
+			auto lItFound = mFiles.find(lItFiles->second);
 			if (lItFound != mFiles.end())
-				lResult = &lItFound->second;
+				lResult.push_back(&lItFound->second);
 		}
 	}
 	return lResult;
-}
-
-/********************************************************************************/
-
-const ESFileInfo* ESDatabase::getFileInfoFromHash(QString pHash) const
-{
-	return const_cast<ESDatabase*>(this)->getFileInfoFromHash(pHash);
 }
 
 /********************************************************************************/

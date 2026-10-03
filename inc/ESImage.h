@@ -46,6 +46,7 @@ public:
 	ESStringId getImagePath() const;
 	QString getImageCachePath() const;
 	QString getImageHash() const;
+	QString getImageFileName() const;
 	const ESUsefullExif& getExif() const;
 	float getRatio() const;
 	

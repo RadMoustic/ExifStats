@@ -51,6 +51,7 @@
 /********************************************************************************/
 
 class ESDatabase;
+class ESNetServer;
 
 /********************************************************************************/
 /********************************************************************************/
@@ -192,9 +193,10 @@ public:
 
 	/********************************* METHODS ***********************************/
 
-	ESQmlBinder();
+	ESQmlBinder(bool pIsServer);
+	virtual ~ESQmlBinder() override;
 
-	void initialize();
+	void initialize(bool pLoadTokenizerAndHNSW);
 
 	QVector<QString> getProcessedFolders();
 	bool getProcessing();
@@ -304,6 +306,12 @@ public:
 
 	Q_INVOKABLE void save();
 
+	// Server
+	Q_INVOKABLE void setServerAddressAndPort(QString pAddress, quint16 pPort);
+	Q_INVOKABLE QString getServerAddress();
+	Q_INVOKABLE int getServerPort();
+	Q_INVOKABLE void setServerPassword(QString pPassword);
+
 signals:
 	/********************************** SIGNALS ***********************************/
 
@@ -320,6 +328,9 @@ signals:
 
 private:
 	/******************************** ATTRIBUTES **********************************/
+
+	bool mIsServer;
+	std::unique_ptr<ESNetServer> mServer;
 
 	ESFocalLengthIn35mmStat m35mmStat;
 	ESApertureStat mApertureStat;

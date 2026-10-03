@@ -16,7 +16,14 @@ public:
 
 	explicit ESNetServer(QObject* pParent = nullptr);
 
+	void setPassword(const QString& pPassword);
+	const QString& getSaltedPassword() const;
+
 protected:
+	/******************************** ATTRIBUTES **********************************/
+
+	QString mSaltedPassword;
+
 	/********************************* METHODS ***********************************/
 
 	void incomingConnection(qintptr pSocketDescriptor) override;

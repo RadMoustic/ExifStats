@@ -6,8 +6,6 @@ import QtQuick.Dialogs
 import QtLocation
 import QtCore
 
-import ExifStats
-
 Popup
 {
 	id: rootItem

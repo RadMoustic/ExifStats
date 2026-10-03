@@ -4,7 +4,6 @@
 #include "ESImage.h"
 #include "ESImageCache.h"
 #include "ESNetClient.h"
-#include "ESDatabase.h"
 
 // Qt
 #include <QPainter>
@@ -19,22 +18,109 @@ ESImageViewerQuickItem::ESImageViewerQuickItem()
 	, mImageRatio(1.f)
 	, mIsUserInteracting(false)
 	, mHighResImageDisplayed(false)
+	, mHighResImageStep(StepNone)
+	, mHighResImageDownloadProgress(0.f)
 {
 }
 
 /********************************************************************************/
 
-void ESImageViewerQuickItem::downloadOriginalImage(QString pImagePath)
+void ESImageViewerQuickItem::downloadOriginalImage(QString pImagePath, bool pHighPriority)
 {
-	std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImagePath);
-	if(lImage && (!lImage->mOriginalImageDownloadRequest || lImage->mOriginalImageDownloadRequest->isCancelled()) && !lImage->getImageHash().isEmpty())
+	if(!pImagePath.isEmpty())
 	{
-		lImage->mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(lImage, "192.168.1.15", 12345);
+		std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(pImagePath);
+		if(!lImage)
+			return;
+		if (mCurrentOriginalImageDownloadRequest && mCurrentOriginalImageDownloadRequest == lImage->mOriginalImageDownloadRequest)
+			return;
+
+		if (pHighPriority)
+		{
+			if(mCurrentOriginalImageDownloadRequest)
+			{
+				mCurrentOriginalImageDownloadRequest->cancelRequest();
+				mCurrentOriginalImageDownloadRequest = nullptr;
+			}
+
+			mOriginalDownloadRequests.push_front(pImagePath);
+		}
+		else
+		{
+			mOriginalDownloadRequests.push_back(pImagePath);
+		}
+		startNextOriginalImageDownloadRequest();
+	}
+}
+
+/********************************************************************************/
+
+void ESImageViewerQuickItem::cancelAllDownloadRequests()
+{
+	mOriginalDownloadRequests.clear();
+	if(mCurrentOriginalImageDownloadRequest)
+	{
+		mCurrentOriginalImageDownloadRequest->cancelRequest();
+		mCurrentOriginalImageDownloadRequest = nullptr;
+	}
+}
+
+/********************************************************************************/
+
+void ESImageViewerQuickItem::startNextOriginalImageDownloadRequest()
+{
+	if(mCurrentOriginalImageDownloadRequest || mOriginalDownloadRequests.empty())
+		return;
+
+	QString lImagePath = mOriginalDownloadRequests.front();
+	mOriginalDownloadRequests.pop_front();
+
+	std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lImagePath);
+	if(lImage && (!lImage->mOriginalImageDownloadRequest || lImage->mOriginalImageDownloadRequest->hasFailed()) && !lImage->getImageHash().isEmpty())
+	{
+		if (lImage == mImage)
+		{
+			setHighResImageStep(StepStarted);
+			setHighResImageDownloadProgress(0.f);
+		}
+		lImage->mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(lImage);
+		mCurrentOriginalImageDownloadRequest = lImage->mOriginalImageDownloadRequest;
+		connect(lImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::lastMessageChanged, this,
+			[this, lImage](ESNetClientHandler::Message pLastMessage)
+			{
+				if(lImage == mImage)
+				{
+					setHighResImageStep(pLastMessage);
+				}
+			}, Qt::DirectConnection);
+		connect(lImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::downloadProgress, this,
+			[this, lImage](float pProgress)
+			{
+				if(lImage == mImage)
+				{
+					setHighResImageDownloadProgress(pProgress);
+				}
+			}, Qt::DirectConnection);
 		connect(lImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, this,
 			[this](const ESNetClientOriginalImageDownloadRequest& /*pRequest*/)
 			{
-				QMetaObject::invokeMethod(this, [this]() {onHighResImageDownloaded(); }, Qt::QueuedConnection);
-			}, Qt::DirectConnection);
+				onHighResImageDownloaded();
+				mCurrentOriginalImageDownloadRequest = nullptr;
+				startNextOriginalImageDownloadRequest();
+			}, Qt::QueuedConnection);
+	}
+	else
+	{
+		if (lImage && lImage->mOriginalImageDownloadRequest)
+		{
+			if (lImage->mOriginalImageDownloadRequest->isFinished() && !lImage->mOriginalImageDownloadRequest->getDownloadedImage().isNull())
+				setHighResImageStep(StepFinished);
+			else
+				setHighResImageStep(StepStarted);
+		}
+		else if(lImage->getImageHash().isEmpty())
+			setHighResImageStep(StepNoHash);
+		startNextOriginalImageDownloadRequest();
 	}
 }
 
@@ -53,9 +139,9 @@ void ESImageViewerQuickItem::downloadOriginalImage(QString pImagePath)
 		std::shared_ptr<ESImage> lESImage = mImage;
 		std::shared_ptr<ESNetClientOriginalImageDownloadRequest> lRequest = lESImage->mOriginalImageDownloadRequest;
 
-		bool hasHighResImage = lRequest && !lRequest->isCancelled() && lRequest->isFinished() && !lRequest->getDownloadedImage().isNull() && !mIsUserInteracting;
-		mHighResImageDisplayed = hasHighResImage;
-		const QImage* lImage = hasHighResImage ? &lRequest->getDownloadedImage() : lESImage->getImage().get();
+		bool lHasHighResImage = lRequest && !lRequest->hasFailed() && lRequest->isFinished() && !lRequest->getDownloadedImage().isNull() && !mIsUserInteracting;
+		mHighResImageDisplayed = lHasHighResImage;
+		const QImage* lImage = lHasHighResImage ? &lRequest->getDownloadedImage() : lESImage->getImage().get();
 		
 		float lW = width();
 		float lH = height();
@@ -106,6 +192,8 @@ void ESImageViewerQuickItem::onHighResImageDownloaded()
 {
 	if (!mIsUserInteracting)
 	{
+		if(mImage->mOriginalImageDownloadRequest && !mImage->mOriginalImageDownloadRequest->getDownloadedImage().isNull())
+			setHighResImageStep(StepFinished);
 		setTextureSize(QSize(4096, 4096));
 		update();
 	}
@@ -131,23 +219,18 @@ void ESImageViewerQuickItem::updateInternal()
 
 		mHighResImageDisplayed = true;
 
-		const ESFileInfo* lImageFileInfo = ESDatabase::getInstance().getFileInfo(mImage->getImagePath());
-		assert(lImageFileInfo);
-
-		if(mImage && !mImage->getImageHash().isEmpty() && (!mImage->mOriginalImageDownloadRequest || mImage->mOriginalImageDownloadRequest->isCancelled()))
+		if(mImage)
 		{
 			mHighResImageDisplayed = false;
-			mImage->mOriginalImageDownloadRequest = ESNetClientOriginalImageDownloadRequest::downloadOriginalImage(mImage, "192.168.1.15", 12345);
-			connect(mImage->mOriginalImageDownloadRequest.get(), &ESNetClientOriginalImageDownloadRequest::finished, this,
-			[this](const ESNetClientOriginalImageDownloadRequest& pRequest)
-			{
-				std::lock_guard<std::mutex> lLock(mImageMutex);
-
-				if (pRequest.getImage() == mImage && !pRequest.getDownloadedImage().isNull())
-				{
-					QMetaObject::invokeMethod(this,[this](){onHighResImageDownloaded();}, Qt::QueuedConnection);
-				}
-			}, Qt::DirectConnection);
+			if (mImage->mOriginalImageDownloadRequest && !mImage->mOriginalImageDownloadRequest->getDownloadedImage().isNull())
+				setHighResImageStep(StepFinished);
+			else if(mImage->getImageHash().isEmpty())
+				setHighResImageStep(StepNoHash);
+			else
+			{	
+				setHighResImageStep(StepStarted);
+				downloadOriginalImage(mImagePath, true);
+			}
 		}
 
 		if(mImage->mOriginalImageDownloadRequest)
