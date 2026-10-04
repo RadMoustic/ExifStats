@@ -17,7 +17,7 @@
 
 /********************************************************************************/
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(EXIFSTATS_READONLY)
 constexpr int cMaxDisplayedImages = 64;
 #else
 constexpr int cMaxDisplayedImages = 512;

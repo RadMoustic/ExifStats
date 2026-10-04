@@ -2,6 +2,7 @@
 
 // ExifStats
 #include "ESImage.h"
+#include "ESDatabase.h"
 
 // Qt
 #include <QTcpSocket>
@@ -119,6 +120,20 @@ void ESNetClientOriginalImageDownloadRequest::onInternalRequestFinished(const QI
 			}
 		}
 	}
+
+#ifdef QT_DEBUG
+	if (mLastMessage == ESNetClientHandler::MsgFileNotFound)
+	{
+		if(std::shared_ptr<ESImage> lImage =mParentImage.lock())
+		{
+			ESHash<true> lHash(QCryptographicHash::Sha256);
+			ESDatabase::getInstance().getFileInfo(lImage->getImagePath())->addHashData(lHash);
+			qInfo() << lImage->getImagePath().getString() << "not found on server, hash data:";
+			qInfo() << lHash.getData();
+		}
+	}
+#endif
+
 	emit finished(*this);
 }
 

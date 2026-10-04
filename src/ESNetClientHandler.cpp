@@ -144,6 +144,23 @@ void ESNetClientHandler::processReadyRead()
 
 							if(!lRequestedFileInfo)
 							{
+								static const bool lsIsDebugHash = qApp->arguments().contains("-debughash");
+								if(lsIsDebugHash)
+								{
+									// Search all database images with the same file name and print the hash data for debugging purposes
+									// Loop over all fles in the database
+									for(const auto& [lFileInfoId, lFileInfo] : ESDatabase::getInstance().getFiles())
+									{
+										QString lFileName = QFileInfo(lFileInfo.mFilePath.getString()).fileName();
+										if(lFileName.endsWith(lRequestedFileName, Qt::CaseInsensitive))
+										{
+											qInfo() << "Found file with same name: " << lFileInfo.mFilePath.getString() << ", hash: " << lFileInfo.mHash;
+											ESHash<true> lHash(QCryptographicHash::Sha256);
+											lFileInfo.addHashData(lHash);
+											qInfo() << "Hash data: " << lHash.getData();
+										}
+									}
+								}
 								QMetaObject::invokeMethod(lSafeThis.data(),[lSafeThis](){lSafeThis->sendMessage(ESNetClientHandler::MsgFileNotFound);},	Qt::QueuedConnection);
 								qWarning() << "File info not found for hash/name: " << lRequestedFileHash << " / " << lRequestedFileName << ", disconnecting client: " << lPeerAddress;
 								return;
@@ -224,7 +241,8 @@ void ESNetClientHandler::sendMessage(Message pMsg)
 			||	pMsg == MsgFileNotFound)
 		{
 			mSocket->waitForBytesWritten(3000);
-			mSocket->disconnectFromHost();
+			if(mSocket) // Can be deleted after the wait if disconnected
+				mSocket->disconnectFromHost();
 		}
 	}
 }

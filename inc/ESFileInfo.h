@@ -97,6 +97,29 @@ struct ESUsefullExif
 typedef std::vector<float, ESAlignedAllocator<float, 64>> ESEmbeddings;
 typedef uint32_t ESFileInfoId;
 
+template<bool KeepData>
+class ESHash : private QCryptographicHash
+{
+public:
+	using QCryptographicHash::QCryptographicHash;
+	using QCryptographicHash::result;
+
+	void addDataCustom(const QByteArrayView& pData)
+	{
+		if constexpr (KeepData)
+		{
+			mData.append(pData);
+			mData.append("_|_");
+		}
+		addData(pData);
+	}
+
+	const QByteArray& getData() const { return mData; }
+
+private:
+	QByteArray mData;
+};
+
 struct ESFileInfo
 {
 	QString mHash;
@@ -112,29 +135,43 @@ struct ESFileInfo
 	ESEmbeddings mEmbeddings;
 	bool mTagsGenerated = false;
 
+	template<bool KeepData>
+	void addHashData(ESHash<KeepData>& pHash) const
+	{
+		pHash.addDataCustom(mExif.mCameraModel.getString().toUtf8());
+		pHash.addDataCustom(mExif.mLensModel.getString().toUtf8());
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mDateTime), sizeof(mExif.mDateTime)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mShutterSpeedValue), sizeof(mExif.mShutterSpeedValue)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFNumber), sizeof(mExif.mFNumber)));
+		if(mExif.mGeoLocationGuessed)
+		{
+			float lZero = 0.f;
+			pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&lZero), sizeof(lZero)));
+			pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&lZero), sizeof(lZero)));
+		}
+		else
+		{
+			pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLatitude), sizeof(mExif.mGeoLocation.mLatitude)));
+			pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLongitude), sizeof(mExif.mGeoLocation.mLongitude)));
+		}
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLengthIn35mm), sizeof(mExif.mFocalLengthIn35mm)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLength), sizeof(mExif.mFocalLength)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mOrientation), sizeof(mExif.mOrientation)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mISOSpeedRatings), sizeof(mExif.mISOSpeedRatings)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mWidth), sizeof(mExif.mWidth)));
+		pHash.addDataCustom(QByteArrayView(reinterpret_cast<const char*>(&mExif.mHeight), sizeof(mExif.mHeight)));
+	}
+
 	void computeHash()
 	{
 		mHash = "";
 		if(mReadResult == eSuccess)
 		{
-			QCryptographicHash lHash(QCryptographicHash::Sha256);
+			ESHash<false> lHash(QCryptographicHash::Sha256);
 
-			lHash.addData(mExif.mCameraModel.getString().toUtf8());
-			lHash.addData(mExif.mLensModel.getString().toUtf8());
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mDateTime), sizeof(mExif.mDateTime)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mShutterSpeedValue), sizeof(mExif.mShutterSpeedValue)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFNumber), sizeof(mExif.mFNumber)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLatitude), sizeof(mExif.mGeoLocation.mLatitude)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mGeoLocation.mLongitude), sizeof(mExif.mGeoLocation.mLongitude)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLengthIn35mm), sizeof(mExif.mFocalLengthIn35mm)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mFocalLength), sizeof(mExif.mFocalLength)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mOrientation), sizeof(mExif.mOrientation)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mISOSpeedRatings), sizeof(mExif.mISOSpeedRatings)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mWidth), sizeof(mExif.mWidth)));
-			lHash.addData(QByteArrayView(reinterpret_cast<const char*>(&mExif.mHeight), sizeof(mExif.mHeight)));
-		
+			addHashData(lHash);
 
-			mHash = QString::fromLatin1(lHash.result().toHex());
+			mHash = QString::fromLatin1(lHash.result());
 		}
 	}
 };
