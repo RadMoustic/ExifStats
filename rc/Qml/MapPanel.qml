@@ -74,7 +74,7 @@ Item
 		Timer
 		{
 			id: updateGeoShapeFilterTimer
-			interval: 100
+			interval: 30
 			running: false
 			repeat: false
 			

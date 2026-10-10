@@ -10,6 +10,20 @@ ESQuadTree::ESQuadTree(const QRectF& pRootRect, const QVector<QPointF>& pPoints)
 
 /********************************************************************************/
 
+void ESQuadTree::clear()
+{
+	mRootNode.clear();
+}
+
+/********************************************************************************/
+
+void ESQuadTree::fill(const QRectF& pRootRect, const QVector<QPointF>& pPoints)
+{
+	mRootNode.fill(pRootRect, pPoints);
+}
+
+/********************************************************************************/
+
 QVector<QVector3D> ESQuadTree::getPoints(int pDepth, const QRectF& pRect)
 {
 	QVector<QVector3D> lResult;
@@ -22,32 +36,59 @@ QVector<QVector3D> ESQuadTree::getPoints(int pDepth, const QRectF& pRect)
 /********************************************************************************/
 
 ESQuadTree::Node::Node(QRectF pRect, const QVector<QPointF>& pPoints)
-	: mRect(pRect)
-	, mTotalPoints(0)
+	: mTotalPoints(0)
 {
-	QVector<QPointF> lNodePoints;
+	fill(pRect, pPoints);
+}
+
+/********************************************************************************/
+
+void ESQuadTree::Node::clear()
+{
+	mTotalPoints = 0;
+	mRect = QRectF(0, 0, -1.f, -1.f);
+}
+
+/********************************************************************************/
+
+void ESQuadTree::Node::fill(QRectF pRect, const QVector<QPointF>& pPoints)
+{
+	clear();
+	mRect = pRect;
+
+	mPoints.clear();
 	for (const QPointF& lPoint : pPoints)
 	{
 		if (mRect.contains(lPoint))
 		{
-			lNodePoints.append(lPoint);
+			mPoints.append(lPoint);
 		}
 	}
 
-	mTotalPoints = lNodePoints.count();
+	mTotalPoints = mPoints.count();
 
-	if (lNodePoints.count() > 1)
+	if (mPoints.count() > 1)
 	{
 		QSizeF lChildSize = mRect.size() / 2.f;
 
-		mTopLeft = std::make_unique<Node>(QRectF(mRect.topLeft(), lChildSize), lNodePoints);
-		mTopRight = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), 0), lChildSize), lNodePoints);
-		mBottomLeft = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(0, lChildSize.height()), lChildSize), lNodePoints);
-		mBottomRight = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), lChildSize.height()), lChildSize), lNodePoints);
+		if (mTopLeft)
+		{
+			mTopLeft->fill(QRectF(mRect.topLeft(), lChildSize), mPoints);
+			mTopRight->fill(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), 0), lChildSize), mPoints);
+			mBottomLeft->fill(QRectF(mRect.topLeft() + QPointF(0, lChildSize.height()), lChildSize), mPoints);
+			mBottomRight->fill(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), lChildSize.height()), lChildSize), mPoints);
+		}
+		else
+		{
+			mTopLeft = std::make_unique<Node>(QRectF(mRect.topLeft(), lChildSize), mPoints);
+			mTopRight = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), 0), lChildSize), mPoints);
+			mBottomLeft = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(0, lChildSize.height()), lChildSize), mPoints);
+			mBottomRight = std::make_unique<Node>(QRectF(mRect.topLeft() + QPointF(lChildSize.width(), lChildSize.height()), lChildSize), mPoints);
+		}
 	}
-	else if (lNodePoints.count() == 1)
+	else if (mPoints.count() == 1)
 	{
-		mRect = QRectF(lNodePoints[0], QSizeF(0, 0));
+		mRect = QRectF(mPoints[0], QSizeF(0, 0));
 	}
 	else
 	{

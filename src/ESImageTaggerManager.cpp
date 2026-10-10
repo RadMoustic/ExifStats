@@ -97,10 +97,10 @@ void ESImageTaggerManager::retag()
 		std::scoped_lock lLock(lDB.mFilesMutex);
 		lDB.mAllTags.clear();
 		lDB.mEmbeddingsDimension = 0;
-		for (auto&& lFileInfo : lDB.mFiles)
+		for (ESFileInfo& lFileInfo : lDB.mFiles)
 		{
-			lFileInfo.second.mTagsGenerated = false;
-			lFileInfo.second.mTagIndexes.clear();
+			lFileInfo.mTagsGenerated = false;
+			lFileInfo.mTagIndexes.clear();
 		}
 	}
 
@@ -306,9 +306,9 @@ void ESImageTaggerManager::updateAllTagLabels()
 			lTagLabelToNewIndex[lDB.mAllTags[i]] = lNewIndex;
 		}
 
-		for (auto& lFileInfo : lDB.mFiles)
+		for (ESFileInfo& lFileInfo : lDB.mFiles)
 		{
-			for (uint16_t& lTagIndex : lFileInfo.second.mTagIndexes)
+			for (uint16_t& lTagIndex : lFileInfo.mTagIndexes)
 			{
 				if (lTagIndex >= 0 && lTagIndex < lDB.mAllTags.size())
 				{
@@ -415,9 +415,9 @@ void ESImageTaggerManager::updateDatabaseMissingTags()
 
 	ESDatabase& lDB = ESDatabase::getInstance();
 	std::shared_lock lLock(lDB.mFilesMutex);
-	for(auto&& lFileInfo : lDB.mFiles)
-		if(!lFileInfo.second.mTagsGenerated)
-			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.second.mFilePath))
+	for(const ESFileInfo& lFileInfo : lDB.mFiles)
+		if(!lFileInfo.mTagsGenerated)
+			if(std::shared_ptr<ESImage> lImage = ESImageCache::getInstance().getImage(lFileInfo.mFilePath))
 				queueImageLoading(lImage, false);
 }
 

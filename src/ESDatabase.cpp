@@ -30,7 +30,7 @@
 /********************************************************************************/
 
 constexpr uint DATABASE_MAGIC_NUMBER = 0xEACDEACD;
-constexpr uint DATABASE_VERSION = 12;
+constexpr uint DATABASE_VERSION = 13;
 /*static*/ const char* ESDatabase::msReadOnlyDatabaseFolderSettingsKey = "ReadOnlyDataBaseFolderPath";
 
 /********************************************************************************/
@@ -72,6 +72,9 @@ void ESDatabase::clear()
 		mUnlockDatabaseRequested = false;
 
 		mFiles.clear();
+		mIdToIndex.clear();
+		mFilesPathToIndex.clear();
+		mFilesHashToIndex.clear();
 		mFolders.clear();
 		mAllLensModels.clear();
 		mAllCameraModels.clear();
@@ -113,14 +116,15 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 
 			if (pClearDB)
 			{
-				mFiles.clear();
 				mFolders.clear();
-				mFilesPathToId.clear();
-				mFilesHashToId.clear();
+				mFiles.clear();
+				mIdToIndex.clear();
+				mFilesPathToIndex.clear();
+				mFilesHashToIndex.clear();
 				mLastAssignedId = 0;
 			}
 
-			QVector<ESFileInfoId> lAllImageFileIds;
+			QVector<int> lAllImageFileIds;
 
 			std::set<const QString*> lUniqueFolders;
 			for (const QString& lFolderPath : pFolders)
@@ -135,19 +139,30 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 				while (lDirIt.hasNext())
 				{
 					ESStringId lFilePath = lDirIt.next();
-					auto&& [lItFound, lIsNewFile] = mFilesPathToId.try_emplace(lFilePath, 0);
+					auto&& [lItFound, lIsNewFile] = mFilesPathToIndex.try_emplace(lFilePath, 0);
 
-					ESFileInfoId lFileInfoId = lIsNewFile ? ++mLastAssignedId : lItFound->second;
-					ESFileInfo& lFileInfo = mFiles[lFileInfoId];
+					int lFileInfoIndex = -1;
 					if(lIsNewFile)
 					{
-						lFileInfo.mId = lFileInfoId;
+						lFileInfoIndex = static_cast<int>(mFiles.size());
+						mFiles.emplace_back();
+					}
+					else
+					{
+						lFileInfoIndex = lItFound->second;
+					}
+					ESFileInfo& lFileInfo = mFiles[lFileInfoIndex];
+					if(lIsNewFile)
+					{
+						lFileInfo.mId = ++mLastAssignedId;
 						lFileInfo.mFilePath = lFilePath;
-						lItFound->second = lFileInfoId;
-						mFilesPathToId[lFilePath] = lFileInfoId;
+						lItFound->second = lFileInfoIndex;
+
+						mFilesPathToIndex[lFilePath] = lFileInfo.mId;
+						mIdToIndex[lFileInfo.mId] = lFileInfoIndex;
 					}
 					if (!pNewFilesOnly || lIsNewFile || lFileInfo.mReadResult != eSuccess)
-						lAllImageFileIds << lFileInfoId;
+						lAllImageFileIds << lFileInfoIndex;
 				}
 
 				if (!mFolders.contains(*lFolderPath))
@@ -161,9 +176,9 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			constexpr uint cNbFilesPerThread = 256;
 
 			QFuture<void> lRes = QtConcurrent::map(lAllImageFileIds,
-				[&](const ESFileInfoId& pFileInfoId)
+				[&](const int pFileInfoIndex)
 				{
-					ESFileInfo& lFileInfo = mFiles[pFileInfoId];
+					ESFileInfo& lFileInfo = mFiles[pFileInfoIndex];
 
 					easyexif::EXIFInfo lExifData;
 					lFileInfo.mReadResult = readFileExif(lFileInfo.mFilePath, lExifData);
@@ -206,12 +221,12 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			// Extract all camera models and counter
 			std::unordered_set<ESStringId> lCameraModels;
 			std::unordered_set<ESStringId> lLensModels;
-			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
+			for (const ESFileInfo& lProcessedFile : mFiles)
 			{
-				if (lProcessedFile.second.mReadResult == eSuccess)
+				if (lProcessedFile.mReadResult == eSuccess)
 				{
-					lCameraModels.insert(lProcessedFile.second.mExif.mCameraModel);
-					lLensModels.insert(lProcessedFile.second.mExif.mLensModel);
+					lCameraModels.insert(lProcessedFile.mExif.mCameraModel);
+					lLensModels.insert(lProcessedFile.mExif.mLensModel);
 				}
 			}
 			mAllCameraModels.assign(lCameraModels.begin(), lCameraModels.end());
@@ -222,9 +237,9 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 				int lCameraModelIdx = 0;
 				for (auto&& lItCamera : lCameraModels)
 				{
-					for (auto&& lProcessedFile : mFiles)
-						if (lProcessedFile.second.mExif.mCameraModel == lItCamera)
-							lProcessedFile.second.mCameraModelIdx = lCameraModelIdx;
+					for (ESFileInfo& lProcessedFile : mFiles)
+						if (lProcessedFile.mExif.mCameraModel == lItCamera)
+							lProcessedFile.mCameraModelIdx = lCameraModelIdx;
 
 					++lCameraModelIdx;
 				}
@@ -235,9 +250,9 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 				int lLensModelIdx = 0;
 				for (auto&& lItLens : lLensModels)
 				{
-					for (auto&& lProcessedFile : mFiles)
-						if (lProcessedFile.second.mExif.mLensModel == lItLens)
-							lProcessedFile.second.mLensModelIdx = lLensModelIdx;
+					for (ESFileInfo& lProcessedFile : mFiles)
+						if (lProcessedFile.mExif.mLensModel == lItLens)
+							lProcessedFile.mLensModelIdx = lLensModelIdx;
 
 					++lLensModelIdx;
 				}
@@ -245,18 +260,18 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 
 			// Sort files by date time, to guess the geolocation for files with missing GPS data
 			std::vector<ESFileInfo*> lFilesSortedByDateTime;
-			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
+			for (ESFileInfo& lProcessedFile : mFiles)
 			{
-				if(lProcessedFile.second.mExif.mGeoLocationGuessed)
+				if(lProcessedFile.mExif.mGeoLocationGuessed)
 				{
-					lProcessedFile.second.mExif.mGeoLocationGuessed = false;
-					lProcessedFile.second.mExif.mGeoLocation.mLatitude = 0.f;
-					lProcessedFile.second.mExif.mGeoLocation.mLongitude = 0.f;
+					lProcessedFile.mExif.mGeoLocationGuessed = false;
+					lProcessedFile.mExif.mGeoLocation.mLatitude = 0.f;
+					lProcessedFile.mExif.mGeoLocation.mLongitude = 0.f;
 				}
-				if (	lProcessedFile.second.mReadResult == eSuccess
-					&&	lProcessedFile.second.mExif.mDateTime > 0)
+				if (	lProcessedFile.mReadResult == eSuccess
+					&&	lProcessedFile.mExif.mDateTime > 0)
 				{
-					lFilesSortedByDateTime.push_back(&lProcessedFile.second);
+					lFilesSortedByDateTime.push_back(&lProcessedFile);
 				}
 			}
 			std::sort(lFilesSortedByDateTime.begin(), lFilesSortedByDateTime.end(), [](const ESFileInfo* a, const ESFileInfo* b)
@@ -347,12 +362,13 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 			}
 
 			// Compute the hash for all files
-			mFilesHashToId.clear();
-			for (std::pair<const ESFileInfoId, ESFileInfo>& lProcessedFile : mFiles)
+			mFilesHashToIndex.clear();
+			for (int i = 0 ; i < mFiles.size() ; ++i)
 			{
-				lProcessedFile.second.computeHash();
-				if(!lProcessedFile.second.mHash.isEmpty())
-					mFilesHashToId.emplace(lProcessedFile.second.mHash, lProcessedFile.first);
+				ESFileInfo& lProcessedFile = mFiles[i];
+				lProcessedFile.computeHash();
+				if(!lProcessedFile.mHash.isEmpty())
+					mFilesHashToIndex.emplace(lProcessedFile.mHash, i);
 			}
 
 			mFilesMutex.unlock();
@@ -512,8 +528,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 	if(lDatabaseVersion >= 9)
 		pSerializer.Serialize(mLastAssignedId);
 
-	pSerializer.SerializeCustom(mFiles,
-		[&](ESFileInfoId& pFileInfoId, ESFileInfo& pFileInfo)
+	auto lSerializeFileInfo = [&](ESFileInfo& pFileInfo)
 		{
 			if (lDatabaseVersion >= 12)
 				pSerializer.Serialize(pFileInfo.mHash);
@@ -523,17 +538,17 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 			pSerializer.Serialize(pFileInfo.mCameraModelIdx);
 			pSerializer.Serialize(pFileInfo.mLensModelIdx);
 			pSerializer.Serialize(pFileInfo.mReadResult);
-			
+
 			pSerializer.Serialize(pFileInfo.mExif.mDateTime);
 			pSerializer.Serialize(pFileInfo.mExif.mFNumber);
 			pSerializer.Serialize(pFileInfo.mExif.mFocalLength);
 			pSerializer.Serialize(pFileInfo.mExif.mFocalLengthIn35mm);
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLatitude);
 			pSerializer.Serialize(pFileInfo.mExif.mGeoLocation.mLongitude);
-			if(lDatabaseVersion >= 11)
+			if (lDatabaseVersion >= 11)
 				pSerializer.Serialize(pFileInfo.mExif.mGeoLocationGuessed);
 			pSerializer.Serialize(pFileInfo.mExif.mShutterSpeedValue);
-			if(lDatabaseVersion >= 5)
+			if (lDatabaseVersion >= 5)
 				pSerializer.Serialize(pFileInfo.mExif.mOrientation);
 			if (lDatabaseVersion >= 10)
 			{
@@ -541,21 +556,12 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 				pSerializer.Serialize(pFileInfo.mExif.mWidth);
 				pSerializer.Serialize(pFileInfo.mExif.mHeight);
 			}
-			if(lDatabaseVersion >= 6)
+			if (lDatabaseVersion >= 6)
 			{
 				pSerializer.Serialize(pFileInfo.mTagsGenerated);
 				pSerializer.Serialize(pFileInfo.mTagIndexes);
 				if (lDatabaseVersion >= 7)
-				{
-#if defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED) && false // Disabled because we need them for similar image search feature
-					if (mEmbeddingsDimension == 0)
-						pSerializer.Serialize(pFileInfo.mEmbeddings);
-					else
-						pSerializer.Skip(pFileInfo.mEmbeddings);
-#else
 					pSerializer.Serialize(pFileInfo.mEmbeddings);
-#endif // defined(EXIFSTATS_READONLY) && defined(HNSWLIB_ENABLED)
-				}
 			}
 
 			if constexpr (SERIALIZER::msIsReading)
@@ -565,9 +571,7 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 					pFileInfo.mId = ++mLastAssignedId;
 				}
 
-				pFileInfoId = pFileInfo.mId;
-
-				if(pFileInfo.mCameraModelIdx != std::numeric_limits<decltype(pFileInfo.mCameraModelIdx)>::max())
+				if (pFileInfo.mCameraModelIdx != std::numeric_limits<decltype(pFileInfo.mCameraModelIdx)>::max())
 					pFileInfo.mExif.mCameraModel = mAllCameraModels[pFileInfo.mCameraModelIdx];
 				if (pFileInfo.mLensModelIdx != std::numeric_limits<decltype(pFileInfo.mLensModelIdx)>::max())
 					pFileInfo.mExif.mLensModel = mAllLensModels[pFileInfo.mLensModelIdx];
@@ -576,23 +580,49 @@ bool ESDatabase::Serialize(SERIALIZER& pSerializer, const QString& pFilePath)
 
 				if (pFileInfo.mEmbeddings.size() > 0)
 				{
-					if(mEmbeddingsDimension == 0)
+					if (mEmbeddingsDimension == 0)
 						mEmbeddingsDimension = int(pFileInfo.mEmbeddings.size());
 					assert(mEmbeddingsDimension == pFileInfo.mEmbeddings.size());
 				}
 
 				if (lDatabaseVersion < 12)
 					pFileInfo.computeHash();
+			}
+		};
 
-				mFilesPathToId[pFileInfo.mFilePath] = pFileInfo.mId;
-				if(!pFileInfo.mHash.isEmpty())
-					mFilesHashToId.emplace(pFileInfo.mHash, pFileInfo.mId);
-			}
+	if (lDatabaseVersion < 13)
+	{
+		auto lSerializeFileInfoOld = [&](ESFileInfoId& pFileInfoId, ESFileInfo& pFileInfo)
+		{
+			lSerializeFileInfo(pFileInfo);
+			if constexpr (SERIALIZER::msIsReading)
+				pFileInfoId = pFileInfo.mId;
 			else
-			{
-				(void)pFileInfoId;
-			}
-		});
+				Q_UNUSED(pFileInfoId);
+		};
+		std::map<ESFileInfoId, ESFileInfo> lFilesMap;
+		pSerializer.SerializeCustom(lFilesMap, lSerializeFileInfoOld);
+
+		mFiles.reserve(lFilesMap.size());
+		for (const auto& [lFileInfoId, lFileInfo] : lFilesMap)
+			mFiles.emplace_back(lFileInfo);
+	}
+	else
+	{
+		pSerializer.SerializeCustom(mFiles, lSerializeFileInfo);
+	}
+
+	if constexpr (SERIALIZER::msIsReading)
+	{
+		for(int i = 0 ; i < mFiles.size() ; ++i)
+		{
+			const ESFileInfo& lFileInfo = mFiles[i];
+			mIdToIndex[mFiles[i].mId] = i;
+			mFilesPathToIndex[lFileInfo.mFilePath] = i;
+			if (!lFileInfo.mHash.isEmpty())
+				mFilesHashToIndex.emplace(lFileInfo.mHash, i);
+		}
+	}
 
 	return true;
 }
@@ -649,11 +679,7 @@ QString ESDatabase::getDatabaseFilePath() const
 
 void ESDatabase::loadDatabase()
 {
-	// Clear
-	mAllCameraModels.clear();
-	mAllLensModels.clear();
-	mFiles.clear();
-	mFilesPathToId.clear();
+	assert(mFiles.size() == 0 && "Database already loaded");
 
 	// Settings
 	QSettings lSettings;
@@ -729,13 +755,9 @@ std::vector<const ESFileInfo*> ESDatabase::getFileInfoFromHash(QString pHash) co
 	std::vector<const ESFileInfo*> lResult;
 	if(pHash.size() > 10)
 	{
-		auto lRange = mFilesHashToId.equal_range(pHash);
+		auto lRange = mFilesHashToIndex.equal_range(pHash);
 		for (auto lItFiles = lRange.first; lItFiles != lRange.second; ++lItFiles)
-		{
-			auto lItFound = mFiles.find(lItFiles->second);
-			if (lItFound != mFiles.end())
-				lResult.push_back(&lItFound->second);
-		}
+			lResult.push_back(&mFiles[lItFiles->second]);
 	}
 	return lResult;
 }
@@ -745,12 +767,10 @@ std::vector<const ESFileInfo*> ESDatabase::getFileInfoFromHash(QString pHash) co
 ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile)
 {
 	ESFileInfo* lResult = nullptr;
-	auto&& lIdItFound = mFilesPathToId.find(pFile);
-	if (lIdItFound != mFilesPathToId.end())
+	auto&& lIdItFound = mFilesPathToIndex.find(pFile);
+	if (lIdItFound != mFilesPathToIndex.end())
 	{
-		auto lItFound = mFiles.find(lIdItFound->second);
-		if (lItFound != mFiles.end())
-			lResult = &lItFound->second;
+		return &mFiles[lIdItFound->second];
 	}
 	return lResult;
 }
@@ -767,9 +787,9 @@ const ESFileInfo* ESDatabase::getFileInfo(ESStringId pFile) const
 ESFileInfo* ESDatabase::getFileInfo(ESFileInfoId pFile)
 {
 	ESFileInfo* lResult = nullptr;
-	auto lItFound = mFiles.find(pFile);
-	if (lItFound != mFiles.end())
-		lResult = &lItFound->second;
+	auto lItFound = mIdToIndex.find(pFile);
+	if (lItFound != mIdToIndex.end())
+		lResult = &mFiles[lItFound->second];
 	return lResult;
 }
 
@@ -796,7 +816,7 @@ bool ESDatabase::isUnlockDatabaseRequested() const
 
 /********************************************************************************/
 
-const std::map<ESFileInfoId, ESFileInfo>& ESDatabase::getFiles() const
+const std::vector<ESFileInfo>& ESDatabase::getFiles() const
 {
 	return mFiles;
 }

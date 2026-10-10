@@ -22,7 +22,7 @@ public:
 
 	~ESPerfLog()
 	{
-		qInfo("%s: %lld ns", qPrintable(mLabel), mTimer.nsecsElapsed());
+		qInfo("%s: %lld us", qPrintable(mLabel), mTimer.nsecsElapsed() / 1000);
 	}
 
 private:

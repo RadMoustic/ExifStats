@@ -493,7 +493,7 @@ void ESQmlBinder::createDatabaseArchive(const QUrl& pZipPath)
 #endif // HNSWLIB_ENABLED
 
 			// Add image cache
-			for(const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
+			for(const ESFileInfo& lFileInfo : lDB.getFiles())
 				if (std::shared_ptr<ESImage> lImage = lImageCache.getImage(lFileInfo.mFilePath))
 					if(lImage->hasCacheFile())
 						lFiles.emplace_back(lImage->getImageCachePath(), CACHE_IMAGE_FOLDER_NAME);
@@ -761,57 +761,59 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 	if(mIsServer)
 		return;
 
-	ESPerfLog lPerfLog(__FUNCTION__);
-
-	const ESDatabase& lDB = ESDatabase::getInstance();
-	std::shared_lock lLock(lDB.getFilesMutex());
-
-	std::vector<const ESFilter*> lActiveFilters;
-	for(const ESFilter* lFilter: mFilters)
 	{
-		if(lFilter->isEnabled())
-			lActiveFilters.push_back(lFilter);
-	}
+		ESPerfLog lPerfLog(__FUNCTION__);
 
-	for (ESStat* lStat : mStats)
-		lStat->reset();
-	for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
-	{		
-		bool lAddFile = true;
-		bool lKeepCategory = false;
-		if(!pIgnoreFilters)
+		const ESDatabase& lDB = ESDatabase::getInstance();
+		std::shared_lock lLock(lDB.getFilesMutex());
+
+		std::vector<const ESFilter*> lActiveFilters;
+		for(const ESFilter* lFilter: mFilters)
 		{
-			for (const ESFilter* lFilter : lActiveFilters)
+			if(lFilter->isEnabled())
+				lActiveFilters.push_back(lFilter);
+		}
+
+		for (ESStat* lStat : mStats)
+			lStat->reset();
+		for (const ESFileInfo& lFileInfo : lDB.getFiles())
+		{		
+			bool lAddFile = true;
+			bool lKeepCategory = false;
+			if(!pIgnoreFilters)
 			{
-				if (lFilter->isFileFilteredOut(lFileInfo))
+				for (const ESFilter* lFilter : lActiveFilters)
 				{
-					lAddFile = false;
-					lKeepCategory = lFilter->mKeepCategory;
-					if(!lKeepCategory)
-						break;
+					if (lFilter->isFileFilteredOut(lFileInfo))
+					{
+						lAddFile = false;
+						lKeepCategory = lFilter->mKeepCategory;
+						if(!lKeepCategory)
+							break;
+					}
+				}
+			}
+			if(lAddFile || lKeepCategory)
+			{
+				if (lFileInfo.mReadResult != eSuccess)
+				{
+					mListFilesStat.addFile(lFileInfo);
+				}
+				else
+				{
+					for (ESStat* lStat : mStats)
+					{
+						if(lAddFile)
+							lStat->addFile(lFileInfo);
+						else if (lKeepCategory)
+							lStat->addFileCategory(lFileInfo);
+					}
 				}
 			}
 		}
-		if(lAddFile || lKeepCategory)
-		{
-			if (lFileInfo.mReadResult != eSuccess)
-			{
-				mListFilesStat.addFile(lFileInfo);
-			}
-			else
-			{
-				for (ESStat* lStat : mStats)
-				{
-					if(lAddFile)
-						lStat->addFile(lFileInfo);
-					else if (lKeepCategory)
-						lStat->addFileCategory(lFileInfo);
-				}
-			}
-		}
+		for (ESStat * lStat : mStats)
+			lStat->onAllFilesAdded();
 	}
-	for (ESStat * lStat : mStats)
-		lStat->onAllFilesAdded();
 
 	emit dataHasChanged();
 }

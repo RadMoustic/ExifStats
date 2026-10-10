@@ -1,5 +1,8 @@
 #include "ESMapDotsQuickItem.h"
 
+// ExifStats
+#include "ESPerfLog.h"
+
 // Qt
 #include <QPainter>
 #include <QGeoCoordinate>
@@ -83,7 +86,11 @@ void ESMapDotsQuickItem::setMap(QVariant pMap)
 
 void ESMapDotsQuickItem::setDots(const QVector<QPointF>& pDots)
 {
-	mQuadTree.reset(new ESQuadTree(QRectF(-90.f, -180.f, 180.f, 360.f), pDots));
+	ESPerfLog lPerfLog(__FUNCTION__);
+	if(mQuadTree)
+		mQuadTree->fill(QRectF(-90.f, -180.f, 180.f, 360.f), pDots);
+	else
+		mQuadTree.reset(new ESQuadTree(QRectF(-90.f, -180.f, 180.f, 360.f), pDots));
 	refresh();
 }
 

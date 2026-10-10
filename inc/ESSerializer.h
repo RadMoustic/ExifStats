@@ -167,6 +167,26 @@ public:
 		typedef T type;
 	};
 
+	template<typename T>
+	void SerializeCustom(std::vector<T>& pList, typename identity<std::function<void(T&)>>::type pSerializeFct)
+	{
+		if constexpr (READ)
+		{
+			quint64 lNbItem = 0;
+			mDataStream >> lNbItem;
+			pList.clear();
+			pList.resize(lNbItem);
+			for (T& lItem : pList)
+				pSerializeFct(lItem);
+		}
+		else
+		{
+			mDataStream << quint64(pList.size());
+			for (T& lItem : pList)
+				pSerializeFct(lItem);
+		}
+	}
+
 	template<typename KEY, typename VALUE>
 	void SerializeCustom(std::map<KEY,VALUE>& pMap, typename identity<std::function<void(KEY&, VALUE&)>>::type pSerializeFct)
 	{

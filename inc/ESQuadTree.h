@@ -20,6 +20,9 @@ public:
 
 	ESQuadTree(const QRectF& pRootRect, const QVector<QPointF>& pPoints);
 
+	void clear();
+	void fill(const QRectF& pRootRect, const QVector<QPointF>& pPoints);
+
 	QVector<QVector3D> getPoints(int pDepth, const QRectF& pRect);
 
 private:
@@ -31,7 +34,11 @@ private:
 
 		const void getPoints(QVector<QVector3D>& pPoints, int pDepth, const QRectF& pRect);
 
+		void clear();
+		void fill(QRectF pRect, const QVector<QPointF>& pPoints);
+
 		QRectF mRect;
+		QVector<QPointF> mPoints;
 
 		std::unique_ptr<Node> mTopLeft;
 		std::unique_ptr<Node> mTopRight;

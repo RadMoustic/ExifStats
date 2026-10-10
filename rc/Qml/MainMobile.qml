@@ -24,10 +24,6 @@ Pane
 	Settings
 	{
 		id: settings
-		
-		property var theme
-		property var imageGridYOffset
-		property var imageGridCol
     }
 			
 	function maxList(pList)
@@ -42,7 +38,7 @@ Pane
 	{
 		if (typeof MainQmlBinder == 'undefined')
 			return;
-		
+
 		focalLength35mmCounter.categories = MainQmlBinder.getFocalLengthIn35mmLabels();
 		focalLength35mmCounter.values = MainQmlBinder.getFocalLengthIn35mmCounts();
 
@@ -97,7 +93,7 @@ Pane
 		
 		timelineCounter.max = maxList(timelineCounter.values)
 		timelineCounter.resetView();
-				
+
 		mapRoot.mapDotsChild.setDots(MainQmlBinder.getAllGeoLocations());
 
 		filtersPanel.displayData();
@@ -119,16 +115,16 @@ Pane
 		onTriggered:
 		{
 			//MainQmlBinder.loadDefaultFilters();
-			imageGrid.gridCol = Math.min(sanitize(imageGrid.maxGridCol, 4), sanitize(settings.imageGridCol, 2));
-			//imageGrid.flickableChild.contentY = settings.imageGridYOffset;
+			imageGrid.gridCol = Math.min(sanitize(imageGrid.maxGridCol, 4), sanitize(settings.value("imageGridCol"), 2));
+			//imageGrid.flickableChild.contentY = settings.value("imageGridYOffset");
 		}
 	}
 
 	function saveSettings()
 	{
-		settings.theme = mainWindow.Material.theme === Material.Dark ? true : false;
-		settings.imageGridYOffset = imageGrid.flickableChild.contentY;
-		settings.imageGridCol = imageGrid.gridCol;
+		settings.setValue("theme", mainWindow.Material.theme === Material.Dark ? "Dark" : "Light");
+		settings.setValue("imageGridYOffset", imageGrid.flickableChild.contentY);
+		settings.setValue("imageGridCol", imageGrid.gridCol);
 		MainQmlBinder.saveDefaultFilters();
 	}
 	
@@ -138,8 +134,8 @@ Pane
 		displayData();
 		MainQmlBinder.dataHasChanged.connect(displayData);
 		
-		mainWindow.Material.theme = settings.theme ? Material.Dark : Material.Light;
-		sidePanel.Material.theme = settings.theme ? Material.Dark : Material.Light;
+		mainWindow.Material.theme = settings.value("theme") === "Dark" ? Material.Dark : Material.Light;
+		sidePanel.Material.theme = settings.value("theme") === "Dark" ? Material.Dark : Material.Light;
 		
 		loadSettingsTimer.start();
 	}

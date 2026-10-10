@@ -216,10 +216,10 @@ void ESTagsFilter::updateHnswIndex()
 				mHnswSpace.reset(new hnswlib::InnerProductSpace(ESDatabase::getInstance().getEmbeddingsDimension()));
 				mHnswIndex.reset(new hnswlib::HierarchicalNSW<float>(mHnswSpace.get(), lDB.getFiles().size()));
 				int lFileIdx = 0;
-				for (const auto& [lFileInfoId, lFileInfo] : lDB.getFiles())
+				for (const ESFileInfo& lFileInfo : lDB.getFiles())
 				{
 					if (lFileInfo.mEmbeddings.size() > 0)
-						mHnswIndex->addPoint(lFileInfo.mEmbeddings.data(), lFileInfoId);
+						mHnswIndex->addPoint(lFileInfo.mEmbeddings.data(), lFileInfo.mId);
 					if (mHnswIndexUpdatingAbortRequested || lDB.isUnlockDatabaseRequested())
 					{
 						mHnswSpace.reset();

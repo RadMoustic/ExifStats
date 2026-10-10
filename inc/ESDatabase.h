@@ -76,7 +76,7 @@ public:
 	const ESFileInfo* getFileInfo(ESFileInfoId pFile) const;
 	std::shared_mutex& getFilesMutex() const;
 	bool isUnlockDatabaseRequested() const;
-	const std::map<ESFileInfoId, ESFileInfo>& getFiles() const;
+	const std::vector<ESFileInfo>& getFiles() const;
 	const QVector<QString>& getAllLensModels() const;
 	const QVector<QString>& getAllCameraModels() const;
 
@@ -99,9 +99,10 @@ private:
 
 	QVector<QString> mFolders;
 
-	std::map<ESFileInfoId, ESFileInfo> mFiles;
-	std::unordered_map<ESStringId, ESFileInfoId> mFilesPathToId;
-	std::unordered_multimap<QString, ESFileInfoId> mFilesHashToId;
+	std::vector<ESFileInfo> mFiles;
+	std::unordered_map<ESFileInfoId, int> mIdToIndex;
+	std::unordered_map<ESStringId, int> mFilesPathToIndex;
+	std::unordered_multimap<QString, int> mFilesHashToIndex;
 	std::atomic_int mProcessedFilesCounter;
 	QMutex mProgressMutex;
 	mutable std::shared_mutex mFilesMutex;

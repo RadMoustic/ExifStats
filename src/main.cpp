@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 	ESCrashHandler::init();
 
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+	QThreadPool::globalInstance()->setThreadPriority(QThread::LowPriority);
 
 	QSurfaceFormat lFormat;
 #ifdef Q_OS_ANDROID

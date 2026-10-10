@@ -82,7 +82,7 @@ void ESImageCache::initializeFromDatabase()
 		mImages.clear();
 		mImages.reserve(lDatabase.getFiles().size());
 		
-		for(const auto& [lFileInfoId, lFileInfo] : lDatabase.getFiles())
+		for(const ESFileInfo& lFileInfo : lDatabase.getFiles())
 		{
 			std::shared_ptr<ESImage> lImage(new ESImage(lFileInfo.mFilePath, getCacheFilePath(lFileInfo.mFilePath), lFileInfo.mExif, lFileInfo.mHash));
 			mImages.emplace(std::make_pair(lFileInfo.mFilePath, lImage));
@@ -114,7 +114,7 @@ void ESImageCache::onDatabaseDataChanged()
 				const ESDatabase& lDatabase = ESDatabase::getInstance();
 				mImages.reserve(lDatabase.getFiles().size());
 
-				for (const auto& [lFileInfoId, lFileInfo] : lDatabase.getFiles())
+				for (const ESFileInfo& lFileInfo : lDatabase.getFiles())
 				{
 					std::shared_ptr<ESImage>& lImage = mImages[lFileInfo.mFilePath];
 					if (!lImage)

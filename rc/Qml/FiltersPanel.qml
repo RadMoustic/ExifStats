@@ -35,7 +35,10 @@ Flickable
 
 		cameraModelsList.model = MainQmlBinder.getCameraModels();
 		lensModelsList.model = MainQmlBinder.getLensModels();
-
+	}
+	
+	Component.onCompleted:
+	{
 		filtersPresetsList.model = MainQmlBinder.getFiltersPresets();
 		filtersPresetsList.currentIndex = -1;
 	}

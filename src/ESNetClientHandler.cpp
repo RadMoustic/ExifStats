@@ -149,7 +149,7 @@ void ESNetClientHandler::processReadyRead()
 								{
 									// Search all database images with the same file name and print the hash data for debugging purposes
 									// Loop over all fles in the database
-									for(const auto& [lFileInfoId, lFileInfo] : ESDatabase::getInstance().getFiles())
+									for(const ESFileInfo& lFileInfo : ESDatabase::getInstance().getFiles())
 									{
 										QString lFileName = QFileInfo(lFileInfo.mFilePath.getString()).fileName();
 										if(lFileName.endsWith(lRequestedFileName, Qt::CaseInsensitive))
