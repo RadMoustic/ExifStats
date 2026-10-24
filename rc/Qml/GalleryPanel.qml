@@ -10,6 +10,7 @@ ESImageGridQuickItem
 	property var imageViewerItem
 	property var mapItem
 	property var mapShowAndFocusFunction: function() {}
+	property bool fullScreen: false
 	
 	property real maxGridCol: MainQmlBinder.isMobile() ? (width > height ? 8 : 4) : Math.min(10, Math.floor(width / getMinImageSize()))
 	property real gridCol: MainQmlBinder.isMobile() ? 1 : Math.floor(width / 250)
@@ -209,7 +210,10 @@ ESImageGridQuickItem
 						imageViewerItem.visible = true;
 						imageViewerItem.imageViewerChild.mImagePath = selectedFile;
 						if(MainQmlBinder.isMobile())
+						{
+							imageViewerItem.quitFullScreenOnClose = !imageGrid.fullScreen;
 							MainQmlBinder.mFullScreen = true;
+						}
 					}
 				}
 				else if (pButton == Qt.RightButton)
@@ -291,6 +295,23 @@ ESImageGridQuickItem
 		onReleased:
 		{
 			imageGrid.mSortingMode = (imageGrid.mSortingMode + 1) % 2;
+		}
+	}
+	RegularButton
+	{
+		id: fullScreenButton
+		text: "Full Screen"
+		anchors.top: sortMode.bottom
+		anchors.right: parent.right
+		anchors.margins: 10
+		visible: MainQmlBinder.isMobile()
+		
+		implicitHeight: 30
+
+		onReleased:
+		{
+			MainQmlBinder.mFullScreen = !MainQmlBinder.mFullScreen;
+			imageGrid.fullScreen = MainQmlBinder.mFullScreen;
 		}
 	}
 }

@@ -60,7 +60,14 @@ ESLogger::ESLogger()
 	{
 		QDir().mkpath(lAppDataLocation);
 	}
-	mLogFile.setFileName(QString("%1/%2.log").arg(lAppDataLocation).arg(qApp->applicationName()));
+	QString lLogFilePath = QString("%1/%2.log").arg(lAppDataLocation).arg(qApp->applicationName());
+	if (QFile::exists(lLogFilePath))
+	{
+		QFile lLogFile(lLogFilePath);
+		if (lLogFile.open(QFileDevice::ReadOnly))
+			mPreviousLogFileContent = QString(lLogFile.readAll()).split('\n');
+	}
+	mLogFile.setFileName(lLogFilePath);
 	if (!mLogFile.open(QFileDevice::WriteOnly))
 	{
 		logMsg(QString("Failed to open log file: '%1'").arg(mLogFile.fileName()), eFatal);
@@ -87,7 +94,7 @@ void ESLogger::logMsg(const QString& pMsg, PpcLogLevel pLevel)
 	if(pLevel == eDebug)
 		return;
 #endif
-	QString lFormatedMsg = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+	QString lFormatedMsg = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
 	lFormatedMsg += " - ";
 	switch (pLevel)
 	{
@@ -151,4 +158,11 @@ void ESLogger::logMsg(const QString& pMsg, PpcLogLevel pLevel)
 const QStringList& ESLogger::getLoggedMessages() const
 {
 	return mMsgsLogged;
+}
+
+/********************************************************************************/
+
+const QStringList& ESLogger::getPreviousSessionLoggedMessages() const
+{
+	return mPreviousLogFileContent;
 }

@@ -41,6 +41,46 @@ Item
 			}
 		}
 		
+		function applySelectedLocation(pCoord)
+		{
+			map.center = pCoord;
+			if (!keepZoomCheckbox.checked)
+			{
+				map.zoomLevel = 14;
+			}
+			mapDots.refresh();
+			updateGeoShapeFilterTimer.restart();
+			resultsContainer.visible = false;
+			searchInput.focus = false;
+		}
+
+		GeocodeModel
+		{
+			id: geocodeModel
+			plugin: map.plugin
+
+			onStatusChanged:
+			{
+				if (status === GeocodeModel.Error)
+				{
+					console.warn("GeocodeModel error: " + errorString);
+				}
+			}
+
+			onLocationsChanged:
+			{
+				if (count > 0 && searchInput.activeFocus)
+				{
+					resultsContainer.visible = true;
+					resultsView.currentIndex = 0;
+				}
+				else
+				{
+					resultsContainer.visible = false;
+				}
+			}
+		}
+
 		function updateMapTheme()
 		{
 			var isDark = (map.Material.theme === Material.Dark);
@@ -90,9 +130,6 @@ Item
 		WheelHandler
 		{
 			id: wheel
-			// workaround for QTBUG-87646 / QTBUG-112394 / QTBUG-112432:
-			// Magic Mouse pretends to be a trackpad but doesn't work with PinchHandler
-			// and we don't yet distinguish mice and trackpads on Wayland either
 			acceptedDevices: Qt.platform.pluginName === "cocoa" || Qt.platform.pluginName === "wayland"
 							 ? PointerDevice.Mouse | PointerDevice.TouchPad
 							 : PointerDevice.Mouse
@@ -153,8 +190,11 @@ Item
 		CheckBox
 		{
 			id: restrictToViewCheckbox
+			anchors.top: parent.top
+			anchors.left: parent.left
+			anchors.margins: 10
 			checked: MainQmlBinder.GeoShapeFilter.isValid
-			text: "Filter by visible area"
+			text: "Filter"
 			onCheckedChanged:
 			{
 				MainQmlBinder.GeoShapeFilter = restrictToViewCheckbox.checked ? map.visibleRegion : QtPositioning.shape();
@@ -163,12 +203,171 @@ Item
 		CheckBox
 		{
 			id: showGuessedGeoLocationCheckbox
-			checked: MainQmlBinder.ShowGuessedLocation
-			text: "Show Guessed GeoLoc"
 			anchors.top: restrictToViewCheckbox.bottom
+			anchors.left: restrictToViewCheckbox.left
+			anchors.topMargin: 4
+			checked: MainQmlBinder.ShowGuessedLocation
+			text: "+ Guessed Loc"
 			onCheckedChanged:
 			{
 				MainQmlBinder.ShowGuessedLocation = showGuessedGeoLocationCheckbox.checked;
+			}
+		}
+
+		Rectangle
+		{
+			id: searchContainer
+			anchors.top: parent.top
+			anchors.left: restrictToViewCheckbox.right
+			anchors.right: parent.right
+			anchors.margins: 15
+			height: 35
+			color: Qt.rgba(Material.background.r, Material.background.g, Material.background.b, 0.85)
+			radius: 4
+
+			Row
+			{
+				anchors.fill: parent
+				anchors.leftMargin: 8
+				anchors.rightMargin: 8
+				spacing: 8
+
+				TextField
+				{
+					id: searchInput
+					width: parent.width - keepZoomCheckbox.width - parent.spacing
+					height: parent.height
+					placeholderText: "Search location..."
+					font.pixelSize: 12
+					leftPadding: 0
+					rightPadding: 0
+					verticalAlignment: TextInput.AlignVCenter
+
+					background: null
+
+					Keys.priority: Keys.Before
+
+					onActiveFocusChanged:
+					{
+						if (activeFocus)
+						{
+							if (geocodeModel.count > 0)
+							{
+								resultsContainer.visible = true;
+							}
+						}
+						else
+						{
+							resultsContainer.visible = false;
+						}
+					}
+					
+					onTextChanged:
+					{
+						geocodeModel.reset();
+					}
+
+					Keys.onDownPressed: (event) =>
+					{
+						if (resultsContainer.visible && resultsView.count > 0)
+						{
+							resultsView.currentIndex = Math.min(resultsView.currentIndex + 1, resultsView.count - 1);
+							resultsView.positionViewAtIndex(resultsView.currentIndex, ListView.Contain);
+							event.accepted = true;
+						}
+					}
+
+					Keys.onUpPressed: (event) =>
+					{
+						if (resultsContainer.visible && resultsView.count > 0)
+						{
+							resultsView.currentIndex = Math.max(resultsView.currentIndex - 1, 0);
+							resultsView.positionViewAtIndex(resultsView.currentIndex, ListView.Contain);
+							event.accepted = true;
+						}
+					}
+
+					onAccepted:
+					{
+						if (resultsContainer.visible && resultsView.count > 0)
+						{
+							var lIndex = resultsView.currentIndex >= 0 ? resultsView.currentIndex : 0;
+							var lLoc = geocodeModel.get(lIndex);
+							if (lLoc && lLoc.coordinate.isValid)
+							{
+								map.applySelectedLocation(lLoc.coordinate);
+							}
+						}
+						else
+						{
+							if (text.trim() !== "")
+							{
+								geocodeModel.query = text;
+								geocodeModel.update();
+							}
+						}
+					}
+				}
+
+				CheckBox
+				{
+					id: keepZoomCheckbox
+					checked: false
+					text: "Keep Zoom"
+					height: parent.height
+					anchors.verticalCenter: parent.verticalCenter
+				}
+			}
+		}
+
+		Item
+		{
+			id: resultsContainer
+			anchors.top: searchContainer.bottom
+			anchors.topMargin: 2
+			anchors.left: searchContainer.left
+			anchors.right: searchContainer.right
+			height: resultsView.height
+			visible: false
+
+			Rectangle
+			{
+				anchors.fill: parent
+				color: Qt.rgba(Material.background.r, Material.background.g, Material.background.b, 0.95)
+				border.color: Material.hintTextColor
+				radius: 4
+			}
+
+			ListView
+			{
+				id: resultsView
+				width: parent.width
+				height: Math.min(contentHeight, 150)
+				model: geocodeModel
+				clip: true
+
+				delegate: Label
+				{
+					width: resultsView.width
+					height: 30
+					color: ListView.isCurrentItem ? (Material.theme == Material.Dark ? "#000000" : "#FFFFFF") : Material.foreground
+					text: locationData.address.text !== "" ? locationData.address.text : "Unknown location"
+
+					MouseArea
+					{
+						anchors.fill: parent
+						onClicked:
+						{
+							resultsView.currentIndex = index;
+							map.applySelectedLocation(locationData.coordinate);
+						}
+					}
+				}
+				
+				highlight: Rectangle
+				{
+					color: Material.accent
+				}
 			}
 		}
 	}

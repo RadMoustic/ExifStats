@@ -797,7 +797,8 @@ void ESQmlBinder::updateStats(bool pIgnoreFilters)
 			{
 				if (lFileInfo.mReadResult != eSuccess)
 				{
-					mListFilesStat.addFile(lFileInfo);
+					if (lAddFile)
+						mListFilesStat.addFile(lFileInfo);
 				}
 				else
 				{

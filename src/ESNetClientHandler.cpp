@@ -40,6 +40,14 @@ void ESNetClientHandler::initializeConnection()
 	{
 		connect(mSocket, &QTcpSocket::readyRead, this, &ESNetClientHandler::processReadyRead);
 		connect(mSocket, &QTcpSocket::disconnected, this, &ESNetClientHandler::onDisconnected);
+		QTimer::singleShot(2000, this, [this]()
+			{
+				if (!mIsAuthenticated)
+				{
+					qWarning() << "Client did not authenticate in time, disconnecting client: " << mSocket->peerAddress().toString();
+					mSocket->disconnectFromHost();
+				}
+			});
 			
 		quint32 lBuffer[8];
 		QRandomGenerator::system()->fillRange(lBuffer);
@@ -114,7 +122,7 @@ void ESNetClientHandler::processReadyRead()
 
 					QPointer<ESNetClientHandler> lSafeThis(this);
 
-					qInfo() << "File Requested '" << lRequestedFileHash << " / " << lRequestedFileName << "' by client: " << mSocket->peerAddress().toString();
+					qInfo() << "File Requested '" << lRequestedFileHash.toUtf8().toHex() << " / " << lRequestedFileName << "' by client: " << mSocket->peerAddress().toString();
 				
 					QtConcurrent::run([lSafeThis, lRequestedFileHash, lRequestedFileName, lPeerAddress = mSocket->peerAddress().toString()]()
 						{
@@ -162,7 +170,7 @@ void ESNetClientHandler::processReadyRead()
 									}
 								}
 								QMetaObject::invokeMethod(lSafeThis.data(),[lSafeThis](){lSafeThis->sendMessage(ESNetClientHandler::MsgFileNotFound);},	Qt::QueuedConnection);
-								qWarning() << "File info not found for hash/name: " << lRequestedFileHash << " / " << lRequestedFileName << ", disconnecting client: " << lPeerAddress;
+								qWarning() << "File info not found for hash/name: " << lRequestedFileHash.toUtf8().toHex() << " / " << lRequestedFileName << ", disconnecting client: " << lPeerAddress;
 								return;
 							}
 							QMetaObject::invokeMethod(lSafeThis.data(), [lSafeThis]() {lSafeThis->sendMessage(ESNetClientHandler::MsgOpeningFile); }, Qt::QueuedConnection);

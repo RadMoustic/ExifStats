@@ -4,7 +4,7 @@
 	<file>Qml/MainDesktop.qml</file>
 	<file>Qml/MainMobile.qml</file>
 	<file>Qml/MainServer.qml</file>
-	<file>Qml/FallbackQmlErrors.qml</file>
+	<file>Qml/LogsViewer.qml</file>
 	<file>Qml/CounterChart.qml</file>
 	<file>Qml/CounterChartFromTo.qml</file>
 	<file>Qml/FilteringList.qml</file>

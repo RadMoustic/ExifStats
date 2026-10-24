@@ -40,7 +40,7 @@ static const char* scMainQmlPathQRC = "qrc:/Qml/MainMobile.qml";
 static const char* scMainQmlLocalPath = "MainDesktop.qml";
 static const char* scMainQmlPathQRC = "qrc:/Qml/MainDesktop.qml";
 #endif // Q_OS_ANDROID
-static const char* scFallbackQmlQRC = "qrc:/Qml/FallbackQmlErrors.qml";
+static const char* scFallbackQmlQRC = "qrc:/Qml/LogsViewer.qml";
 
 
 /********************************************************************************/

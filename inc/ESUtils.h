@@ -178,3 +178,9 @@ public:
 
 	struct propagate_on_container_move_assignment : std::true_type {};
 };
+
+/********************************************************************************/
+
+#ifdef Q_OS_ANDROID
+long long getAppMemoryUsage();
+#endif

@@ -30,7 +30,7 @@ static const char* scMainQmlDirPath = "ESQml";
 
 static const char* scMainQmlLocalPath = "MainServer.qml";
 static const char* scMainQmlPathQRC = "qrc:/Qml/MainServer.qml";
-static const char* scFallbackQmlQRC = "qrc:/Qml/FallbackQmlErrors.qml";
+static const char* scFallbackQmlQRC = "qrc:/Qml/LogsViewer.qml";
 
 
 /********************************************************************************/

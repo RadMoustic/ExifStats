@@ -24,6 +24,7 @@ public:
 	/******************************** ATTRIBUTES **********************************/
 
 	ES_QML_READ_PROPERTY(ConsoleLines, QStandardItemModel*)
+	ES_QML_READ_PROPERTY(PreviousSessionLogs, QStandardItemModel*)
 
 	/********************************* METHODS ***********************************/
 

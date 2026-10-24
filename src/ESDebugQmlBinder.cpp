@@ -9,10 +9,15 @@
 
 ESDebugQmlBinder::ESDebugQmlBinder()
 	: mConsoleLines(new QStandardItemModel())
+	, mPreviousSessionLogs(new QStandardItemModel())
 {
 	for (QString lLine : ESLogger::get().getLoggedMessages())
 	{
 		mConsoleLines->appendRow(new QStandardItem(lLine));
+	}
+	for (QString lLine : ESLogger::get().getPreviousSessionLoggedMessages())
+	{
+		mPreviousSessionLogs->appendRow(new QStandardItem(lLine));
 	}
 	connect(&ESLogger::get(), &ESLogger::newMsg, this, &ESDebugQmlBinder::onNewLoggerMsg);
 }
@@ -22,8 +27,11 @@ ESDebugQmlBinder::ESDebugQmlBinder()
 /*virtual*/ ESDebugQmlBinder::~ESDebugQmlBinder()
 {
 	QStandardItemModel* lConsoleLines = getConsoleLines();
+	QStandardItemModel* lPreviousSessionLogs = getPreviousSessionLogs();
 	setConsoleLines(nullptr);
+	setPreviousSessionLogs(nullptr);
 	delete lConsoleLines;
+	delete lPreviousSessionLogs;
 }
 
 /********************************************************************************/

@@ -306,20 +306,6 @@ Pane
 					}
 					RegularButton
 					{
-						text:"Logs"
-						
-						onReleased:
-						{
-							sidePanel.close();
-							logsViewer.visible = true;
-						}
-					}
-					Item
-					{
-						Layout.fillWidth: true
-					}
-					RegularButton
-					{
 						text:"Dark"
 						highlighted: mainWindow.Material.theme == Material.Dark
 						
@@ -337,6 +323,33 @@ Pane
 							}
 							MainQmlBinder.themeHasChanged();
 						}
+					}
+				}
+				RowLayout
+				{
+					RegularButton
+					{
+						text:"Logs"
+						
+						onReleased:
+						{
+							sidePanel.close();
+							logsViewer.visible = true;
+						}
+					}
+					RegularButton
+					{
+						text:"Prev Logs"
+						
+						onReleased:
+						{
+							sidePanel.close();
+							previousSessionLogsViewer.visible = true;
+						}
+					}
+					Item
+					{
+						Layout.fillWidth: true
 					}
 				}
 				
@@ -376,10 +389,13 @@ Pane
 		id: mainLayout
 		
 		anchors.fill: parent
-		anchors.topMargin: mainWindow.Window.window ? mainWindow.Window.window.SafeArea.margins.top : 0
+		anchors.topMargin: mainWindow.Window.window && !MainQmlBinder.mFullScreen ? mainWindow.Window.window.SafeArea.margins.top : 0
 		
 		RowLayout
 		{
+			id: menuBar
+			visible: !imageGrid.fullScreen
+			
 			RoundButton
 			{
 				icon.source: "qrc:/Images/Menu.png"
@@ -540,28 +556,20 @@ Pane
 		anchors.fill: parent
 	}
 	
-	FallbackQmlErrors
+	LogsViewer
 	{
 		id: logsViewer
 		anchors.fill: parent
 		visible: false
-		
-		RoundButton
-		{
-			id: closeLogsButton
-			text: "X"
-			anchors.top: parent.top
-			anchors.right: parent.right
-			anchors.margins: 15
-			radius: 4
-			
-			implicitWidth: 40
-			implicitHeight: 40
-
-			onReleased:
-			{
-				logsViewer.visible = false;
-			}
-		}
+		closeButtonVisible: true
+	}
+	
+	LogsViewer
+	{
+		id: previousSessionLogsViewer
+		anchors.fill: parent
+		visible: false
+		model: DebugQmlBinder.mPreviousSessionLogs
+		closeButtonVisible: true
 	}
 }

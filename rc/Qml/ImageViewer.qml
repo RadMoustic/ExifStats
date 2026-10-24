@@ -14,6 +14,7 @@ Rectangle
 	property alias imageViewerChild: imageViewer
 	property real initialScale: 1.0
 	property real maxZoom: 15.0
+	property bool quitFullScreenOnClose: true
 	
 	function resetView()
 	{
@@ -25,7 +26,10 @@ Rectangle
 	function closeView()
 	{
 		imageViewerRoot.visible = false;
-		MainQmlBinder.mFullScreen = false;
+		if(quitFullScreenOnClose)
+		{
+			MainQmlBinder.mFullScreen = false;
+		}
 		imageInfo.display = false;
 		imageViewer.cancelAllDownloadRequests();
 	}

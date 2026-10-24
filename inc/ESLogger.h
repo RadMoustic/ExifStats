@@ -34,6 +34,7 @@ public:
 	static ESLogger& get();
 
 	const QStringList& getLoggedMessages() const;
+	const QStringList& getPreviousSessionLoggedMessages() const;
 
 	void logMsg(const QString& pMsg, PpcLogLevel pLevel);
 
@@ -52,6 +53,7 @@ protected:
 	/******************************** ATTRIBUTES **********************************/
 
 	static std::shared_ptr<ESLogger> msInstance;
+	QStringList mPreviousLogFileContent;
 	QStringList mMsgsLogged;
 	QFile mLogFile;
 	QMutex mMutex;

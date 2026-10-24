@@ -7,11 +7,13 @@
 #include "ESImageTaggerManager.h"
 #include "ESCrashHandler.h"
 #include "ESNetServer.h"
+#include "ESUtils.h"
 
 // Qt
 #include <QApplication>
 #include <QtPlugin>
 #include <QThreadPool>
+#include <QTimer>
 
 // Stl
 #include <iostream>
@@ -87,7 +89,6 @@ int main(int argc, char* argv[])
 	ESCrashHandler::init();
 
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
-	QThreadPool::globalInstance()->setThreadPriority(QThread::LowPriority);
 
 	QSurfaceFormat lFormat;
 #ifdef Q_OS_ANDROID
@@ -112,6 +113,17 @@ int main(int argc, char* argv[])
 	lApp.setWindowIcon(QIcon(":/Images/ExifStats.ico"));
 
 	QImageReader::setAllocationLimit(512);
+
+#ifdef Q_OS_ANDROID
+	QTimer lMemoryUsageLogger;
+	lMemoryUsageLogger.setInterval(5000);
+	QObject::connect(&lMemoryUsageLogger, &QTimer::timeout, 
+		[&]
+		{
+			qInfo() << "Memory Usage: " << getAppMemoryUsage();
+		});
+	lMemoryUsageLogger.start();
+#endif
 
 	ESStringPool lStringPool;
 
