@@ -20,6 +20,7 @@
 	<file>Qml/ImageViewer.qml</file>
 	<file>Qml/ContrastedButton.qml</file>
 	<file>Qml/CircularProgressBar.qml</file>
+	<file>Qml/DateTextField.qml</file>
 
 	<file>Images/Menu.png</file>
 	<file>Images/Add.png</file>

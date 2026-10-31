@@ -165,9 +165,9 @@ void ESQmlBinder::initialize(bool pLoadTokenizerAndHNSW)
 	if(mIsServer)
 	{
 		mServer = std::make_unique<ESNetServer>();
-		if (mServer->listen(QHostAddress::Any, 12345))
+		if (mServer->listen(QHostAddress::Any, 58312))
 		{
-			qInfo() << "Server started on port 12345";
+			qInfo() << "Server started on port 58312";
 		}
 		else
 		{

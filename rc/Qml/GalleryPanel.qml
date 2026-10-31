@@ -283,6 +283,50 @@ ESImageGridQuickItem
 		height: 15
 	}
 	
+	Row
+	{
+		id: gotoPanel
+		
+		anchors.left: parent.left
+		
+		Rectangle
+		{
+			color: Material.theme == Material.Dark ? "#cc000000" :"#eeffffff"
+			width: 150
+			height: 40
+			radius: 8
+			
+			DateTextField
+			{
+				id: gotoDataTextField
+				anchors.fill: parent
+				placeholderText: "YYYY/MM/DD"
+				
+				onDateEditionFinished: function(pStandardizedDate)
+				{
+					text = pStandardizedDate;
+				}
+				
+				onDateAccepted: function(pStandardizedDate)
+				{
+					text = pStandardizedDate;
+					flickable.contentY = imageGrid.scrollViewToDateTime(pStandardizedDate);
+				}
+			}
+		}
+		
+		RegularButton
+		{
+			text: "GO"
+			implicitHeight: 40
+			
+			onReleased:
+			{
+				flickable.contentY = imageGrid.scrollViewToDateTime(gotoDataTextField.text);
+			}
+		}
+	}
+	
 	RegularButton
 	{
 		id: sortMode

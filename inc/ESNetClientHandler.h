@@ -4,6 +4,9 @@
 #include <QObject>
 #include <QByteArray>
 
+// Stl
+#include <mutex>
+
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
@@ -63,7 +66,9 @@ private:
 
 	ESNetServer* mServer;
 	qintptr mSocketDescriptor;
+
 	QTcpSocket* mSocket;
+	mutable std::recursive_mutex mSocketMutex;
 	QByteArray mChallengeNonce;
 	bool mIsAuthenticated;
 };

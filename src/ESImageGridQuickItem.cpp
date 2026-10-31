@@ -45,6 +45,7 @@ ESImageGridQuickItem::ESImageGridQuickItem()
 	, mGeometryHasChanged(false)
 	, mFilteredFilesListComponent(nullptr)
 	, mZoomCenter(-1,-1)
+	, mVisibleDateTime(0)
 {
 	setFlag(ItemHasContents, true);
 	setAcceptedMouseButtons(Qt::AllButtons);
@@ -268,6 +269,38 @@ float ESImageGridQuickItem::scrollViewTo(QString pImage)
 
 /********************************************************************************/
 
+float ESImageGridQuickItem::scrollViewToDateTime(QString pDateTime)
+{
+	QDateTime lToDate = QDateTime::fromString(pDateTime, "yyyy/MM/dd");
+	if (lToDate.isValid())
+	{
+		return scrollViewToDateTimeInternal(lToDate.toSecsSinceEpoch());
+	}
+
+	return -1.f;
+}
+
+/********************************************************************************/
+
+float ESImageGridQuickItem::scrollViewToDateTimeInternal(uint64_t pDateTime)
+{
+	QVector2D lImagePos(0, 0);
+	int lImageIdx = 0;
+	for (const std::shared_ptr<ESImage>& lImage : mImages)
+	{
+		if (lImage->getExif().mDateTime > pDateTime)
+		{
+			lImagePos = getImagePos(lImageIdx);
+			break;
+		}
+		++lImageIdx;
+	}
+	setYOffset(lImagePos.y());
+	return lImagePos.y();
+}
+
+/********************************************************************************/
+
 QVector2D ESImageGridQuickItem::getImagePos(QString pImage)
 {
 	QVector2D lResult(0,0);
@@ -443,6 +476,10 @@ void ESImageGridQuickItem::updateInternal()
 		{
 			QVector2D lNewKeepInViewImagePos = getImagePos(lImageAtZoomCenter);
 			setYOffset(lNewKeepInViewImagePos.y() - lKeepInViewImageYOffset);
+		}
+		else if (mDataHasChanged)
+		{
+			scrollViewToDateTimeInternal(getVisibleDateTime());
 		}
 		setContentHeight(std::max(1.f, lNewContentHeight));
 				
@@ -684,6 +721,8 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 			}
 		}
 
+		quint64 lMinVisibleDateTime = std::numeric_limits<quint64>::max();
+
 		mImageTextures->bind();
 		for (int lRow = lStartPreloadRow; lRow < lEndPreloadRow; ++lRow)
 		{
@@ -715,6 +754,9 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 
 				if (!lBoudingRect.intersects(lImageRect))
 					continue;
+
+				if (lImageWrapper->getExif().mDateTime != 0)
+					lMinVisibleDateTime = std::min(lMinVisibleDateTime, lImageWrapper->getExif().mDateTime);
 
 				bool lDrawPlaceholder = true;
 				if (lImageWrapper->isLoaded() && !lImageWrapper->isNull())
@@ -779,6 +821,15 @@ void ESImageGridQuickItemRenderer::checkOpengGLErrors()
 		assert(mInstanceData.size() < cMaxDisplayedImages);
 		mImageTextures->release();
 		mImageTextures->generateMipMaps();
+
+		if (lMinVisibleDateTime != std::numeric_limits<uint64_t>::max())
+		{
+			lItem->setVisibleDateTime(lMinVisibleDateTime);
+		}
+		else
+		{
+			lItem->setVisibleDateTime(0);
+		}
 	}
 }
 

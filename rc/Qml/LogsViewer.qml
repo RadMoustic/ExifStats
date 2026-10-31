@@ -6,7 +6,6 @@ import QtQuick.Window
 Pane
 {
 	id: rootItem
-	anchors.fill: parent
 	
 	property alias model: consoleStrList.model
 	property alias closeButtonVisible: closeButton.visible

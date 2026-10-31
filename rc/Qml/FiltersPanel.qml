@@ -334,7 +334,7 @@ Flickable
 				id: searchPathText
 				Layout.fillWidth: true
 				implicitHeight: 40
-				placeholderText: "Path"
+				placeholderText: "File name"
 				text: MainQmlBinder.PathInclusiveFilters.length > 0 ? MainQmlBinder.PathInclusiveFilters.join(" ") : ""
 				
 				onEditingFinished:
@@ -796,20 +796,25 @@ Flickable
 				Layout.fillWidth: false
 			}
 
-			TextField
+			DateTextField
 			{
 				x: 0
 				Layout.fillWidth: false
 				text: MainQmlBinder.TimeFrom
-				validator: RegularExpressionValidator { regularExpression: /\d{1,4}\/\d{1,2}\/\d{1,2}/ }
 				font.bold: true
 				background: null
-				onEditingFinished:
+				onDateEditionFinished: function(pStandardizedDate)
 				{
-					MainQmlBinder.TimeFrom = text;
-					MainQmlBinder.TimeFilterOutInvalid = true;
+					if(pStandardizedDate == "")
+					{
+						MainQmlBinder.TimeFrom = MainQmlBinder.MinTime;
+					}
+					else if(pStandardizedDate !== MainQmlBinder.MinTime)
+					{
+						MainQmlBinder.TimeFrom = pStandardizedDate;
+						MainQmlBinder.TimeFilterOutInvalid = true;
+					}
 				}
-
 			}
 			
 			Label
@@ -818,17 +823,24 @@ Flickable
 				Layout.fillWidth: false
 			}
 			
-			TextField
+			DateTextField
 			{
 				Layout.fillWidth: false
 				text: MainQmlBinder.TimeTo
-				validator: RegularExpressionValidator { regularExpression: /\d{1,4}\/\d{1,2}\/\d{1,2}/ }
 				font.bold: true
 				background: null
-				onEditingFinished:
+				onDateEditionFinished: function(pStandardizedDate)
 				{
-					MainQmlBinder.TimeTo = text;
-					MainQmlBinder.TimeFilterOutInvalid = true;
+					if(pStandardizedDate == "")
+					{
+						MainQmlBinder.TimeTo = MainQmlBinder.MaxTime;
+					}
+					else if(pStandardizedDate !== MainQmlBinder.MaxTime)
+					{
+						MainQmlBinder.TimeTo = pStandardizedDate;
+						if(pStandardizedDate !== "")
+							MainQmlBinder.TimeFilterOutInvalid = true;
+					}
 				}
 			}
 			

@@ -42,7 +42,8 @@ void ESNetClientHandler::initializeConnection()
 		connect(mSocket, &QTcpSocket::disconnected, this, &ESNetClientHandler::onDisconnected);
 		QTimer::singleShot(2000, this, [this]()
 			{
-				if (!mIsAuthenticated)
+				std::lock_guard lLock(mSocketMutex);
+				if (!mIsAuthenticated && mSocket)
 				{
 					qWarning() << "Client did not authenticate in time, disconnecting client: " << mSocket->peerAddress().toString();
 					mSocket->disconnectFromHost();
@@ -65,6 +66,11 @@ void ESNetClientHandler::initializeConnection()
 
 void ESNetClientHandler::processReadyRead()
 {
+	std::lock_guard lLock(mSocketMutex);
+	if(!mSocket)
+	{
+		return;
+	}
 	if (!mIsAuthenticated)
 	{
 		if (mSocket->bytesAvailable() < 32)
@@ -237,6 +243,7 @@ void ESNetClientHandler::processReadyRead()
 
 void ESNetClientHandler::sendMessage(Message pMsg)
 {
+	mSocketMutex.lock();
 	if (mSocket && mSocket->state() == QAbstractSocket::ConnectedState)
 	{
 		QDataStream lStream(mSocket);
@@ -248,9 +255,12 @@ void ESNetClientHandler::sendMessage(Message pMsg)
 		if (	pMsg == MsgFailedToOpenFile
 			||	pMsg == MsgFileNotFound)
 		{
+			mSocketMutex.unlock();
 			mSocket->waitForBytesWritten(3000);
+			mSocketMutex.lock();
 			if(mSocket) // Can be deleted after the wait if disconnected
 				mSocket->disconnectFromHost();
+			mSocketMutex.unlock();
 		}
 	}
 }
@@ -259,6 +269,7 @@ void ESNetClientHandler::sendMessage(Message pMsg)
 
 void ESNetClientHandler::sendImageData(const QByteArray& pData, QString pFilePath)
 {
+	std::lock_guard lLock(mSocketMutex);
 	if (mSocket && mSocket->state() == QAbstractSocket::ConnectedState)
 	{
 		QDataStream lStream(mSocket);
@@ -287,6 +298,7 @@ void ESNetClientHandler::sendImageData(const QByteArray& pData, QString pFilePat
 
 void ESNetClientHandler::onDisconnected()
 {
+	std::lock_guard lLock(mSocketMutex);
 	qInfo() << "Client disconnected: " << mSocket->peerAddress().toString();
 	mSocket->deleteLater();
 	mSocket = nullptr;

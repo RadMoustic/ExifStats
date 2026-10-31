@@ -113,6 +113,7 @@ public:
 	ES_QML_READ_PROPERTY(Loading, bool)
 	ES_QML_READ_PROPERTY(LoadingProgress, float)
 	ES_QML_READ_PROPERTY(ContentHeight, int)
+	ES_QML_READ_PROPERTY(VisibleDateTime, uint64_t)
 
 	Q_INVOKABLE float getMinImageSize() const;
 	Q_INVOKABLE QString getImageFileAtPos(float pX, float pY) const;
@@ -123,6 +124,7 @@ public:
 
 	Q_INVOKABLE QVector2D getImagePos(QString pImage);
 	Q_INVOKABLE float scrollViewTo(QString pImage);
+	Q_INVOKABLE float scrollViewToDateTime(QString pDateTime);
 
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
@@ -154,4 +156,5 @@ private:
 	void preloadImagesAround(int pImageIdx, int pPreloadCountAround) const;
 	int getImageIndexAtPos(float pX, float pY, bool pGetClosestIfNotFound = false) const;
 	QVector2D getImagePos(int pIndex) const;
+	float scrollViewToDateTimeInternal(uint64_t pDateTime);
 };
