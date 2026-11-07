@@ -18,6 +18,12 @@
 * All files (database, presets, logs and image cache are stored in **%localappdata%/ExifStats/ExifStats**
 * All settings are stored in **HKEY_CURRENT_USER\SOFTWARE\ExifStats\ExifStats**
 
+## Client / Server
+* Start the desktop application with "-server"
+* The server version does not display any statistics or images, it only listen to incomming connections to transfert high definition 4k images to the clients
+* Set the server address, port and password in the mobile application to automatically download the high definition images from the server in the image viewer
+* The database for the client doesn't have to be created on the server, it will search for images with identical EXIF data (and if several images match it will use the name)
+
 ## Customize UI / QML
 
 Download and extract the CustomizeQML.zip into the same directory as ExifStats.exe. Restart ExifStats.exe and it should load the QML from the Qml directory instead of the embedded one. It supports hot reload and all errors and warnings are logged into a file located in **%localappdata%\ExifStats\ExifStats\ExifStats.log**
