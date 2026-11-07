@@ -158,7 +158,7 @@ void ESDatabase::updateDatabase(const QStringList& pFolders, bool pClearDB, bool
 						lFileInfo.mFilePath = lFilePath;
 						lItFound->second = lFileInfoIndex;
 
-						mFilesPathToIndex[lFilePath] = lFileInfo.mId;
+						mFilesPathToIndex[lFilePath] = lFileInfoIndex;
 						mIdToIndex[lFileInfo.mId] = lFileInfoIndex;
 					}
 					if (!pNewFilesOnly || lIsNewFile || lFileInfo.mReadResult != eSuccess)
