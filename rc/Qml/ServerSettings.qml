@@ -26,11 +26,13 @@ Popup
 		TextField
 		{
 			id: password
+			echoMode: TextInput.Password
 		}
 		
 		onAccepted:
 		{
 			MainQmlBinder.setServerPassword(password.text);
+			password.text = "";
 		}
 	}
 	
@@ -40,7 +42,24 @@ Popup
 		anchors.centerIn: parent
 		spacing: 15
 		width: parent.width - 40
-
+		
+		Row
+		{
+			Label
+			{
+				text: "Port: "
+			}
+			TextField
+			{
+				id: portTextField
+				text: MainQmlBinder.getServerListenningPort()
+				
+				onAccepted:
+				{
+					MainQmlBinder.setServerListenningPort(parseInt(portTextField.text));
+				}
+			}
+		}
 		RegularButton
 		{
 			text:"Set Password"

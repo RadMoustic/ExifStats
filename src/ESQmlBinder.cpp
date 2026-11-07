@@ -19,6 +19,7 @@
 #include <QDir>
 #include <QJsonDocument>
 #include <QtLogging>
+#include <QNetworkInterface>
 
 // Quazip
 #include <quazip/JlCompress.h>
@@ -51,6 +52,8 @@ ESQmlBinder::ESQmlBinder(bool pIsServer)
 	, mTaggingModelsExtractingProgress(0.f)
 	, mExporting(false)
 	, mExportingProgress(0.f)
+	, mServerListenningLocalOnly(true)
+	, mServerListenningPort(58312)
 {
 	(void)connect(&ESDatabase::getInstance(), &ESDatabase::dataChanged, this, 
 	[this]()
@@ -136,6 +139,14 @@ ESQmlBinder::ESQmlBinder(bool pIsServer)
 #ifdef IMAGETAGGER_ENABLE
 	setImageTaggerEnabled(true);
 #endif // IMAGETAGGER_ENABLE
+
+	if (mIsServer)
+	{
+		QSettings lSettings;
+
+		if (lSettings.contains("ServerListenningPort"))
+			mServerListenningPort = lSettings.value("ServerListenningPort").toUInt();
+	}
 }
 
 /********************************************************************************/
@@ -164,19 +175,54 @@ void ESQmlBinder::initialize(bool pLoadTokenizerAndHNSW)
 
 	if(mIsServer)
 	{
-		mServer = std::make_unique<ESNetServer>();
-		if (mServer->listen(QHostAddress::Any, 58312))
-		{
-			qInfo() << "Server started on port 58312";
-		}
-		else
-		{
-			qCritical() << "Failed to start server: " << mServer->errorString();
-		}
+		restartServer();
 	}
 	else
 	{
 		ESNetClientOriginalImageDownloadRequest::initialize();
+	}
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::setServerListenningPort(quint16 pPort)
+{
+	if (mIsServer)
+	{
+		QSettings lSettings;
+		lSettings.setValue("ServerListenningPort", pPort);
+		mServerListenningPort = pPort;
+
+		restartServer();
+	}
+}
+
+/********************************************************************************/
+
+bool ESQmlBinder::getServerLocalOnly() const
+{
+	return mServerListenningLocalOnly;
+}
+
+/********************************************************************************/
+
+int ESQmlBinder::getServerListenningPort() const
+{
+	return mServerListenningPort;
+}
+
+/********************************************************************************/
+
+void ESQmlBinder::restartServer()
+{
+	mServer = std::make_unique<ESNetServer>();
+	if (mServer->listen(QHostAddress::Any, mServerListenningPort))
+	{
+		qInfo() << "Server listenning on port " << mServerListenningPort;
+	}
+	else
+	{
+		qCritical() << "Failed to start server: " << mServer->errorString();
 	}
 }
 

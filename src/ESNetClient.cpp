@@ -431,14 +431,17 @@ void ESNetClientOriginalImageDownloadRequestInternal::handleerror(QAbstractSocke
 
 /*static*/ void ESNetClientOriginalImageDownloadRequest::setPassword(const QString& pPassword)
 {
+	QSettings lSettings;
+	msServerSaltedPassword = "";
+	lSettings.setValue("ServerPassword", msServerSaltedPassword);
+	
 	if (pPassword.size() < 20)
 	{
 		qWarning() << "Password too short. It should be at least 20 characters long.";
 		return;
 	}
+	
 	msServerSaltedPassword = QCryptographicHash::hash(pPassword.toUtf8() + "ExifStatsSalt", QCryptographicHash::Sha256).toHex();
-
-	QSettings lSettings;
 	lSettings.setValue("ServerPassword", msServerSaltedPassword);
 }
 

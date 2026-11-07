@@ -9,6 +9,7 @@
 #include <QVector2D>
 #include <QGeoShape>
 #include <QDateTime>
+#include <QHostAddress>
 
 // Stl
 #include <functional>
@@ -307,6 +308,11 @@ public:
 	Q_INVOKABLE void save();
 
 	// Server
+	Q_INVOKABLE void setServerListenningPort(quint16 pPort);
+	Q_INVOKABLE bool getServerLocalOnly() const;
+	Q_INVOKABLE int getServerListenningPort() const;
+
+	// Client
 	Q_INVOKABLE void setServerAddressAndPort(QString pAddress, quint16 pPort);
 	Q_INVOKABLE QString getServerAddress();
 	Q_INVOKABLE int getServerPort();
@@ -331,6 +337,8 @@ private:
 
 	bool mIsServer;
 	std::unique_ptr<ESNetServer> mServer;
+	quint16 mServerListenningPort;
+	bool mServerListenningLocalOnly;
 
 	ESFocalLengthIn35mmStat m35mmStat;
 	ESApertureStat mApertureStat;
@@ -374,6 +382,8 @@ private:
 #ifdef Q_OS_ANDROID
 	void openArchiveZip() const;
 #endif // Q_OS_ANDROID
+	QHostAddress getLocalNetworkAddress() const;
+	void restartServer();
 
 	template<typename K, typename V>
 	static QVariantMap toQVariantMap(const QMap<K, V>& pMap)

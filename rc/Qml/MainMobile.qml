@@ -229,6 +229,7 @@ Pane
 				TextField
 				{
 					id: passwordField
+					echoMode: TextInput.Password
 				}
 			}
 		}
@@ -236,7 +237,9 @@ Pane
 		onAccepted:
 		{
 			MainQmlBinder.setServerAddressAndPort(addressField.text, parseInt(portField.text));
-			MainQmlBinder.setServerPassword(passwordField.text);
+			if(passwordField.text !== "")
+				MainQmlBinder.setServerPassword(passwordField.text);
+			passwordField.text = "";
 		}
 	}
 	
