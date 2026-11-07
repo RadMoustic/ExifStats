@@ -603,7 +603,7 @@ Flickable
 			{
 				x: 0
 				Layout.fillWidth: false
-				text: MainQmlBinder.ShutterSpeedFrom < 1 ? (1.0 / MainQmlBinder.ShutterSpeedFrom).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedFrom
+				text: MainQmlBinder.ShutterSpeedFrom < 1 ? (1.0 / MainQmlBinder.ShutterSpeedFrom).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedFrom.toFixed(0)
 				validator: RegularExpressionValidator { regularExpression: /^(?:[1-9]\d{0,3}|0|1\/[1-9]\d{0,3}|1\/0)$/ }
 				font.bold: true
 				background: null
@@ -624,7 +624,7 @@ Flickable
 			TextField
 			{
 				Layout.fillWidth: false
-				text: MainQmlBinder.ShutterSpeedTo < 1 ? (1.0 / MainQmlBinder.ShutterSpeedTo).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedTo
+				text: MainQmlBinder.ShutterSpeedTo < 1 ? (1.0 / MainQmlBinder.ShutterSpeedTo).toFixed(0) : "1/"+MainQmlBinder.ShutterSpeedTo.toFixed(0)
 				validator: RegularExpressionValidator { regularExpression: /^(?:[1-9]\d{0,3}|0|1\/[1-9]\d{0,3}|1\/0)$/ }
 				font.bold: true
 				background: null
